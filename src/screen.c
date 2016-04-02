@@ -8806,7 +8806,7 @@ screenclear2(void)
     /* blank out ScreenLines */
     for (i = 0; i < Rows; ++i)
     {
-	lineclear(LineOffset[i] + p_vtlc, (int)Columns);
+	lineclear(LineOffset[i], (int)Columns);
 	LineWraps[i] = FALSE;
     }
 
@@ -8820,7 +8820,7 @@ screenclear2(void)
     {
 	/* can't clear the screen, mark all chars with invalid attributes */
 	for (i = 0; i < Rows; ++i)
-	    lineinvalid(LineOffset[i] + p_vtlc, (int)Columns);
+	    lineinvalid(LineOffset[i], (int)Columns);
 	clear_cmdline = TRUE;
     }
 
@@ -9614,9 +9614,9 @@ screen_ins_lines(
 		linecopy(j + line_count, j, wp);
 	    j += line_count;
 	    if (can_clear((char_u *)" "))
-		lineclear(LineOffset[j] + wp->w_wincol + p_vtlc, wp->w_width);
+		lineclear(LineOffset[j] + wp->w_wincol, wp->w_width);
 	    else
-		lineinvalid(LineOffset[j] + wp->w_wincol + p_vtlc, wp->w_width);
+		lineinvalid(LineOffset[j] + wp->w_wincol, wp->w_width);
 	    LineWraps[j] = FALSE;
 	}
 	else
@@ -9632,9 +9632,9 @@ screen_ins_lines(
 	    LineOffset[j + line_count] = temp;
 	    LineWraps[j + line_count] = FALSE;
 	    if (can_clear((char_u *)" "))
-		lineclear(temp + p_vtlc, (int)Columns);
+		lineclear(temp, (int)Columns);
 	    else
-		lineinvalid(temp + p_vtlc, (int)Columns);
+		lineinvalid(temp, (int)Columns);
 	}
     }
 
@@ -9841,9 +9841,9 @@ screen_del_lines(
 		linecopy(j - line_count, j, wp);
 	    j -= line_count;
 	    if (can_clear((char_u *)" "))
-		lineclear(LineOffset[j] + wp->w_wincol + p_vtlc, wp->w_width);
+		lineclear(LineOffset[j] + wp->w_wincol, wp->w_width);
 	    else
-		lineinvalid(LineOffset[j] + wp->w_wincol + p_vtlc, wp->w_width);
+		lineinvalid(LineOffset[j] + wp->w_wincol, wp->w_width);
 	    LineWraps[j] = FALSE;
 	}
 	else
@@ -9860,9 +9860,9 @@ screen_del_lines(
 	    LineOffset[j - line_count] = temp;
 	    LineWraps[j - line_count] = FALSE;
 	    if (can_clear((char_u *)" "))
-		lineclear(temp + p_vtlc, (int)Columns);
+		lineclear(temp, (int)Columns);
 	    else
-		lineinvalid(temp + p_vtlc, (int)Columns);
+		lineinvalid(temp, (int)Columns);
 	}
     }
 
@@ -10223,7 +10223,6 @@ draw_vertical_tabline(int curr_row)
     tabpage_T	*tp;
     int		wincount;
     int		modified;
-    /* char_u	buffer[1024]; */
 
     if (0 == p_vtlc)
 	return;
@@ -10233,15 +10232,6 @@ draw_vertical_tabline(int curr_row)
     {
 	col = 0;
 	attr = attr_nosel;
-
-	/* screen_putchar('@', row, col++, attr); */
-	/* vim_snprintf((char *)buffer, sizeof(buffer), "%d", row); */
-	/* len = (int)STRLEN(buffer);                               */
-	/* if (p_vtlc > col + len)                                  */
-	/* {                                                        */
-	/*     screen_puts_len(buffer, len, row, col, attr);        */
-	/*     col += len;                                          */
-	/* }                                                        */
 
         if (tp != NULL)
         {
@@ -10283,10 +10273,9 @@ draw_vertical_tabline(int curr_row)
 		    }
 		}
 		if (modified)
-		{
 		    if (p_vtlc > col + 1)
 			screen_puts_len((char_u *)"+", 1, row, col++, attr);
-		}
+
 		if (p_vtlc > col + 1)
 		    screen_putchar(' ', row, col++, attr);
 	    }
