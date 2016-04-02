@@ -165,7 +165,7 @@ static void win_rest_invalid(win_T *wp);
 static void msg_pos_mode(void);
 static void recording_mode(int attr);
 #if defined(FEAT_WINDOWS)
-static void draw_vertical_tabline(void);
+static void draw_vertical_tabline(int row);
 static void draw_tabline(void);
 #endif
 #if defined(FEAT_WINDOWS) || defined(FEAT_WILDMENU) || defined(FEAT_STL_OPT)
@@ -631,7 +631,6 @@ update_screen(int type)
     /* Redraw the tab pages line if needed. */
     if (redraw_tabline || type >= NOT_VALID)
 	draw_tabline();
-    draw_vertical_tabline();
 #endif
 
 #ifdef FEAT_SYN_HL
@@ -988,7 +987,6 @@ updateWindow(win_T *wp)
     /* When the screen was cleared redraw the tab pages line. */
     if (redraw_tabline)
 	draw_tabline();
-    draw_vertical_tabline();
 
     if (wp->w_redr_status
 # ifdef FEAT_CMDL_INFO
@@ -1498,7 +1496,6 @@ win_update(win_T *wp)
 		/* The screen was cleared, redraw the tab pages line. */
 		if (redraw_tabline)
 		    draw_tabline();
-                draw_vertical_tabline();
 #endif
 	    }
 	}
@@ -5864,6 +5861,8 @@ screen_line(
     if (endcol > Columns)
 	endcol = Columns;
 
+    draw_vertical_tabline(row);
+
 # ifdef FEAT_CLIPBOARD
     clip_may_clear_selection(row, row);
 # endif
@@ -6290,7 +6289,6 @@ redraw_statuslines(void)
 	    win_redr_status(wp);
     if (redraw_tabline)
 	draw_tabline();
-    draw_vertical_tabline();
 }
 #endif
 
@@ -10210,7 +10208,7 @@ recording_mode(int attr)
 
 #if defined(FEAT_WINDOWS)
     static void
-draw_vertical_tabline(void)
+draw_vertical_tabline(int curr_row)
 {
     int		len;
     int		attr_sel = hl_attr(HLF_TPS);
@@ -10220,24 +10218,35 @@ draw_vertical_tabline(void)
     char_u	*p;
     int		room;
     int		attr;
-    int		col = 0;
     int		row = 0;
+    int		col = 0;
     tabpage_T	*tp;
     int		wincount;
     int		modified;
+    /* char_u	buffer[1024]; */
+
+    if (0 == p_vtlc)
+	return;
 
     tp = first_tabpage;
-    for (row = 0; row < Rows; ++row)
+    for (row = 0; row < Rows; row++)
     {
 	col = 0;
 	attr = attr_nosel;
-	if(tp != NULL)
-	{
+
+	/* screen_putchar('@', row, col++, attr); */
+	/* vim_snprintf((char *)buffer, sizeof(buffer), "%d", row); */
+	/* len = (int)STRLEN(buffer);                               */
+	/* if (p_vtlc > col + len)                                  */
+	/* {                                                        */
+	/*     screen_puts_len(buffer, len, row, col, attr);        */
+	/*     col += len;                                          */
+	/* }                                                        */
+
+        if (tp != NULL)
+        {
 	    if (tp->tp_topframe == topframe)
 		attr = attr_sel;
-
-	    if (p_vtlc > col + 1)
-		screen_putchar(' ', row, col++, attr);
 
 	    if (tp == curtab)
 	    {
@@ -10254,6 +10263,7 @@ draw_vertical_tabline(void)
 	    for (wincount = 0; wp != NULL; wp = wp->w_next, ++wincount)
 		if (bufIsChanged(wp->w_buffer))
 		    modified = TRUE;
+
 	    if (modified || wincount > 1)
 	    {
 		if (wincount > 1)
@@ -10261,14 +10271,16 @@ draw_vertical_tabline(void)
 		    vim_snprintf((char *)NameBuff, MAXPATHL, "%d", wincount);
 		    len = (int)STRLEN(NameBuff);
 		    if (p_vtlc > col + len)
+		    {
 			screen_puts_len(NameBuff, len, row, col,
 #if defined(FEAT_SYN_HL)
-				     hl_combine_attr(attr, hl_attr(HLF_T))
+				hl_combine_attr(attr, hl_attr(HLF_T))
 #else
-				     attr
+				attr
 #endif
-				     );
-		    col += len;
+				);
+			col += len;
+		    }
 		}
 		if (modified)
 		{
@@ -10295,11 +10307,11 @@ draw_vertical_tabline(void)
 		    }
 		else
 #endif
-		if (len > room)
-		{
-		    p += len - room;
-		    len = room;
-		}
+		    if (len > room)
+		    {
+			p += len - room;
+			len = room;
+		    }
 		if (len > Columns - col - 1)
 		    len = Columns - col - 1;
 
@@ -10622,7 +10634,6 @@ showruler(int always)
     /* Redraw the tab pages line if needed. */
     if (redraw_tabline)
 	draw_tabline();
-    draw_vertical_tabline();
 #endif
 }
 
