@@ -10238,7 +10238,7 @@ draw_vertical_tabline()
 	return;
 
     tp = first_tabpage;
-    for (row = 0; row < Rows; row++)
+    for (row = 0; row < Rows - p_ch; row++)
     {
 	col = 0;
 	attr = attr_fill;
