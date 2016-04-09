@@ -6806,6 +6806,10 @@ static char *(highlight_init_both[]) =
 	     "TabLineSel term=bold cterm=bold gui=bold"),
 	CENT("TabLineFill term=reverse cterm=reverse",
 	     "TabLineFill term=reverse cterm=reverse gui=reverse"),
+	CENT("VTabLineSel term=bold cterm=bold",
+	     "VTabLineSel term=bold cterm=bold gui=bold"),
+	CENT("VTabLineFill term=reverse cterm=reverse",
+	     "VTabLineFill term=reverse cterm=reverse gui=reverse"),
 #endif
 #ifdef FEAT_GUI
 	"Cursor guibg=fg guifg=bg",
@@ -6879,6 +6883,8 @@ static char *(highlight_init_light[]) =
 #ifdef FEAT_WINDOWS
 	CENT("TabLine term=underline cterm=underline ctermfg=black ctermbg=LightGrey",
 	     "TabLine term=underline cterm=underline ctermfg=black ctermbg=LightGrey gui=underline guibg=LightGrey"),
+	CENT("VTabLine term=NONE cterm=NONE ctermfg=black ctermbg=LightGrey",
+	     "VTabLine term=NONE cterm=NONE ctermfg=black ctermbg=LightGrey gui=underline guibg=LightGrey"),
 #endif
 #ifdef FEAT_SYN_HL
 	CENT("CursorColumn term=reverse ctermbg=LightGrey",
@@ -6967,6 +6973,8 @@ static char *(highlight_init_dark[]) =
 #ifdef FEAT_WINDOWS
 	CENT("TabLine term=underline cterm=underline ctermfg=white ctermbg=DarkGrey",
 	     "TabLine term=underline cterm=underline ctermfg=white ctermbg=DarkGrey gui=underline guibg=DarkGrey"),
+	CENT("VTabLine term=NONE cterm=NONE ctermfg=white ctermbg=DarkGrey",
+	     "VTabLine term=NONE cterm=NONE ctermfg=white ctermbg=DarkGrey gui=underline guibg=DarkGrey"),
 #endif
 #ifdef FEAT_SYN_HL
 	CENT("CursorColumn term=reverse ctermbg=DarkGrey",

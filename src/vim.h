@@ -1340,6 +1340,9 @@ typedef enum
     , HLF_CUC	    /* 'cursurcolumn' */
     , HLF_CUL	    /* 'cursurline' */
     , HLF_MC	    /* 'colorcolumn' */
+    , HLF_VTP	    /* vertical tabpage line */
+    , HLF_VTPS	    /* vertical tabpage line selected */
+    , HLF_VTPF	    /* vertical tabpage line filler */
     , HLF_COUNT	    /* MUST be the last one */
 } hlf_T;
 
@@ -1349,7 +1352,7 @@ typedef enum
 		  'n', 'N', 'r', 's', 'S', 'c', 't', 'v', 'V', 'w', 'W', \
 		  'f', 'F', 'A', 'C', 'D', 'T', '-', '>', \
 		  'B', 'P', 'R', 'L', \
-		  '+', '=', 'x', 'X', '*', '#', '_', '!', '.', 'o'}
+		  '+', '=', 'x', 'X', '*', '#', '_', '!', '.', 'o', '$', '%', '^' }
 
 /*
  * Boolean constants

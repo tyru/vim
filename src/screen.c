@@ -10220,8 +10220,9 @@ recording_mode(int attr)
 draw_vertical_tabline()
 {
     int		len;
-    int		attr_sel = hl_attr(HLF_TPS);
-    int		attr_nosel = hl_attr(HLF_TP);
+    int		attr_sel = hl_attr(HLF_VTPS);
+    int		attr_nosel = hl_attr(HLF_VTP);
+    int		attr_fill = hl_attr(HLF_VTPF);
     win_T	*wp;
     win_T	*cwp;
     char_u	*p;
@@ -10240,12 +10241,14 @@ draw_vertical_tabline()
     for (row = 0; row < Rows; row++)
     {
 	col = 0;
-	attr = attr_nosel;
+	attr = attr_fill;
 
         if (tp != NULL)
         {
 	    if (tp->tp_topframe == topframe)
 		attr = attr_sel;
+	    else
+		attr = attr_nosel;
 
 	    if (tp == curtab)
 	    {
