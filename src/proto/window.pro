@@ -59,6 +59,7 @@ void win_new_width(win_T *wp, int width);
 void win_comp_scroll(win_T *wp);
 void command_height(void);
 void last_status(int morewin);
+int vtabline_width(void);
 int tabline_height(void);
 char_u *grab_file_name(long count, linenr_T *file_lnum);
 char_u *file_name_at_cursor(int options, long count, linenr_T *file_lnum);

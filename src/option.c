@@ -2808,6 +2808,13 @@ static struct vimoption options[] =
     {"visualbell",  "vb",   P_BOOL|P_VI_DEF,
 			    (char_u *)&p_vb, PV_NONE,
 			    {(char_u *)FALSE, (char_u *)0L} SCRIPTID_INIT},
+    {"vshowtabline", "vstal", P_NUM|P_RALL,
+#ifdef FEAT_WINDOWS
+			    (char_u *)&p_vstal, PV_NONE,
+#else
+			    (char_u *)NULL, PV_NONE,
+#endif
+			    {(char_u *)1L, (char_u *)0L} SCRIPTID_INIT},
     {"vtablinecolumns",  "vtlc",   P_NUM|P_RALL,
 			    (char_u *)&p_vtlc, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
@@ -8654,6 +8661,16 @@ set_num_option(
     }
 #endif
 
+    else if (pp == &p_vstal)
+    {
+	if (p_vstal < 0 || 2 < p_vstal)
+	{
+	    errmsg = e_positive;
+	    p_vstal = 1;
+	}
+        shell_new_columns();
+    }
+
     else if (pp == &p_vtlc)
     {
 	if (p_vtlc < 0)
@@ -8661,7 +8678,7 @@ set_num_option(
 	    errmsg = e_positive;
 	    p_vtlc = 0;
 	}
-        do_cmdline_cmd((char_u *)"wincmd =");
+        shell_new_columns();
     }
 
     /* if p_ch changed value, change the command line height */
