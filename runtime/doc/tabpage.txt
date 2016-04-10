@@ -14,7 +14,8 @@ when used in combination with more than one tab page.
 2. Commands			|tab-page-commands|
 3. Other items			|tab-page-other|
 4. Setting 'tabline'		|setting-tabline|
-5. Setting 'guitablabel'	|setting-guitablabel|
+5. Setting 'vtabline'		|setting-vtabline|
+6. Setting 'guitablabel'	|setting-guitablabel|
 
 {Vi does not have any of these commands}
 {not able to use multiple tab pages when the |+windows| feature was disabled
@@ -368,7 +369,25 @@ clever way when there is not enough room.  Check the 'columns' option for the
 space available.
 
 ==============================================================================
-5. Setting 'guitablabel'				*setting-guitablabel*
+5. Setting 'vtabline'					*setting-vtabline*
+
+The 'vtabline' option specifies what the lines with vertical tab page labels
+looks like.
+
+You can use the 'vshowtabline' option to specify when you want the lines with
+vertical tab page labels to appear: never, when there is more than one tab
+page or always.
+
+The highlighting of the vertical tab page labels is set with the groups
+VTabLine VTabLineSel and VTabLineFill.
+|hl-VTabLine| |hl-VTabLineSel| |hl-VTabLineFill|
+
+A "+" will be shown for a tab page that has a modified window.  The number of
+windows in a tab page is also shown.  Thus "3+" means three windows and one of
+them has a modified buffer.
+
+==============================================================================
+6. Setting 'guitablabel'				*setting-guitablabel*
 
 When the GUI tab pages line is displayed, 'guitablabel' can be used to
 specify the label to display for each tab page.  Unlike 'tabline', which

@@ -4927,6 +4927,12 @@ TabLine		tab pages line, not active tab page label
 TabLineFill	tab pages line, where there are no labels
 							*hl-TabLineSel*
 TabLineSel	tab pages line, active tab page label
+							*hl-VTabLine*
+VTabLine	vertical tab pages line, not active tab page label
+							*hl-VTabLineFill*
+VTabLineFill	vertical tab pages line, where there are no labels
+							*hl-VTabLineSel*
+VTabLineSel	vertical tab pages line, active tab page label
 							*hl-Title*
 Title		titles for output from ":set all", ":autocmd" etc.
 							*hl-Visual*
