@@ -14,7 +14,7 @@ when used in combination with more than one tab page.
 2. Commands			|tab-page-commands|
 3. Other items			|tab-page-other|
 4. Setting 'tabline'		|setting-tabline|
-5. Setting 'vtabline'		|setting-vtabline|
+5. Setting 'tabsidebar'		|setting-tabsidebar|
 6. Setting 'guitablabel'	|setting-guitablabel|
 
 {Vi does not have any of these commands}
@@ -369,18 +369,18 @@ clever way when there is not enough room.  Check the 'columns' option for the
 space available.
 
 ==============================================================================
-5. Setting 'vtabline'					*setting-vtabline*
+5. Setting 'tabsidebar'					*setting-tabsidebar*
 
-The 'vtabline' option specifies what the lines with vertical tab page labels
+The 'tabsidebar' option specifies what the sidebar with tab page labels
 looks like.
 
-You can use the 'vshowtabline' option to specify when you want the lines with
-vertical tab page labels to appear: never, when there is more than one tab
-page or always.
+You can use the 'showtabsidebar' option to specify when you want the sidebar
+with tab page labels to appear: never, when there is more than one tab page or
+always.
 
-The highlighting of the vertical tab page labels is set with the groups
-VTabLine VTabLineSel and VTabLineFill.
-|hl-VTabLine| |hl-VTabLineSel| |hl-VTabLineFill|
+The highlighting of the tab page labels is set with the groups TabSideBar
+TabSideBarSel and TabSideBarFill.
+|hl-TabSideBar| |hl-TabSideBarSel| |hl-TabSideBarFill|
 
 A "+" will be shown for a tab page that has a modified window.  The number of
 windows in a tab page is also shown.  Thus "3+" means three windows and one of

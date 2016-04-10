@@ -468,7 +468,7 @@ struct vimoption
 #if defined(FEAT_DIFF) || defined(FEAT_FOLDING) || defined(FEAT_SPELL) \
 	|| defined(FEAT_WINDOWS) || defined(FEAT_CLIPBOARD) \
 	|| defined(FEAT_INS_EXPAND) || defined(FEAT_SYN_HL) || defined(FEAT_CONCEAL)
-# define HIGHLIGHT_INIT "8:SpecialKey,@:NonText,d:Directory,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,c:VertSplit,t:Title,v:Visual,V:VisualNOS,w:WarningMsg,W:WildMenu,f:Folded,F:FoldColumn,A:DiffAdd,C:DiffChange,D:DiffDelete,T:DiffText,>:SignColumn,-:Conceal,B:SpellBad,P:SpellCap,R:SpellRare,L:SpellLocal,+:Pmenu,=:PmenuSel,x:PmenuSbar,X:PmenuThumb,*:TabLine,#:TabLineSel,_:TabLineFill,!:CursorColumn,.:CursorLine,o:ColorColumn,$:VTabLine,%:VTabLineSel,^:VTabLineFill"
+# define HIGHLIGHT_INIT "8:SpecialKey,@:NonText,d:Directory,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,c:VertSplit,t:Title,v:Visual,V:VisualNOS,w:WarningMsg,W:WildMenu,f:Folded,F:FoldColumn,A:DiffAdd,C:DiffChange,D:DiffDelete,T:DiffText,>:SignColumn,-:Conceal,B:SpellBad,P:SpellCap,R:SpellRare,L:SpellLocal,+:Pmenu,=:PmenuSel,x:PmenuSbar,X:PmenuThumb,*:TabLine,#:TabLineSel,_:TabLineFill,!:CursorColumn,.:CursorLine,o:ColorColumn,$:TabSideBar,%:TabSideBarSel,^:TabSideBarFill"
 #else
 # define HIGHLIGHT_INIT "8:SpecialKey,@:NonText,d:Directory,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,t:Title,v:Visual,w:WarningMsg,W:WildMenu,>:SignColumn,*:TabLine,#:TabLineSel,_:TabLineFill"
 #endif
@@ -2408,6 +2408,13 @@ static struct vimoption options[] =
 			    (char_u *)NULL, PV_NONE,
 #endif
 			    {(char_u *)1L, (char_u *)0L} SCRIPTID_INIT},
+    {"showtabsidebar", "stsb", P_NUM|P_RALL,
+#ifdef FEAT_WINDOWS
+			    (char_u *)&p_stsb, PV_NONE,
+#else
+			    (char_u *)NULL, PV_NONE,
+#endif
+			    {(char_u *)1L, (char_u *)0L} SCRIPTID_INIT},
     {"sidescroll",  "ss",   P_NUM|P_VI_DEF,
 			    (char_u *)&p_ss, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
@@ -2559,6 +2566,9 @@ static struct vimoption options[] =
 			    (char_u *)NULL, PV_NONE,
 #endif
 			    {(char_u *)10L, (char_u *)0L} SCRIPTID_INIT},
+    {"tabsidebarcolumns",  "tsbc",   P_NUM|P_RALL,
+			    (char_u *)&p_tsbc, PV_NONE,
+			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
     {"tabstop",	    "ts",   P_NUM|P_VI_DEF|P_RBUF,
 			    (char_u *)&p_ts, PV_TS,
 			    {(char_u *)8L, (char_u *)0L} SCRIPTID_INIT},
@@ -2808,16 +2818,6 @@ static struct vimoption options[] =
     {"visualbell",  "vb",   P_BOOL|P_VI_DEF,
 			    (char_u *)&p_vb, PV_NONE,
 			    {(char_u *)FALSE, (char_u *)0L} SCRIPTID_INIT},
-    {"vshowtabline", "vstal", P_NUM|P_RALL,
-#ifdef FEAT_WINDOWS
-			    (char_u *)&p_vstal, PV_NONE,
-#else
-			    (char_u *)NULL, PV_NONE,
-#endif
-			    {(char_u *)1L, (char_u *)0L} SCRIPTID_INIT},
-    {"vtablinecolumns",  "vtlc",   P_NUM|P_RALL,
-			    (char_u *)&p_vtlc, PV_NONE,
-			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
     {"w300",	    NULL,   P_NUM|P_VI_DEF,
 			    (char_u *)NULL, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
@@ -8661,22 +8661,22 @@ set_num_option(
     }
 #endif
 
-    else if (pp == &p_vstal)
+    else if (pp == &p_stsb)
     {
-	if (p_vstal < 0 || 2 < p_vstal)
+	if (p_stsb < 0 || 2 < p_stsb)
 	{
 	    errmsg = e_positive;
-	    p_vstal = 1;
+	    p_stsb = 1;
 	}
         shell_new_columns();
     }
 
-    else if (pp == &p_vtlc)
+    else if (pp == &p_tsbc)
     {
-	if (p_vtlc < 0)
+	if (p_tsbc < 0)
 	{
 	    errmsg = e_positive;
-	    p_vtlc = 0;
+	    p_tsbc = 0;
 	}
         shell_new_columns();
     }

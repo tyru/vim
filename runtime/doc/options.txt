@@ -6679,6 +6679,20 @@ A jump table for the options with a short description can be found at |Q_op|.
 	line.
 	See |tab-page| for more information about tab pages.
 
+						*'showtabsidebar'* *'stsb'*
+'showtabsidebar' 'stsb'	number	(default 1)
+			global
+			{not in Vi}
+			{not available when compiled without the |+windows|
+			feature}
+	The value of this option specifies when the tabsidebar with tab page
+	labels will be displayed:
+		0: never
+		1: only if there are at least two tab pages
+		2: always
+	This is non-GUI implementation of the tabsidebar only.
+	See |tab-page| for more information about tab page labels.
+
 						*'sidescroll'* *'ss'*
 'sidescroll' 'ss'	number	(default 0)
 			global
@@ -7312,6 +7326,14 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Maximum number of tab pages to be opened by the |-p| command line
 	argument or the ":tab all" command. |tabpage|
 
+						*'tabsidebarcolumns'* *'tsbc'*
+'tabsidebarcolumns' 'tsbc'		number	(default 0)
+			global
+			{not in Vi, although some versions have a boolean
+			verbose option}
+	When bigger than zero, this option determines the content of the
+	tabsidebar at the left of the Vim window.
+	The column size of tabsidebar is |tabsidebarcolumns|.
 
 						*'tabstop'* *'ts'*
 'tabstop' 'ts'		number	(default 8)
@@ -8005,29 +8027,6 @@ A jump table for the options with a short description can be found at |Q_op|.
 	If this many milliseconds nothing is typed the swap file will be
 	written to disk (see |crash-recovery|).  Also used for the
 	|CursorHold| autocommand event.
-
-						*'vshowtabline'* *'vstal'*
-'vshowtabline' 'vstal'	number	(default 1)
-			global
-			{not in Vi}
-			{not available when compiled without the |+windows|
-			feature}
-	The value of this option specifies when the line with vertical tab
-        page labels will be displayed:
-		0: never
-		1: only if there are at least two tab pages
-		2: always
-	This is non-GUI implementation of the vertical tab page labels only.
-	See |tab-page| for more information about tab page labels.
-
-						*'vtablinecolumns'* *'vtlc'*
-'vtablinecolumns' 'vtlc'		number	(default 0)
-			global
-			{not in Vi, although some versions have a boolean
-			verbose option}
-	When bigger than zero, this option determines the content of the
-	vertical tab page labels at the left of the Vim window.
-	The column size of vertical tab page labels is |vtablinecolumns|.
 
 						*'verbose'* *'vbs'*
 'verbose' 'vbs'		number	(default 0)
