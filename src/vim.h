@@ -808,6 +808,8 @@ extern char *(*dyn_libintl_textdomain)(const char *domainname);
 #define FINDFILE_DIR	1	/* only directories */
 #define FINDFILE_BOTH	2	/* files and directories */
 
+#define COLUMNS_WITHOUT_TABSB()	(Columns - tabsidebar_width() < 0 ? 0 : Columns - tabsidebar_width())
+
 #ifdef FEAT_WINDOWS
 # define W_WINCOL(wp)	(wp->w_wincol)
 # define W_WIDTH(wp)	(wp->w_width)

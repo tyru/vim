@@ -21237,7 +21237,7 @@ f_winwidth(typval_T *argvars, typval_T *rettv)
 #ifdef FEAT_WINDOWS
 	rettv->vval.v_number = wp->w_width;
 #else
-	rettv->vval.v_number = (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width());
+	rettv->vval.v_number = COLUMNS_WITHOUT_TABSB();
 #endif
 }
 

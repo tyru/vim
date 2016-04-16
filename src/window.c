@@ -1150,7 +1150,7 @@ win_split_ins(
 	if (flags & (WSP_TOP | WSP_BOT))
 	{
 	    wp->w_wincol = 0;
-	    win_new_width(wp, (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()));
+	    win_new_width(wp, COLUMNS_WITHOUT_TABSB());
 	    wp->w_vsep_width = 0;
 	}
 	else
@@ -1747,7 +1747,7 @@ win_equal(
 	dir = *p_ead;
     win_equal_rec(next_curwin == NULL ? curwin : next_curwin, current,
 		      topframe, dir, 0, tabline_height(),
-					   (int)(Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()), topframe->fr_height);
+					   (int)COLUMNS_WITHOUT_TABSB(), topframe->fr_height);
 }
 
 /*
@@ -1803,7 +1803,7 @@ win_equal_rec(
 	     * frame. */
 	    n = frame_minwidth(topfr, NOWIN);
 	    /* add one for the rightmost window, it doesn't have a separator */
-	    if (col + width == (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()))
+	    if (col + width == COLUMNS_WITHOUT_TABSB())
 		extra_sep = 1;
 	    else
 		extra_sep = 0;
@@ -3452,7 +3452,7 @@ win_alloc_firstwin(win_T *oldwin)
 	return FAIL;
     topframe = curwin->w_frame;
 #ifdef FEAT_WINDOWS
-    topframe->fr_width = (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width());
+    topframe->fr_width = COLUMNS_WITHOUT_TABSB();
 #endif
     topframe->fr_height = Rows - p_ch;
     topframe->fr_win = curwin;
@@ -3485,8 +3485,8 @@ win_init_size(void)
     firstwin->w_height = ROWS_AVAIL;
     topframe->fr_height = ROWS_AVAIL;
 #ifdef FEAT_WINDOWS
-    firstwin->w_width = (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width());
-    topframe->fr_width = (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width());
+    firstwin->w_width = COLUMNS_WITHOUT_TABSB();
+    topframe->fr_width = COLUMNS_WITHOUT_TABSB();
 #endif
 }
 
@@ -3772,7 +3772,7 @@ leave_tabpage(
     tp->tp_firstwin = firstwin;
     tp->tp_lastwin = lastwin;
     tp->tp_old_Rows = Rows;
-    tp->tp_old_Columns = (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width());
+    tp->tp_old_Columns = COLUMNS_WITHOUT_TABSB();
     firstwin = NULL;
     lastwin = NULL;
     return OK;
@@ -3824,7 +3824,7 @@ enter_tabpage(
 #endif
 		))
 	shell_new_rows();
-    if (curtab->tp_old_Columns != (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()) && starting == 0)
+    if (curtab->tp_old_Columns != COLUMNS_WITHOUT_TABSB() && starting == 0)
 	shell_new_columns();	/* update window widths */
 
 #if defined(FEAT_GUI)
@@ -4478,7 +4478,7 @@ win_alloc(win_T *after UNUSED, int hidden UNUSED)
     if (!hidden)
 	win_append(after, new_wp);
     new_wp->w_wincol = 0;
-    new_wp->w_width = (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width());
+    new_wp->w_width = COLUMNS_WITHOUT_TABSB();
 #endif
 
     /* position the display and the cursor at the top of the file. */
@@ -4818,9 +4818,9 @@ shell_new_columns(void)
 
     /* First try setting the widths of windows with 'winfixwidth'.  If that
      * doesn't result in the right width, forget about that option. */
-    frame_new_width(topframe, (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()), FALSE, TRUE);
-    if (!frame_check_width(topframe, (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width())))
-	frame_new_width(topframe, (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()), FALSE, FALSE);
+    frame_new_width(topframe, COLUMNS_WITHOUT_TABSB(), FALSE, TRUE);
+    if (!frame_check_width(topframe, COLUMNS_WITHOUT_TABSB()))
+	frame_new_width(topframe, COLUMNS_WITHOUT_TABSB(), FALSE, FALSE);
 
     (void)win_comp_pos();		/* recompute w_winrow and w_wincol */
 #if 0
@@ -5071,7 +5071,7 @@ frame_setheight(frame_T *curfrp, int height)
 		if (frp != curfrp)
 		    room -= frame_minheight(frp, NULL);
 	    }
-	    if (curfrp->fr_width != (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()))
+	    if (curfrp->fr_width != COLUMNS_WITHOUT_TABSB())
 		room_cmdline = 0;
 	    else
 	    {
@@ -5083,7 +5083,7 @@ frame_setheight(frame_T *curfrp, int height)
 
 	    if (height <= room + room_cmdline)
 		break;
-	    if (run == 2 || curfrp->fr_width == (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()))
+	    if (run == 2 || curfrp->fr_width == COLUMNS_WITHOUT_TABSB())
 	    {
 		if (height > room + room_cmdline)
 		    height = room + room_cmdline;
@@ -5827,7 +5827,7 @@ command_height(void)
 
     /* Find bottom frame with width of screen. */
     frp = lastwin->w_frame;
-    while (frp->fr_width != (Columns - tabsidebar_width() < 1 ? 1 : Columns - tabsidebar_width()) && frp->fr_parent != NULL)
+    while (frp->fr_width != COLUMNS_WITHOUT_TABSB() && frp->fr_parent != NULL)
 	frp = frp->fr_parent;
 
     /* Avoid changing the height of a window with 'winfixheight' set. */
