@@ -621,6 +621,11 @@ static char *(features[]) =
 #else
 	"-termresponse",
 #endif
+#ifdef FEAT_TERMTRUECOLOR
+	"+termtruecolor",
+#else
+	"-termtruecolor",
+#endif
 #ifdef FEAT_TEXTOBJ
 	"+textobjects",
 #else
@@ -748,6 +753,44 @@ static char *(features[]) =
 
 static int included_patches[] =
 {   /* Add new patch number below this line */
+/**/
+    1782,
+/**/
+    1781,
+/**/
+    1780,
+/**/
+    1779,
+/**/
+    1778,
+/**/
+    1777,
+/**/
+    1776,
+/**/
+    1775,
+/**/
+    1774,
+/**/
+    1773,
+/**/
+    1772,
+/**/
+    1771,
+/**/
+    1770,
+/**/
+    1769,
+/**/
+    1768,
+/**/
+    1767,
+/**/
+    1766,
+/**/
+    1765,
+/**/
+    1764,
 /**/
     1763,
 /**/
