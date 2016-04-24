@@ -2417,6 +2417,7 @@ static struct vimoption options[] =
 			    (char_u *)NULL, PV_NONE,
 #endif
 			    {(char_u *)1L, (char_u *)0L} SCRIPTID_INIT},
+#ifdef FEAT_TABSIDEBAR
     {"showtabsidebar", "stsb", P_NUM|P_RALL,
 #ifdef FEAT_WINDOWS
 			    (char_u *)&p_stsb, PV_NONE,
@@ -2424,6 +2425,7 @@ static struct vimoption options[] =
 			    (char_u *)NULL, PV_NONE,
 #endif
 			    {(char_u *)1L, (char_u *)0L} SCRIPTID_INIT},
+#endif
     {"sidescroll",  "ss",   P_NUM|P_VI_DEF,
 			    (char_u *)&p_ss, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
@@ -2575,9 +2577,11 @@ static struct vimoption options[] =
 			    (char_u *)NULL, PV_NONE,
 #endif
 			    {(char_u *)10L, (char_u *)0L} SCRIPTID_INIT},
+#ifdef FEAT_TABSIDEBAR
     {"tabsidebarcolumns",  "tsbc",   P_NUM|P_RALL,
 			    (char_u *)&p_tsbc, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
+#endif
     {"tabstop",	    "ts",   P_NUM|P_VI_DEF|P_RBUF,
 			    (char_u *)&p_ts, PV_TS,
 			    {(char_u *)8L, (char_u *)0L} SCRIPTID_INIT},

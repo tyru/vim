@@ -128,10 +128,19 @@ static int win_line(win_T *, linenr_T, int, int, int nochange);
 static int char_needs_redraw(int off_from, int off_to, int cols);
 #ifdef FEAT_RIGHTLEFT
 static void screen_line(int row, int coloff, int endcol, int clear_width, int rlflag);
-# define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c), (rl))
+static void screen_line(int row, int coloff, int endcol, int clear_width, int rlflag);
+# ifdef FEAT_TABSIDEBAR
+#  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c), (rl))
+# else
+#  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o), (e), (c), (rl))
+# endif
 #else
 static void screen_line(int row, int coloff, int endcol, int clear_width);
-# define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c))
+# ifdef FEAT_TABSIDEBAR
+#  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c))
+# else
+#  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o), (e), (c))
+# endif
 #endif
 #ifdef FEAT_WINDOWS
 static void draw_vsep_win(win_T *wp, int row);
@@ -165,7 +174,9 @@ static void win_rest_invalid(win_T *wp);
 static void msg_pos_mode(void);
 static void recording_mode(int attr);
 #if defined(FEAT_WINDOWS)
+# ifdef FEAT_TABSIDEBAR
 static void draw_tabsidebar();
+#endif
 static void draw_tabline(void);
 #endif
 #if defined(FEAT_WINDOWS) || defined(FEAT_WILDMENU) || defined(FEAT_STL_OPT)
@@ -2126,8 +2137,15 @@ win_update(win_T *wp)
 	     */
 	    screen_fill(W_WINROW(wp) + wp->w_height - 1,
 		    W_WINROW(wp) + wp->w_height,
-		    (int)W_ENDCOL(wp) - 3 + tabsidebar_width(), (int)W_ENDCOL(wp) + tabsidebar_width(),
-		    '@', '@', hl_attr(HLF_AT));
+		    (int)W_ENDCOL(wp) - 3
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , (int)W_ENDCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , '@', '@', hl_attr(HLF_AT));
 	    set_empty_rows(wp, srow);
 	    wp->w_botline = lnum;
 	}
@@ -2271,8 +2289,15 @@ win_draw_end(
 	    if (n > W_WIDTH(wp))
 		n = W_WIDTH(wp);
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		    W_ENDCOL(wp) - n + tabsidebar_width(), (int)W_ENDCOL(wp) + tabsidebar_width(),
-		    ' ', ' ', hl_attr(HLF_FC));
+		    W_ENDCOL(wp) - n
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , (int)W_ENDCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , ' ', ' ', hl_attr(HLF_FC));
 	}
 # endif
 # ifdef FEAT_SIGNS
@@ -2284,14 +2309,28 @@ win_draw_end(
 	    if (nn > W_WIDTH(wp))
 		nn = W_WIDTH(wp);
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		    W_ENDCOL(wp) - nn + tabsidebar_width(), (int)W_ENDCOL(wp) - n + tabsidebar_width(),
-		    ' ', ' ', hl_attr(HLF_SC));
+		    W_ENDCOL(wp) - nn
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , (int)W_ENDCOL(wp) - n
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , ' ', ' ', hl_attr(HLF_SC));
 	    n = nn;
 	}
 # endif
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		W_WINCOL(wp) + tabsidebar_width(), W_ENDCOL(wp) - 1 - FDC_OFF + tabsidebar_width(),
-		c2, c2, hl_attr(hl));
+		W_WINCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, W_ENDCOL(wp) - 1 - FDC_OFF
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, c2, c2, hl_attr(hl));
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
 		W_ENDCOL(wp) - 1 - FDC_OFF + tabsidebar_width(), W_ENDCOL(wp) - FDC_OFF + tabsidebar_width(),
 		c1, c2, hl_attr(hl));

@@ -578,6 +578,11 @@ static char *(features[]) =
 #if defined(USE_SYSTEM) && (defined(UNIX) || defined(__EMX__))
 	"+system()",
 #endif
+#ifdef FEAT_TABSIDEBAR
+	"+tabsidebar",
+#else
+	"-tabsidebar",
+#endif
 #ifdef FEAT_TAG_BINS
 	"+tag_binary",
 #else
