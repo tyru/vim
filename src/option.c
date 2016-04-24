@@ -8689,6 +8689,7 @@ set_num_option(
     }
 #endif
 
+#ifdef FEAT_TABSIDEBAR
     else if (pp == &p_stsb)
     {
 	if (p_stsb < 0 || 2 < p_stsb)
@@ -8708,6 +8709,7 @@ set_num_option(
 	}
         shell_new_columns();
     }
+#endif
 
     /* if p_ch changed value, change the command line height */
     else if (pp == &p_ch)

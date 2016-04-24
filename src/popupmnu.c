@@ -482,8 +482,11 @@ pum_redraw(void)
 #ifdef FEAT_TABSIDEBAR
 			+ tabsidebar_width()
 #endif
-			, pum_col + pum_base_width + n + tabsidebar_width(),
-							      ' ', ' ', attr);
+			, pum_col + pum_base_width + n
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, ' ', ' ', attr);
 		col = pum_col + pum_base_width + n;
 	    }
 	    totwidth = pum_base_width + n;
@@ -517,17 +520,17 @@ pum_redraw(void)
 	    if (curwin->w_p_rl)
 		screen_putchar(' ', row, pum_col - pum_width
 #ifdef FEAT_TABSIDEBAR
-			+ tabsidebar_width(),
+			+ tabsidebar_width()
 #endif
-			i >= thumb_pos && i < thumb_pos + thumb_heigth
+			, i >= thumb_pos && i < thumb_pos + thumb_heigth
 						  ? attr_thumb : attr_scroll);
 	    else
 #endif
 		screen_putchar(' ', row, pum_col + pum_width
 #ifdef FEAT_TABSIDEBAR
-			+ tabsidebar_width(),
+			+ tabsidebar_width()
 #endif
-			i >= thumb_pos && i < thumb_pos + thumb_heigth
+			, i >= thumb_pos && i < thumb_pos + thumb_heigth
 						  ? attr_thumb : attr_scroll);
 	}
 

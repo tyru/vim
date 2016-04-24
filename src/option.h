@@ -821,8 +821,10 @@ static char *(p_swb_values[]) = {"useopen", "usetab", "split", "newtab", "vsplit
 #define SWB_SPLIT		0x004
 #define SWB_NEWTAB		0x008
 #define SWB_VSPLIT		0x010
+#ifdef FEAT_TABSIDEBAR
 EXTERN long	p_stsb;		/* 'showtabsidebar' */
 EXTERN long	p_tsbc;		/* 'tabsidebarcolumns' */
+#endif
 EXTERN int	p_tbs;		/* 'tagbsearch' */
 EXTERN char_u	*p_tc;		/* 'tagcase' */
 EXTERN unsigned tc_flags;       /* flags from 'tagcase' */

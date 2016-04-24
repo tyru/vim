@@ -176,7 +176,7 @@ static void recording_mode(int attr);
 #if defined(FEAT_WINDOWS)
 # ifdef FEAT_TABSIDEBAR
 static void draw_tabsidebar();
-#endif
+# endif
 static void draw_tabline(void);
 #endif
 #if defined(FEAT_WINDOWS) || defined(FEAT_WILDMENU) || defined(FEAT_STL_OPT)
@@ -2332,8 +2332,15 @@ win_draw_end(
 #endif
 		, c2, c2, hl_attr(hl));
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		W_ENDCOL(wp) - 1 - FDC_OFF + tabsidebar_width(), W_ENDCOL(wp) - FDC_OFF + tabsidebar_width(),
-		c1, c2, hl_attr(hl));
+		W_ENDCOL(wp) - 1 - FDC_OFF
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, W_ENDCOL(wp) - FDC_OFF
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, c1, c2, hl_attr(hl));
     }
     else
 #endif
@@ -2346,8 +2353,15 @@ win_draw_end(
 	    if (n > wp->w_width)
 		n = wp->w_width;
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		    W_WINCOL(wp) + tabsidebar_width(), (int)W_WINCOL(wp) + n + tabsidebar_width(),
-		    cmdwin_type, ' ', hl_attr(HLF_AT));
+		    W_WINCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , (int)W_WINCOL(wp) + n
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , cmdwin_type, ' ', hl_attr(HLF_AT));
 	}
 #endif
 #ifdef FEAT_FOLDING
@@ -2359,8 +2373,15 @@ win_draw_end(
 	    if (nn > W_WIDTH(wp))
 		nn = W_WIDTH(wp);
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		    W_WINCOL(wp) + n + tabsidebar_width(), (int)W_WINCOL(wp) + nn + tabsidebar_width(),
-		    ' ', ' ', hl_attr(HLF_FC));
+		    W_WINCOL(wp) + n
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , (int)W_WINCOL(wp) + nn
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , ' ', ' ', hl_attr(HLF_FC));
 	    n = nn;
 	}
 #endif
@@ -2373,14 +2394,28 @@ win_draw_end(
 	    if (nn > W_WIDTH(wp))
 		nn = W_WIDTH(wp);
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		    W_WINCOL(wp) + n + tabsidebar_width(), (int)W_WINCOL(wp) + nn + tabsidebar_width(),
-		    ' ', ' ', hl_attr(HLF_SC));
+		    W_WINCOL(wp) + n
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , (int)W_WINCOL(wp) + nn
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , ' ', ' ', hl_attr(HLF_SC));
 	    n = nn;
 	}
 #endif
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		W_WINCOL(wp) + FDC_OFF + tabsidebar_width(), (int)W_ENDCOL(wp) + tabsidebar_width(),
-		c1, c2, hl_attr(hl));
+		W_WINCOL(wp) + FDC_OFF
+#ifdef FEAT_TABSIDEBAR
+	       	+ tabsidebar_width()
+#endif
+		, (int)W_ENDCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+	       	+ tabsidebar_width()
+#endif
+		, c1, c2, hl_attr(hl));
     }
     set_empty_rows(wp, row);
 }
@@ -5901,7 +5936,9 @@ screen_line(
     if (endcol > Columns)
 	endcol = Columns;
 
+#ifdef FEAT_TABSIDEBAR
     draw_tabsidebar();
+#endif
 
 # ifdef FEAT_CLIPBOARD
     clip_may_clear_selection(row, row);
@@ -6371,8 +6408,15 @@ draw_vsep_win(win_T *wp, int row)
 	/* draw the vertical separator right of this window */
 	c = fillchar_vsep(&hl);
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + wp->w_height,
-		W_ENDCOL(wp) + tabsidebar_width(), W_ENDCOL(wp) + 1 + tabsidebar_width(),
-		c, ' ', hl);
+		W_ENDCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, W_ENDCOL(wp) + 1
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, c, ' ', hl);
     }
 }
 #endif
@@ -6639,14 +6683,30 @@ win_redr_status_matches(
 	    }
 	}
 
-	screen_puts(buf, row, 0 + tabsidebar_width(), attr);
+	screen_puts(buf, row, 0
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, attr);
 	if (selstart != NULL && highlight)
 	{
 	    *selend = NUL;
-	    screen_puts(selstart, row, selstart_col + tabsidebar_width(), hl_attr(HLF_WM));
+	    screen_puts(selstart, row, selstart_col
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , hl_attr(HLF_WM));
 	}
 
-	screen_fill(row, row + 1, clen + tabsidebar_width(), (int)Columns + tabsidebar_width(), fillchar, fillchar, attr);
+	screen_fill(row, row + 1, clen
+#ifdef FEAT_TABSIDEBAR
+	       	+ tabsidebar_width()
+#endif
+		, (int)Columns
+#ifdef FEAT_TABSIDEBAR
+	       	+ tabsidebar_width()
+#endif
+		, fillchar, fillchar, attr);
     }
 
 #ifdef FEAT_WINDOWS
@@ -6784,13 +6844,28 @@ win_redr_status(win_T *wp)
 	    }
 
 	row = W_WINROW(wp) + wp->w_height;
-	screen_puts(p, row, W_WINCOL(wp) + tabsidebar_width(), attr);
-	screen_fill(row, row + 1, len + W_WINCOL(wp) + tabsidebar_width(),
-			this_ru_col + W_WINCOL(wp) + tabsidebar_width(), fillchar, fillchar, attr);
+	screen_puts(p, row, W_WINCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+	       	+ tabsidebar_width()
+#endif
+		, attr);
+	screen_fill(row, row + 1, len + W_WINCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, this_ru_col + W_WINCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, fillchar, fillchar, attr);
 
 	if (get_keymap_str(wp, NameBuff, MAXPATHL)
 		&& (int)(this_ru_col - len) > (int)(STRLEN(NameBuff) + 1))
-	    screen_puts(NameBuff, row, (int)(this_ru_col - STRLEN(NameBuff) - 1 + W_WINCOL(wp) + tabsidebar_width()), attr);
+	    screen_puts(NameBuff, row, (int)(this_ru_col - STRLEN(NameBuff) - 1 + W_WINCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		       	+ tabsidebar_width()
+#endif
+			), attr);
 
 #ifdef FEAT_CMDL_INFO
 	win_redr_ruler(wp, TRUE);
@@ -6806,8 +6881,11 @@ win_redr_status(win_T *wp)
 	    fillchar = fillchar_status(&attr, wp == curwin);
 	else
 	    fillchar = fillchar_vsep(&attr);
-	screen_putchar(fillchar, W_WINROW(wp) + wp->w_height, W_ENDCOL(wp) + tabsidebar_width(),
-									attr);
+	screen_putchar(fillchar, W_WINROW(wp) + wp->w_height, W_ENDCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, attr);
     }
     busy = FALSE;
 }
@@ -7083,7 +7161,11 @@ win_redr_custom(
     for (n = 0; hltab[n].start != NULL; n++)
     {
 	len = (int)(hltab[n].start - p);
-	screen_puts_len(p, len, row, col + tabsidebar_width(), curattr);
+	screen_puts_len(p, len, row, col
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, curattr);
 	col += vim_strnsize(p, len);
 	p = hltab[n].start;
 
@@ -7098,7 +7180,11 @@ win_redr_custom(
 	else
 	    curattr = highlight_user[hltab[n].userhl - 1];
     }
-    screen_puts(p, row, col + tabsidebar_width(), curattr);
+    screen_puts(p, row, col
+#ifdef FEAT_TABSIDEBAR
+	    + tabsidebar_width()
+#endif
+	    , curattr);
 
     if (wp == NULL)
     {
@@ -9293,7 +9379,11 @@ setcursor(void)
 # endif
 			1)) :
 #endif
-							    curwin->w_wcol) + tabsidebar_width());
+			curwin->w_wcol)
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			);
     }
 }
 
@@ -9362,8 +9452,15 @@ win_ins_lines(
 	if (lastrow > Rows)
 	    lastrow = Rows;
 	screen_fill(nextrow - line_count, lastrow - line_count,
-		  W_WINCOL(wp) + tabsidebar_width(), (int)W_ENDCOL(wp) + tabsidebar_width(),
-		  ' ', ' ', 0);
+		  W_WINCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		  + tabsidebar_width()
+#endif
+		  , (int)W_ENDCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		  + tabsidebar_width()
+#endif
+		  , ' ', ' ', 0);
     }
 
     if (screen_ins_lines(0, W_WINROW(wp) + row, line_count, (int)Rows, NULL)
@@ -9473,8 +9570,15 @@ win_do_lines(
     if (row + line_count >= wp->w_height)
     {
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + wp->w_height,
-		W_WINCOL(wp) + tabsidebar_width(), (int)W_ENDCOL(wp) + tabsidebar_width(),
-		' ', ' ', 0);
+		W_WINCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, (int)W_ENDCOL(wp)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, ' ', ' ', 0);
 	return OK;
     }
 
@@ -10307,6 +10411,7 @@ recording_mode(int attr)
 }
 
 #if defined(FEAT_WINDOWS)
+#ifdef FEAT_TABSIDEBAR
     static void
 draw_tabsidebar()
 {
@@ -10417,6 +10522,7 @@ draw_tabsidebar()
             screen_putchar(' ', row, col++, attr);
     }
 }
+#endif
 
 /*
  * Draw the tab pages line at the top of the Vim window.
@@ -10427,7 +10533,13 @@ draw_tabline(void)
     int		tabcount = 0;
     tabpage_T	*tp;
     int		tabwidth;
-    int		col = tabsidebar_width();
+    int		col
+#ifdef FEAT_TABSIDEBAR
+       	= tabsidebar_width()
+#else
+       	= 0
+#endif
+	;
     int		scol = 0;
     int		attr;
     win_T	*wp;
@@ -10922,12 +11034,22 @@ win_redr_ruler(win_T *wp, int always)
 	if (this_ru_col + (int)STRLEN(buffer) > WITH_WIDTH(width))
 	    buffer[WITH_WIDTH(width) - this_ru_col] = NUL;
 
-	screen_puts(buffer, row, this_ru_col + WITH_OFF(off) + tabsidebar_width(), attr);
+	screen_puts(buffer, row, this_ru_col + WITH_OFF(off)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, attr);
 	i = redraw_cmdline;
 	screen_fill(row, row + 1,
-		this_ru_col + WITH_OFF(off) + (int)STRLEN(buffer) + tabsidebar_width(),
-		(int)(WITH_OFF(off) + WITH_WIDTH(width)) + tabsidebar_width(),
-		fillchar, fillchar, attr);
+		this_ru_col + WITH_OFF(off) + (int)STRLEN(buffer)
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, (int)(WITH_OFF(off) + WITH_WIDTH(width))
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, fillchar, fillchar, attr);
 	/* don't redraw the cmdline because of showing the ruler */
 	redraw_cmdline = i;
 	wp->w_ru_cursor = wp->w_cursor;

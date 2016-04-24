@@ -5868,7 +5868,7 @@ ex_help(exarg_T *eap)
 	     * narrow. */
 	    n = WSP_HELP;
 	    if (cmdmod.split == 0 && curwin->w_width != COLUMNS_WITHOUT_TABSB()
-						  && curwin->w_width < 80)
+						&& curwin->w_width < 80)
 		n |= WSP_TOP;
 	    if (win_split(0, n) == FAIL)
 		goto erret;

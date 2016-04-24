@@ -761,6 +761,13 @@
 #endif
 
 /*
+ * +tabsidebar		Tab SideBar
+ */
+#if defined(FEAT_WINDOWS)
+# define FEAT_TABSIDEBAR
+#endif
+
+/*
  * +browse		":browse" command.
  *			or just the ":browse" command modifier
  */
