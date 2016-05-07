@@ -1346,9 +1346,9 @@ typedef enum
     , HLF_CUC	    /* 'cursurcolumn' */
     , HLF_CUL	    /* 'cursurline' */
     , HLF_MC	    /* 'colorcolumn' */
-    , HLF_VTP	    /* vertical tabpage line */
-    , HLF_VTPS	    /* vertical tabpage line selected */
-    , HLF_VTPF	    /* vertical tabpage line filler */
+    , HLF_TSB	    /* tabsidebar */
+    , HLF_TSBS	    /* tabsidebar selected */
+    , HLF_TSBF	    /* tabsidebar filler */
     , HLF_COUNT	    /* MUST be the last one */
 } hlf_T;
 

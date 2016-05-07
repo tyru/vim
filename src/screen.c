@@ -128,7 +128,6 @@ static int win_line(win_T *, linenr_T, int, int, int nochange);
 static int char_needs_redraw(int off_from, int off_to, int cols);
 #ifdef FEAT_RIGHTLEFT
 static void screen_line(int row, int coloff, int endcol, int clear_width, int rlflag);
-static void screen_line(int row, int coloff, int endcol, int clear_width, int rlflag);
 # ifdef FEAT_TABSIDEBAR
 #  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c), (rl))
 # else
@@ -10416,9 +10415,9 @@ recording_mode(int attr)
 draw_tabsidebar()
 {
     int		len;
-    int		attr_sel = hl_attr(HLF_VTPS);
-    int		attr_nosel = hl_attr(HLF_VTP);
-    int		attr_fill = hl_attr(HLF_VTPF);
+    int		attr_sel = hl_attr(HLF_TSBS);
+    int		attr_nosel = hl_attr(HLF_TSB);
+    int		attr_fill = hl_attr(HLF_TSBF);
     win_T	*wp;
     win_T	*cwp;
     char_u	*p;

@@ -844,6 +844,7 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 'showmatch'	options.txt	/*'showmatch'*
 'showmode'	options.txt	/*'showmode'*
 'showtabline'	options.txt	/*'showtabline'*
+'showtabsidebar'	options.txt	/*'showtabsidebar'*
 'shq'	options.txt	/*'shq'*
 'si'	options.txt	/*'si'*
 'sidescroll'	options.txt	/*'sidescroll'*
@@ -890,6 +891,7 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 'stl'	options.txt	/*'stl'*
 'stmp'	options.txt	/*'stmp'*
 'sts'	options.txt	/*'sts'*
+'stsb'	options.txt	/*'stsb'*
 'su'	options.txt	/*'su'*
 'sua'	options.txt	/*'sua'*
 'suffixes'	options.txt	/*'suffixes'*
@@ -1028,6 +1030,7 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 'ta'	options.txt	/*'ta'*
 'tabline'	options.txt	/*'tabline'*
 'tabpagemax'	options.txt	/*'tabpagemax'*
+'tabsidebarcolumns'	options.txt	/*'tabsidebarcolumns'*
 'tabstop'	options.txt	/*'tabstop'*
 'tag'	options.txt	/*'tag'*
 'tagbsearch'	options.txt	/*'tagbsearch'*
@@ -1073,6 +1076,7 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 'tpm'	options.txt	/*'tpm'*
 'tr'	options.txt	/*'tr'*
 'ts'	options.txt	/*'ts'*
+'tsbc'	options.txt	/*'tsbc'*
 'tsl'	options.txt	/*'tsl'*
 'tsr'	options.txt	/*'tsr'*
 'ttimeout'	options.txt	/*'ttimeout'*
@@ -6624,6 +6628,9 @@ hl-StatusLineNC	syntax.txt	/*hl-StatusLineNC*
 hl-TabLine	syntax.txt	/*hl-TabLine*
 hl-TabLineFill	syntax.txt	/*hl-TabLineFill*
 hl-TabLineSel	syntax.txt	/*hl-TabLineSel*
+hl-TabSideBar	syntax.txt	/*hl-TabSideBar*
+hl-TabSideBarFill	syntax.txt	/*hl-TabSideBarFill*
+hl-TabSideBarSel	syntax.txt	/*hl-TabSideBarSel*
 hl-Title	syntax.txt	/*hl-Title*
 hl-Tooltip	syntax.txt	/*hl-Tooltip*
 hl-User1	syntax.txt	/*hl-User1*
@@ -8055,6 +8062,7 @@ settabwinvar()	eval.txt	/*settabwinvar()*
 setting-guifont	gui.txt	/*setting-guifont*
 setting-guitablabel	tabpage.txt	/*setting-guitablabel*
 setting-tabline	tabpage.txt	/*setting-tabline*
+setting-tabsidebar	tabpage.txt	/*setting-tabsidebar*
 setuid	change.txt	/*setuid*
 setwinvar()	eval.txt	/*setwinvar()*
 sftp	pi_netrw.txt	/*sftp*
