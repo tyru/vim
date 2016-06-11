@@ -183,7 +183,7 @@ func s:communicate(port)
   call assert_equal('got it', s:responseMsg)
 
   " Collect garbage, tests that our handle isn't collected.
-  call garbagecollect_for_testing()
+  call test_garbagecollect_now()
 
   " check setting options (without testing the effect)
   call ch_setoptions(handle, {'callback': 's:NotUsed'})
@@ -538,6 +538,9 @@ func Test_nl_pipe()
     call assert_equal("this", ch_readraw(handle))
     call assert_equal("AND this", ch_readraw(handle))
 
+    call ch_sendraw(handle, "split this line\n")
+    call assert_equal("this linethis linethis line", ch_readraw(handle))
+
     let reply = ch_evalraw(handle, "quit\n")
     call assert_equal("Goodbye!", reply)
   finally
@@ -676,12 +679,17 @@ func Test_nl_write_both_file()
   endtry
 endfunc
 
-func Run_test_pipe_to_buffer(use_name)
+func BufCloseCb(ch)
+  let s:bufClosed = 'yes'
+endfunc
+
+func Run_test_pipe_to_buffer(use_name, nomod)
   if !has('job')
     return
   endif
   call ch_log('Test_pipe_to_buffer()')
-  let options = {'out_io': 'buffer'}
+  let s:bufClosed = 'no'
+  let options = {'out_io': 'buffer', 'close_cb': 'BufCloseCb'}
   if a:use_name
     let options['out_name'] = 'pipe-output'
     let firstline = 'Reading from channel output...'
@@ -690,6 +698,9 @@ func Run_test_pipe_to_buffer(use_name)
     let options['out_buf'] = bufnr('%')
     quit
     let firstline = ''
+  endif
+  if a:nomod
+    let options['out_modifiable'] = 0
   endif
   let job = job_start(s:python . " test_channel_pipe.py", options)
   call assert_equal("run", job_status(job))
@@ -700,11 +711,14 @@ func Run_test_pipe_to_buffer(use_name)
     call ch_sendraw(handle, "double this\n")
     call ch_sendraw(handle, "quit\n")
     sp pipe-output
-    call s:waitFor('line("$") >= 6')
-    if getline('$') == 'DETACH'
-      $del
-    endif
+    call s:waitFor('line("$") >= 6 && s:bufClosed == "yes"')
     call assert_equal([firstline, 'line one', 'line two', 'this', 'AND this', 'Goodbye!'], getline(1, '$'))
+    if a:nomod
+      call assert_equal(0, &modifiable)
+    else
+      call assert_equal(1, &modifiable)
+    endif
+    call assert_equal('yes', s:bufClosed)
     bwipe!
   finally
     call job_stop(job)
@@ -712,14 +726,18 @@ func Run_test_pipe_to_buffer(use_name)
 endfunc
 
 func Test_pipe_to_buffer_name()
-  call Run_test_pipe_to_buffer(1)
+  call Run_test_pipe_to_buffer(1, 0)
 endfunc
 
 func Test_pipe_to_buffer_nr()
-  call Run_test_pipe_to_buffer(0)
+  call Run_test_pipe_to_buffer(0, 0)
 endfunc
 
-func Run_test_pipe_err_to_buffer(use_name)
+func Test_pipe_to_buffer_name_nomod()
+  call Run_test_pipe_to_buffer(1, 1)
+endfunc
+
+func Run_test_pipe_err_to_buffer(use_name, nomod)
   if !has('job')
     return
   endif
@@ -734,6 +752,9 @@ func Run_test_pipe_err_to_buffer(use_name)
     quit
     let firstline = ''
   endif
+  if a:nomod
+    let options['err_modifiable'] = 0
+  endif
   let job = job_start(s:python . " test_channel_pipe.py", options)
   call assert_equal("run", job_status(job))
   try
@@ -745,6 +766,11 @@ func Run_test_pipe_err_to_buffer(use_name)
     sp pipe-err
     call s:waitFor('line("$") >= 5')
     call assert_equal([firstline, 'line one', 'line two', 'this', 'AND this'], getline(1, '$'))
+    if a:nomod
+      call assert_equal(0, &modifiable)
+    else
+      call assert_equal(1, &modifiable)
+    endif
     bwipe!
   finally
     call job_stop(job)
@@ -752,11 +778,15 @@ func Run_test_pipe_err_to_buffer(use_name)
 endfunc
 
 func Test_pipe_err_to_buffer_name()
-  call Run_test_pipe_err_to_buffer(1)
+  call Run_test_pipe_err_to_buffer(1, 0)
 endfunc
   
 func Test_pipe_err_to_buffer_nr()
-  call Run_test_pipe_err_to_buffer(0)
+  call Run_test_pipe_err_to_buffer(0, 0)
+endfunc
+  
+func Test_pipe_err_to_buffer_name_nomod()
+  call Run_test_pipe_err_to_buffer(1, 1)
 endfunc
   
 func Test_pipe_both_to_buffer()
@@ -1302,7 +1332,7 @@ endfunc
 func Test_using_freed_memory()
   let g:a = job_start(['ls'])
   sleep 10m
-  call garbagecollect_for_testing()
+  call test_garbagecollect_now()
 endfunc
 
 

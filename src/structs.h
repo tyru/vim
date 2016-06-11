@@ -1014,6 +1014,7 @@ typedef struct
 #ifdef FEAT_MBYTE
     vimconv_T	vir_conv;	/* encoding conversion */
 #endif
+    int		vir_version;	/* viminfo version detected or -1 */
     garray_T	vir_barlines;	/* lines starting with | */
 } vir_T;
 
@@ -1261,6 +1262,8 @@ struct partial_S
 {
     int		pt_refcount;	/* reference count */
     char_u	*pt_name;	/* function name */
+    int		pt_auto;	/* when TRUE the partial was created for using
+				   dict.member in handle_subscript() */
     int		pt_argc;	/* number of arguments */
     typval_T	*pt_argv;	/* arguments in allocated array */
     dict_T	*pt_dict;	/* dict for "self" */
@@ -1307,6 +1310,7 @@ struct jobvar_S
 struct readq_S
 {
     char_u	*rq_buffer;
+    long_u	rq_buflen;
     readq_T	*rq_next;
     readq_T	*rq_prev;
 };
@@ -1399,6 +1403,8 @@ typedef struct {
     partial_T	*ch_partial;
 
     buf_T	*ch_buffer;	/* buffer to read from or write to */
+    int		ch_nomodifiable; /* TRUE when buffer can be 'nomodifiable' */
+    int		ch_nomod_error;	/* TRUE when e_modifiable was given */
     int		ch_buf_append;	/* write appended lines instead top-bot */
     linenr_T	ch_buf_top;	/* next line to send */
     linenr_T	ch_buf_bot;	/* last line to send */
@@ -1416,6 +1422,11 @@ struct channel_S {
     char	*ch_hostname;	/* only for socket, allocated */
     int		ch_port;	/* only for socket */
 
+    int		ch_to_be_closed; /* When TRUE reading or writing failed and
+				  * the channel must be closed when it's safe
+				  * to invoke callbacks. */
+    int		ch_to_be_freed; /* When TRUE channel must be freed when it's
+				 * safe to invoke callbacks. */
     int		ch_error;	/* When TRUE an error was reported.  Avoids
 				 * giving pages full of error messages when
 				 * the other side has exited, only mention the
@@ -1470,6 +1481,8 @@ struct channel_S {
 #define JO_IN_BUF	    0x4000000	/* "in_buf" (JO_OUT_BUF << 2) */
 #define JO_CHANNEL	    0x8000000	/* "channel" */
 #define JO_BLOCK_WRITE	    0x10000000	/* "block_write" */
+#define JO_OUT_MODIFIABLE   0x20000000	/* "out_modifiable" */
+#define JO_ERR_MODIFIABLE   0x40000000	/* "err_modifiable" (JO_OUT_ << 1) */
 #define JO_ALL		    0x7fffffff
 
 #define JO_MODE_ALL	(JO_MODE + JO_IN_MODE + JO_OUT_MODE + JO_ERR_MODE)
@@ -1493,6 +1506,7 @@ typedef struct
     char_u	jo_io_name_buf[4][NUMBUFLEN];
     char_u	*jo_io_name[4];	/* not allocated! */
     int		jo_io_buf[4];
+    int		jo_modifiable[4];
     channel_T	*jo_channel;
 
     linenr_T	jo_in_top;
@@ -1517,7 +1531,6 @@ typedef struct
     int		jo_id;
     char_u	jo_soe_buf[NUMBUFLEN];
     char_u	*jo_stoponexit;
-    char_u	jo_ecb_buf[NUMBUFLEN];
 } jobopt_T;
 
 
@@ -1854,9 +1867,10 @@ struct file_buffer
 #ifdef FEAT_MBYTE
     int		b_p_bomb;	/* 'bomb' */
 #endif
-#if defined(FEAT_QUICKFIX)
+#ifdef FEAT_QUICKFIX
     char_u	*b_p_bh;	/* 'bufhidden' */
     char_u	*b_p_bt;	/* 'buftype' */
+    int		b_has_qf_entry;
 #endif
     int		b_p_bl;		/* 'buflisted' */
 #ifdef FEAT_CINDENT
@@ -2454,7 +2468,7 @@ struct window_S
     int		w_wrow, w_wcol;	    /* cursor position in window */
 
     linenr_T	w_botline;	    /* number of the line below the bottom of
-				       the screen */
+				       the window */
     int		w_empty_rows;	    /* number of ~ rows in window */
 #ifdef FEAT_DIFF
     int		w_filler_rows;	    /* number of filler rows at the end of the

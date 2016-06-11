@@ -443,7 +443,10 @@ redraw_after_callback()
 #ifdef FEAT_GUI
     if (gui.in_use)
     {
-	gui_update_cursor(TRUE, FALSE);
+	/* Don't update the cursor while it is blinking, it will get
+	 * updated soon and this avoids interrupting the blinking. */
+	if (!gui_mch_is_blinking())
+	    gui_update_cursor(FALSE, FALSE);
 	gui_mch_flush();
     }
 #endif
@@ -811,6 +814,10 @@ update_single_line(win_T *wp, linenr_T lnum)
 {
     int		row;
     int		j;
+
+    /* Don't do anything if the screen structures are (not yet) valid. */
+    if (!screen_valid(TRUE))
+	return;
 
     if (lnum >= wp->w_topline && lnum < wp->w_botline
 				 && foldedCount(wp, lnum, &win_foldinfo) == 0)

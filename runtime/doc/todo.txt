@@ -1,4 +1,4 @@
-*todo.txt*      For Vim version 7.4.  Last change: 2016 Apr 30
+*todo.txt*      For Vim version 7.4.  Last change: 2016 Jun 04
 
 
 		  VIM REFERENCE MANUAL	  by Bram Moolenaar
@@ -34,41 +34,11 @@ not be repeated below, unless there is extra information.
 							*known-bugs*
 -------------------- Known bugs and current work -----------------------
 
-Athena version doesn't start up.  Related to termguicolors change. (Kelvin
-Lee)
-
-Test_out_close_cb sometimes fails.
-    Why is DETACH not send to OutHandler()?
-
-Vim reliably crashes when freeing the job and operator-pending mode is active.
-(James McCoy, 2016 Apr 26)
-
-Using close callback to read output doesn't work reliably.
-(Andrew Stewart, 2016 Apr 27)
-
-problem with "Ignore" after adding 'guicolors'. (Charles Campbell, 2016 Apr
-27)
-
-In test_partial when start_job() has a non-existing command memory leaks.
-
-Memory leak in test49
-Memory leak in test_alot, with matchstrpos()
-
-Packages:
-Also keep a list of loaded plugins, skip when encountered again?
-
-Vim.org: when a user already has a homepage, do show the field so that it can
-be deleted.
-
-Running gvim from Agide causes a crash.
-
 +channel:
-- Only add DETACH message for netbeans.
-- GUI:cursor blinking is irregular when invoking callbacks. (Ramel Eshed, 2016
-  Apr 16) somehow remember the previous state?
 - When a message in the queue but there is no callback, drop it after a while?
   Add timestamp to queued messages and callbacks with ID, remove after a
   minute.  Option to set the droptime.
+- Add an option to drop text of very long lines?  Default to 1 Mbyte.
 - Add remark about undo sync, is there a way to force it?
 - When starting a job, have an option to open the server socket, so we know
   the port, and pass it to the command with --socket-fd {nr}. (Olaf Dabrunz,
@@ -78,11 +48,6 @@ Running gvim from Agide causes a crash.
 Later
 - job_start(): run job in a newly opened terminal.
     With xterm could use -S{pty}.
-
-Make it so that the window ID can be used where currently a window nr is used
-
-Patch to fix invalid behavior with NULL list. (Nikolai Pavlov, #768)
-Also check :for.
 
 Regexp problems:
 - Since 7.4.704 the old regex engine fails to match [[:print:]] in 0xf6.
@@ -131,13 +96,24 @@ Regexp problems:
   matches the empty string. (Dominique Pelle, 2015 Oct 2, Nov 24)
 - Search for \\~ causes error E874.
 
-Using freed memory in quickfix code. (Dominique, 2016 Mar 21)
+Patch to reduce number of memory allocations for quickfix lines.
+(Yegappan Lakshmanan, 2016 May 22, #831)
+
+User commands: add a <> item to pass on command modifiers, such as ":tab".
+Patch by Yegappan Lakshmanan, 2016 May 22, #829.
 
 jsonencode(): should convert to utf-8. (Nikolai Pavlov, 2016 Jan 23)
 What if there is an invalid character?
 
 Once .exe with updated installer is available: Add remark to download page
 about /S and /D options (Ken Takata, 2016 Apr 13)
+
+Cursor positioned in the wrong place when editing src/testdir/test_viml.vim.
+
+When using "k" at the hit-enter prompt only get the hit-enter prompt, not
+scrolling up. (Ramel Eshed, 2016 May 25)
+Related patches: Patch 7.4.1603, Patch 7.4.1594 
+Patch by Hirohito Higashi, 2016 May 26.
 
 Patch to make cursor blinking work better with GTK3. (Kazunobu Kuriyama, 2016
 Apr 19)  Need to check this works on Linux.
@@ -152,8 +128,36 @@ Add tests for using number larger than number of lines in buffer.
 Patch to fix escaping special characters for delete(). (tc-0, 2016 Mar 20,
 #700) Test fails on MS-Windows.
 
+Invalid behavior with NULL list. (Nikolai Pavlov, #768)
+
+Patch to fix using CTRL-] on "{address}." in help. (Hirohito Higashi, 2016 May
+18, #814)
+
+Can we add a function to parse one line for 'errorformat'?  Like ":caddexpr"
+for one line.
+
+Patch to fix greying popup menu items. (Shane Harper, 2016 May 23, #834)
+
+&t_ut not used with 'termguicolors' is set. (Jacob Niehus, 2016 May 14, #804)
+Patch to fix this, Jacob Niehus, 2016 May 14, #805)
+
+For current Windows build .pdb file is missing. (Gabriele Fava, 2016 May 11)
+5)
+
+Patch to support expression argument to sort() instead of a function name.
+Yasuhiro Matsumoto, 2013 May 31.
+Or should we add a more general mechanism, like a lambda() function?
+Patch by Yasuhiro Matsumoto, 2014 Sep 16, update 2016 Apr 17.
+Correction for test, Ken Takata, 2016 May 27.
+
+Problem with whitespace in errorformat. (Gerd Wachsmuth, 2016 May 15, #807)
+
+Patch to add filtering of the quickfix list. (Yegappan Lakshmanan, 2016 Mar
+13, last version)  Update May 22, #830.
+
 When 'autochdir' is set, writing  new file does not change the current dir.
 (Dan Church, issue #777)
+Patch to fix this. (mister fish (Allen Haim), 2016 May 14, #803)
 
 ml_get errors when reloading file. (Chris Desjardins, 2016 Apr 19)
 Also with latest version.
@@ -182,6 +186,10 @@ Patch for C syntax HL. (Bradley Garagan, 2016 Apr 17) #763
 Patch to make matchit work better, respect 'matchpairs'. (Ken Takata, 2016 Mar
 25)
 
+Possibly wrong value for seq_cur. (Florent Fayolle, 2016 May 15, #806)
+
+Patch to improve map documentation. Issue #799.
+
 We can use '. to go to the last change in the current buffer, but how about
 the last change in any buffer?  Can we use ', (, is next to .)?
 
@@ -206,6 +214,14 @@ Update 2016 Mar 28.  Can include all parts into one dist patch.
 
 Patch to support 64 bit ints for Number. (Ken Takata, 2016 Jan 21)
 Update 2016 Apr 24.
+
+Patch to improve cscope. (Adrian Kocis, #843)
+
+Patch for groovy multi-line comment highlighting. (Justin M. Keyes, 2016 May
+20 #644)
+
+When doing "vi buf.md" a BufNew autocommand for *.md is not triggered.
+Because of using the initial buffer? (Dun Peal, 2016 May 12)
 
 Patch to add the :bvimgrep command.  (Christian Brabandt, 2014 Nov 12)
 Updated 2016 Feb 10
@@ -247,11 +263,6 @@ Patch to make tests pass with EBCDIC. (Owen Leibman, 2016 Apr 10)
 
 When repeating the 'confirm' dialog one needs to press Enter. (ds26gte, 2016
 Apr 17)  #762
-
-Patch to support expression argument to sort() instead of a function name.
-Yasuhiro Matsumoto, 2013 May 31.
-Or should we add a more general mechanism, like a lambda() function?
-Patch by Yasuhiro Matsumoto, 2014 Sep 16, update 2016 Apr 17.
 
 Should jsonencode()/jsondecode() restrict recursiveness?
 Or avoid recursiveness.
@@ -375,9 +386,6 @@ Patch to add :mapgroup, put mappings in a group like augroup.
 Value returned by virtcol() changes depending on how lines wrap.  This is
 inconsistent with the documentation.
 
-Patch to add filtering of the quickfix list. (Yegappan Lakshmanan, 2016 Mar
-13, last version)  Update Mar 21., Apr 2.
-
 Can we cache the syntax attributes, so that updates for 'relativenumber' and
 'cursorline'/'cursorcolumn' are a lot faster?
 
@@ -422,8 +430,6 @@ wildcards.  Add a ":nowild" command modifier?  (ZyX, 2015 March 4)
 
 Proposal to make options.txt easier to read. (Arnaud Decara, 2015 Aug 5)
 Update Aug 14.
-
-Crash in :cnext on MS-Windows. (Ben Fritz, 2015 Oct 27)
 
 When using --remote-tab on MS-Windows 'encoding' hasn't been initialized yet,
 the file name ends up encoded wrong. (Raul Coronado, 2015 Dec 21)
@@ -834,6 +840,7 @@ optional. (2013 Jul 12)
 Dialog is too big on Linux too. (David Fishburn, 2013 Sep 2)
 
 Improve the installer for MS-Windows.  There are a few alternatives:
+- Add silent install option. (Shane Lee, #751)
 - Installer from Cream (Steve Hall).
 - Modern UI 2.0 for the Nsis installer. (Guopeng Wen)
     https://github.com/gpwen/vim-installer-mui2

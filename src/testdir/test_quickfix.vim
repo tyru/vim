@@ -280,19 +280,19 @@ function Test_cbuffer()
 endfunction
 
 function Test_nomem()
-  call alloc_fail(GetAllocId('qf_dirname_start'), 0, 0)
+  call test_alloc_fail(GetAllocId('qf_dirname_start'), 0, 0)
   call assert_fails('vimgrep vim runtest.vim', 'E342:')
 
-  call alloc_fail(GetAllocId('qf_dirname_now'), 0, 0)
+  call test_alloc_fail(GetAllocId('qf_dirname_now'), 0, 0)
   call assert_fails('vimgrep vim runtest.vim', 'E342:')
 
-  call alloc_fail(GetAllocId('qf_namebuf'), 0, 0)
+  call test_alloc_fail(GetAllocId('qf_namebuf'), 0, 0)
   call assert_fails('cfile runtest.vim', 'E342:')
 
-  call alloc_fail(GetAllocId('qf_errmsg'), 0, 0)
+  call test_alloc_fail(GetAllocId('qf_errmsg'), 0, 0)
   call assert_fails('cfile runtest.vim', 'E342:')
 
-  call alloc_fail(GetAllocId('qf_pattern'), 0, 0)
+  call test_alloc_fail(GetAllocId('qf_pattern'), 0, 0)
   call assert_fails('cfile runtest.vim', 'E342:')
 
 endfunc
@@ -700,14 +700,14 @@ endfunc
 
 " Tests for the setqflist() and setloclist() functions
 function SetXlistTests(cchar, bnum)
+  let Xwindow = a:cchar . 'window'
+  let Xnext = a:cchar . 'next'
   if a:cchar == 'c'
     let Xsetlist = function('setqflist')
     let Xgetlist = function('getqflist')
-    let Xnext = 'cnext'
   else
     let Xsetlist = function('setloclist', [0])
     let Xgetlist = function('getloclist', [0])
-    let Xnext = 'lnext'
   endif
 
   call Xsetlist([{'bufnr': a:bnum, 'lnum': 1},
@@ -722,6 +722,15 @@ function SetXlistTests(cchar, bnum)
   call assert_equal(3, len(l))
   exe Xnext
   call assert_equal(3, line('.'))
+
+  " Appending entries to the list should not change the cursor position
+  " in the quickfix window
+  exe Xwindow
+  1
+  call Xsetlist([{'bufnr': a:bnum, 'lnum': 4},
+	      \  {'bufnr': a:bnum, 'lnum': 5}], 'a')
+  call assert_equal(1, line('.'))
+  close
 
   call Xsetlist([{'bufnr': a:bnum, 'lnum': 3},
 	      \  {'bufnr': a:bnum, 'lnum': 4},
@@ -743,8 +752,51 @@ function Test_setqflist()
   call SetXlistTests('c', bnum)
   call SetXlistTests('l', bnum)
 
+  enew!
   call delete('Xtestfile')
 endfunction
+
+func Test_setqflist_empty_middle()
+  " create three quickfix lists
+  vimgrep Test_ test_quickfix.vim
+  let testlen = len(getqflist())
+  call assert_true(testlen > 0)
+  vimgrep empty test_quickfix.vim
+  call assert_true(len(getqflist()) > 0)
+  vimgrep matches test_quickfix.vim
+  let matchlen = len(getqflist())
+  call assert_true(matchlen > 0)
+  colder
+  " make the middle list empty
+  call setqflist([], 'r')
+  call assert_true(len(getqflist()) == 0)
+  colder
+  call assert_equal(testlen, len(getqflist()))
+  cnewer
+  cnewer
+  call assert_equal(matchlen, len(getqflist()))
+endfunc
+
+func Test_setqflist_empty_older()
+  " create three quickfix lists
+  vimgrep one test_quickfix.vim
+  let onelen = len(getqflist())
+  call assert_true(onelen > 0)
+  vimgrep two test_quickfix.vim
+  let twolen = len(getqflist())
+  call assert_true(twolen > 0)
+  vimgrep three test_quickfix.vim
+  let threelen = len(getqflist())
+  call assert_true(threelen > 0)
+  colder 2
+  " make the first list empty, check the others didn't change
+  call setqflist([], 'r')
+  call assert_true(len(getqflist()) == 0)
+  cnewer
+  call assert_equal(twolen, len(getqflist()))
+  cnewer
+  call assert_equal(threelen, len(getqflist()))
+endfunc
 
 function! XquickfixSetListWithAct(cchar)
   let Xolder = a:cchar . 'older'

@@ -913,9 +913,10 @@ extern char *(*dyn_libintl_textdomain)(const char *domainname);
 #define GETF_SWITCH	0x04	/* respect 'switchbuf' settings when jumping */
 
 /* Values for buflist_new() flags */
-#define BLN_CURBUF	1	/* May re-use curbuf for new buffer */
-#define BLN_LISTED	2	/* Put new buffer in buffer list */
-#define BLN_DUMMY	4	/* Allocating dummy buffer */
+#define BLN_CURBUF	1	/* may re-use curbuf for new buffer */
+#define BLN_LISTED	2	/* put new buffer in buffer list */
+#define BLN_DUMMY	4	/* allocating dummy buffer */
+#define BLN_NEW		8	/* create a new buffer */
 
 /* Values for in_cinkeys() */
 #define KEY_OPEN_FORW	0x101
@@ -1068,7 +1069,7 @@ extern char *(*dyn_libintl_textdomain)(const char *domainname);
 #define OPENLINE_COM_LIST  16	/* format comments with list/2nd line indent */
 
 /*
- * There are four history tables:
+ * There are five history tables:
  */
 #define HIST_CMD	0	/* colon commands */
 #define HIST_SEARCH	1	/* search commands */
@@ -1076,6 +1077,29 @@ extern char *(*dyn_libintl_textdomain)(const char *domainname);
 #define HIST_INPUT	3	/* input() lines */
 #define HIST_DEBUG	4	/* debug commands */
 #define HIST_COUNT	5	/* number of history tables */
+
+/* The type numbers are fixed for backwards compatibility. */
+#define BARTYPE_VERSION 1
+#define BARTYPE_HISTORY 2
+
+#define VIMINFO_VERSION 2
+#define VIMINFO_VERSION_WITH_HISTORY 2
+
+typedef enum {
+    BVAL_NR,
+    BVAL_STRING,
+    BVAL_EMPTY
+} btype_T;
+
+#define BVAL_MAX 4	/* Maximum number of fields in a barline. */
+
+typedef struct {
+    btype_T	bv_type;
+    long	bv_nr;
+    char_u	*bv_string;
+    int		bv_len;		/* length of bv_string */
+    int		bv_allocated;	/* bv_string was allocated */
+} bval_T;
 
 /*
  * Values for do_tag().
@@ -1885,35 +1909,37 @@ typedef int sock_T;
 #define VV_FCS_CHOICE	38
 #define VV_BEVAL_BUFNR	39
 #define VV_BEVAL_WINNR	40
-#define VV_BEVAL_LNUM	41
-#define VV_BEVAL_COL	42
-#define VV_BEVAL_TEXT	43
-#define VV_SCROLLSTART	44
-#define VV_SWAPNAME	45
-#define VV_SWAPCHOICE	46
-#define VV_SWAPCOMMAND	47
-#define VV_CHAR		48
-#define VV_MOUSE_WIN	49
-#define VV_MOUSE_LNUM   50
-#define VV_MOUSE_COL	51
-#define VV_OP		52
-#define VV_SEARCHFORWARD 53
-#define VV_HLSEARCH	54
-#define VV_OLDFILES	55
-#define VV_WINDOWID	56
-#define VV_PROGPATH	57
-#define VV_COMPLETED_ITEM 58
-#define VV_OPTION_NEW   59
-#define VV_OPTION_OLD   60
-#define VV_OPTION_TYPE  61
-#define VV_ERRORS	62
-#define VV_FALSE	63
-#define VV_TRUE		64
-#define VV_NULL		65
-#define VV_NONE		66
-#define VV_VIM_DID_ENTER 67
-#define VV_TESTING	68
-#define VV_LEN		69	/* number of v: vars */
+#define VV_BEVAL_WINID	41
+#define VV_BEVAL_LNUM	42
+#define VV_BEVAL_COL	43
+#define VV_BEVAL_TEXT	44
+#define VV_SCROLLSTART	45
+#define VV_SWAPNAME	46
+#define VV_SWAPCHOICE	47
+#define VV_SWAPCOMMAND	48
+#define VV_CHAR		49
+#define VV_MOUSE_WIN	50
+#define VV_MOUSE_WINID	51
+#define VV_MOUSE_LNUM   52
+#define VV_MOUSE_COL	53
+#define VV_OP		54
+#define VV_SEARCHFORWARD 55
+#define VV_HLSEARCH	56
+#define VV_OLDFILES	57
+#define VV_WINDOWID	58
+#define VV_PROGPATH	59
+#define VV_COMPLETED_ITEM 60
+#define VV_OPTION_NEW   61
+#define VV_OPTION_OLD   62
+#define VV_OPTION_TYPE  63
+#define VV_ERRORS	64
+#define VV_FALSE	65
+#define VV_TRUE		66
+#define VV_NULL		67
+#define VV_NONE		68
+#define VV_VIM_DID_ENTER 69
+#define VV_TESTING	70
+#define VV_LEN		71	/* number of v: vars */
 
 /* used for v_number in VAR_SPECIAL */
 #define VVAL_FALSE	0L
@@ -2339,5 +2365,8 @@ int vim_main2(int argc, char **argv);
 #define DIP_START   0x08	/* also use "start" directory in 'packpath' */
 #define DIP_OPT	    0x10	/* also use "opt" directory in 'packpath' */
 #define DIP_NORTP   0x20	/* do not use 'runtimepath' */
+
+/* Lowest number used for window ID. Cannot have this many windows. */
+#define LOWEST_WIN_ID 1000
 
 #endif /* VIM__H */
