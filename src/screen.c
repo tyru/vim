@@ -165,7 +165,7 @@ static void win_rest_invalid(win_T *wp);
 static void msg_pos_mode(void);
 static void recording_mode(int attr);
 #if defined(FEAT_WINDOWS)
-static void draw_tabline(void);
+void draw_tabline(void);
 #endif
 #if defined(FEAT_WINDOWS) || defined(FEAT_WILDMENU) || defined(FEAT_STL_OPT)
 static int fillchar_status(int *attr, int is_curwin);
@@ -10276,7 +10276,7 @@ recording_mode(int attr)
 /*
  * Draw the tab pages line at the top of the Vim window.
  */
-    static void
+    void
 draw_tabline(void)
 {
     int		tabcount = 0;
