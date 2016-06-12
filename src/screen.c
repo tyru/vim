@@ -174,7 +174,7 @@ static void msg_pos_mode(void);
 static void recording_mode(int attr);
 #if defined(FEAT_WINDOWS)
 # ifdef FEAT_TABSIDEBAR
-static void draw_tabsidebar();
+static void draw_tabsidebar(void);
 # endif
 static void draw_tabline(void);
 #endif
@@ -2415,11 +2415,11 @@ win_draw_end(
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
 		W_WINCOL(wp) + FDC_OFF
 #ifdef FEAT_TABSIDEBAR
-	       	+ tabsidebar_width()
+		+ tabsidebar_width()
 #endif
 		, (int)W_ENDCOL(wp)
 #ifdef FEAT_TABSIDEBAR
-	       	+ tabsidebar_width()
+		+ tabsidebar_width()
 #endif
 		, c1, c2, hl_attr(hl));
     }
@@ -6706,11 +6706,11 @@ win_redr_status_matches(
 
 	screen_fill(row, row + 1, clen
 #ifdef FEAT_TABSIDEBAR
-	       	+ tabsidebar_width()
+		+ tabsidebar_width()
 #endif
 		, (int)Columns
 #ifdef FEAT_TABSIDEBAR
-	       	+ tabsidebar_width()
+		+ tabsidebar_width()
 #endif
 		, fillchar, fillchar, attr);
     }
@@ -6852,7 +6852,7 @@ win_redr_status(win_T *wp)
 	row = W_WINROW(wp) + wp->w_height;
 	screen_puts(p, row, W_WINCOL(wp)
 #ifdef FEAT_TABSIDEBAR
-	       	+ tabsidebar_width()
+		+ tabsidebar_width()
 #endif
 		, attr);
 	screen_fill(row, row + 1, len + W_WINCOL(wp)
@@ -6869,7 +6869,7 @@ win_redr_status(win_T *wp)
 		&& (int)(this_ru_col - len) > (int)(STRLEN(NameBuff) + 1))
 	    screen_puts(NameBuff, row, (int)(this_ru_col - STRLEN(NameBuff) - 1 + W_WINCOL(wp)
 #ifdef FEAT_TABSIDEBAR
-		       	+ tabsidebar_width()
+			+ tabsidebar_width()
 #endif
 			), attr);
 
@@ -8365,7 +8365,11 @@ redraw_block(int row, int end, win_T *wp)
 	col = wp->w_wincol;
 	width = wp->w_width;
     }
-    screen_draw_rectangle(row, col, end - row, width, FALSE);
+    screen_draw_rectangle(row, col
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, end - row, width, FALSE);
 }
 #endif
 
@@ -10419,7 +10423,7 @@ recording_mode(int attr)
 #if defined(FEAT_WINDOWS)
 #ifdef FEAT_TABSIDEBAR
     static void
-draw_tabsidebar()
+draw_tabsidebar(void)
 {
     int		len;
     int		attr_sel = hl_attr(HLF_TSBS);
@@ -10541,9 +10545,9 @@ draw_tabline(void)
     int		tabwidth;
     int		col
 #ifdef FEAT_TABSIDEBAR
-       	= tabsidebar_width()
+	= tabsidebar_width()
 #else
-       	= 0
+	= 0
 #endif
 	;
     int		scol = 0;

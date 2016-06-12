@@ -549,6 +549,9 @@ static void f_cscope_connection(typval_T *argvars, typval_T *rettv);
 static void f_cursor(typval_T *argsvars, typval_T *rettv);
 static void f_deepcopy(typval_T *argvars, typval_T *rettv);
 static void f_delete(typval_T *argvars, typval_T *rettv);
+#ifdef FEAT_TABSIDEBAR
+static void f_debugtabsidebar(typval_T *argvars, typval_T *rettv);
+#endif
 static void f_did_filetype(typval_T *argvars, typval_T *rettv);
 static void f_diff_filler(typval_T *argvars, typval_T *rettv);
 static void f_diff_hlID(typval_T *argvars, typval_T *rettv);
@@ -8537,6 +8540,7 @@ static struct fst
     {"cscope_connection",0,3, f_cscope_connection},
     {"cursor",		1, 3, f_cursor},
     {"deepcopy",	1, 2, f_deepcopy},
+    {"debugtabsidebar", 0, 0, f_debugtabsidebar},
     {"delete",		1, 2, f_delete},
     {"did_filetype",	0, 0, f_did_filetype},
     {"diff_filler",	1, 1, f_diff_filler},
@@ -11144,6 +11148,33 @@ f_delete(typval_T *argvars, typval_T *rettv)
     else
 	EMSG2(_(e_invexpr2), flags);
 }
+
+#ifdef FEAT_TABSIDEBAR
+/*
+ * "debugtabsidebar()" function
+ */
+    static void
+f_debugtabsidebar(typval_T *argvars, typval_T *rettv)
+{
+    char_u	buf[1024];
+    char_u	*s;
+    int		len;
+    sprintf((char*)buf,
+            "Rows:%ld, Columns:%ld, screenrow:%d, screencol:%d, w_winrow:%d, w_wincol:%d,",
+            Rows,
+            Columns,
+            screen_screenrow() + 1,
+            screen_screencol() + 1,
+            curwin->w_winrow,
+            curwin->w_wincol
+            );
+    len = STRLEN(buf);
+    s = alloc((unsigned) len);
+    vim_strncpy(s, buf, len);
+    rettv->v_type = VAR_STRING;
+    rettv->vval.v_string = s;
+}
+#endif
 
 /*
  * "did_filetype()" function
