@@ -11160,13 +11160,14 @@ f_debugtabsidebar(typval_T *argvars, typval_T *rettv)
     char_u	*s;
     int		len;
     sprintf((char*)buf,
-            "Rows:%ld, Columns:%ld, screenrow:%d, screencol:%d, w_winrow:%d, w_wincol:%d,",
+            "Rows:%ld, Columns:%ld, screenrow:%d, screencol:%d, w_winrow:%d, w_wincol:%d, w_width:%d,",
             Rows,
             Columns,
             screen_screenrow() + 1,
             screen_screencol() + 1,
             curwin->w_winrow,
-            curwin->w_wincol
+            curwin->w_wincol,
+            curwin->w_width
             );
     len = STRLEN(buf);
     s = alloc((unsigned) len);

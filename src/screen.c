@@ -176,7 +176,7 @@ static void recording_mode(int attr);
 # ifdef FEAT_TABSIDEBAR
 static void draw_tabsidebar(void);
 # endif
-static void draw_tabline(void);
+void draw_tabline(void);
 #endif
 #if defined(FEAT_WINDOWS) || defined(FEAT_WILDMENU) || defined(FEAT_STL_OPT)
 static int fillchar_status(int *attr, int is_curwin);
@@ -9064,24 +9064,24 @@ linecopy(int to, int from, win_T *wp)
     unsigned	off_from = LineOffset[from] + wp->w_wincol;
 
     mch_memmove(ScreenLines + off_to, ScreenLines + off_from,
-	    wp->w_width * sizeof(schar_T));
+	    (tabsidebar_width() + wp->w_width) * sizeof(schar_T));
 # ifdef FEAT_MBYTE
     if (enc_utf8)
     {
 	int	i;
 
 	mch_memmove(ScreenLinesUC + off_to, ScreenLinesUC + off_from,
-		wp->w_width * sizeof(u8char_T));
+		(tabsidebar_width() + wp->w_width) * sizeof(u8char_T));
 	for (i = 0; i < p_mco; ++i)
 	    mch_memmove(ScreenLinesC[i] + off_to, ScreenLinesC[i] + off_from,
-		    wp->w_width * sizeof(u8char_T));
+		    (tabsidebar_width() + wp->w_width) * sizeof(u8char_T));
     }
     if (enc_dbcs == DBCS_JPNU)
 	mch_memmove(ScreenLines2 + off_to, ScreenLines2 + off_from,
-		wp->w_width * sizeof(schar_T));
+		(tabsidebar_width() + wp->w_width) * sizeof(schar_T));
 # endif
     mch_memmove(ScreenAttrs + off_to, ScreenAttrs + off_from,
-	    wp->w_width * sizeof(sattr_T));
+	    (tabsidebar_width() + wp->w_width) * sizeof(sattr_T));
 }
 #endif
 
@@ -10537,7 +10537,7 @@ draw_tabsidebar(void)
 /*
  * Draw the tab pages line at the top of the Vim window.
  */
-    static void
+    void
 draw_tabline(void)
 {
     int		tabcount = 0;
