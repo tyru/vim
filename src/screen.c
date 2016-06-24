@@ -6524,10 +6524,10 @@ win_redr_status_matches(
 
 #ifdef FEAT_MBYTE
     if (has_mbyte)
-	buf = alloc((unsigned)Columns * MB_MAXBYTES + 1);
+	buf = alloc((unsigned)COLUMNS_WITHOUT_TABSB() * MB_MAXBYTES + 1);
     else
 #endif
-	buf = alloc((unsigned)Columns + 1);
+	buf = alloc((unsigned)COLUMNS_WITHOUT_TABSB() + 1);
     if (buf == NULL)
 	return;
 
@@ -6554,7 +6554,7 @@ win_redr_status_matches(
 	if (first_match > 0)
 	    clen += 2;
 	/* jumping right, put match at the left */
-	if ((long)clen > Columns)
+	if ((long)clen > COLUMNS_WITHOUT_TABSB())
 	{
 	    first_match = match;
 	    /* if showing the last match, we can add some on the left */
@@ -6562,7 +6562,7 @@ win_redr_status_matches(
 	    for (i = match; i < num_matches; ++i)
 	    {
 		clen += status_match_len(xp, L_MATCH(i)) + 2;
-		if ((long)clen >= Columns)
+		if ((long)clen >= COLUMNS_WITHOUT_TABSB())
 		    break;
 	    }
 	    if (i == num_matches)
@@ -6573,7 +6573,7 @@ win_redr_status_matches(
 	while (first_match > 0)
 	{
 	    clen += status_match_len(xp, L_MATCH(first_match - 1)) + 2;
-	    if ((long)clen >= Columns)
+	    if ((long)clen >= COLUMNS_WITHOUT_TABSB())
 		break;
 	    --first_match;
 	}
@@ -6593,7 +6593,7 @@ win_redr_status_matches(
     clen = len;
 
     i = first_match;
-    while ((long)(clen + status_match_len(xp, L_MATCH(i)) + 2) < Columns)
+    while ((long)(clen + status_match_len(xp, L_MATCH(i)) + 2) < COLUMNS_WITHOUT_TABSB())
     {
 	if (i == match)
 	{
@@ -6708,10 +6708,7 @@ win_redr_status_matches(
 #ifdef FEAT_TABSIDEBAR
 		+ tabsidebar_width()
 #endif
-		, (int)Columns
-#ifdef FEAT_TABSIDEBAR
-		+ tabsidebar_width()
-#endif
+		, COLUMNS_WITHOUT_TABSB()
 		, fillchar, fillchar, attr);
     }
 
@@ -6809,7 +6806,7 @@ win_redr_status(win_T *wp)
 	    len += 4;
 	}
 
-	this_ru_col = ru_col - (COLUMNS_WITHOUT_TABSB() - W_WIDTH(wp));
+	this_ru_col = ru_col - (Columns - W_WIDTH(wp));
 	if (this_ru_col < (W_WIDTH(wp) + 1) / 2)
 	    this_ru_col = (W_WIDTH(wp) + 1) / 2;
 	if (this_ru_col <= 1)
@@ -7085,8 +7082,8 @@ win_redr_custom(
 		col = (W_WIDTH(wp) + 1) / 2;
 #else
 	    col = ru_col;
-	    if (col > (Columns + 1) / 2)
-		col = (Columns + 1) / 2;
+	    if (col > (COLUMNS_WITHOUT_TABSB() + 1) / 2)
+		col = (COLUMNS_WITHOUT_TABSB() + 1) / 2;
 #endif
 	    maxwidth = W_WIDTH(wp) - col;
 #ifdef FEAT_WINDOWS
@@ -7207,7 +7204,7 @@ win_redr_custom(
 	    p = tabtab[n].start;
 	    fillchar = tabtab[n].userhl;
 	}
-	while (col < Columns)
+	while (col < COLUMNS_WITHOUT_TABSB())
 	    TabPageIdxs[col++] = fillchar;
     }
 
@@ -11012,7 +11009,7 @@ win_redr_ruler(win_T *wp, int always)
 #endif
 	    ++o;
 #ifdef FEAT_WINDOWS
-	this_ru_col = ru_col - (COLUMNS_WITHOUT_TABSB() - width);
+	this_ru_col = ru_col - (Columns - width);
 	if (this_ru_col < 0)
 	    this_ru_col = 0;
 #endif
