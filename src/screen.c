@@ -427,7 +427,7 @@ redraw_asap(int type)
  * it belongs. If highlighting was changed a redraw is needed.
  */
     void
-redraw_after_callback()
+redraw_after_callback(void)
 {
     if (State == HITRETURN || State == ASKMORE)
 	; /* do nothing */
@@ -9105,9 +9105,12 @@ can_clear(char_u *p)
 		|| gui.in_use
 #endif
 #ifdef FEAT_TERMGUICOLORS
-		|| (p_tgc && cterm_normal_bg_gui_color != (long_u)INVALCOLOR)
+		|| (p_tgc && cterm_normal_bg_gui_color == (long_u)INVALCOLOR)
+		|| (!p_tgc && cterm_normal_bg_color == 0)
+#else
+		|| cterm_normal_bg_color == 0
 #endif
-		|| cterm_normal_bg_color == 0 || *T_UT != NUL));
+		|| *T_UT != NUL));
 }
 
 /*
@@ -10408,7 +10411,7 @@ unshowmode(int force)
  * Clear the mode message.
  */
     void
-clearmode()
+clearmode(void)
 {
     msg_pos_mode();
     if (Recording)
