@@ -3268,7 +3268,7 @@ get_mef_name(void)
     static int	start = -1;
     static int	off = 0;
 #ifdef HAVE_LSTAT
-    struct stat	sb;
+    stat_T	sb;
 #endif
 
     if (*p_mef == NUL)
@@ -4377,11 +4377,11 @@ set_errorlist(
 	    continue;
 
 	filename = get_dict_string(d, (char_u *)"filename", TRUE);
-	bufnum = get_dict_number(d, (char_u *)"bufnr");
-	lnum = get_dict_number(d, (char_u *)"lnum");
-	col = get_dict_number(d, (char_u *)"col");
-	vcol = get_dict_number(d, (char_u *)"vcol");
-	nr = get_dict_number(d, (char_u *)"nr");
+	bufnum = (int)get_dict_number(d, (char_u *)"bufnr");
+	lnum = (int)get_dict_number(d, (char_u *)"lnum");
+	col = (int)get_dict_number(d, (char_u *)"col");
+	vcol = (int)get_dict_number(d, (char_u *)"vcol");
+	nr = (int)get_dict_number(d, (char_u *)"nr");
 	type = get_dict_string(d, (char_u *)"type", TRUE);
 	pattern = get_dict_string(d, (char_u *)"pattern", TRUE);
 	text = get_dict_string(d, (char_u *)"text", TRUE);
