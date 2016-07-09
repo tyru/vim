@@ -8559,7 +8559,6 @@ static struct fst
     {"count",		2, 4, f_count},
     {"cscope_connection",0,3, f_cscope_connection},
     {"cursor",		1, 3, f_cursor},
-    {"debugtabsidebar", 0, 0, f_debugtabsidebar},
     {"deepcopy",	1, 2, f_deepcopy},
     {"delete",		1, 2, f_delete},
     {"did_filetype",	0, 0, f_did_filetype},
@@ -11171,34 +11170,6 @@ f_delete(typval_T *argvars, typval_T *rettv)
     else
 	EMSG2(_(e_invexpr2), flags);
 }
-
-#ifdef FEAT_TABSIDEBAR
-/*
- * "debugtabsidebar()" function
- */
-    static void
-f_debugtabsidebar(typval_T *argvars, typval_T *rettv)
-{
-    char_u	buf[1024];
-    char_u	*s;
-    int		len;
-    sprintf((char*)buf,
-            "Rows:%ld, Columns:%ld, screenrow:%d, screencol:%d, w_winrow:%d, w_wincol:%d, w_width:%d,",
-            Rows,
-            Columns,
-            screen_screenrow() + 1,
-            screen_screencol() + 1,
-            curwin->w_winrow,
-            curwin->w_wincol,
-            curwin->w_width
-            );
-    len = STRLEN(buf);
-    s = alloc((unsigned) len);
-    vim_strncpy(s, buf, len);
-    rettv->v_type = VAR_STRING;
-    rettv->vval.v_string = s;
-}
-#endif
 
 /*
  * "did_filetype()" function

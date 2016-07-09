@@ -2727,6 +2727,8 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 :redraw	various.txt	/*:redraw*
 :redraws	various.txt	/*:redraws*
 :redrawstatus	various.txt	/*:redrawstatus*
+:redrawt	various.txt	/*:redrawt*
+:redrawtabline	various.txt	/*:redrawtabline*
 :reg	change.txt	/*:reg*
 :registers	change.txt	/*:registers*
 :res	windows.txt	/*:res*
@@ -4476,6 +4478,7 @@ Ex	intro.txt	/*Ex*
 Ex-mode	intro.txt	/*Ex-mode*
 Exuberant_ctags	tagsrch.txt	/*Exuberant_ctags*
 F	motion.txt	/*F*
+FALSE	eval.txt	/*FALSE*
 FAQ	intro.txt	/*FAQ*
 Farsi	farsi.txt	/*Farsi*
 FileAppendCmd	autocmd.txt	/*FileAppendCmd*
@@ -4690,6 +4693,7 @@ TOhtml-encoding-detect	syntax.txt	/*TOhtml-encoding-detect*
 TOhtml-performance	syntax.txt	/*TOhtml-performance*
 TOhtml-uncopyable-text	syntax.txt	/*TOhtml-uncopyable-text*
 TOhtml-wrap-text	syntax.txt	/*TOhtml-wrap-text*
+TRUE	eval.txt	/*TRUE*
 TSQL	ft_sql.txt	/*TSQL*
 TTpro-telnet	syntax.txt	/*TTpro-telnet*
 Tab	intro.txt	/*Tab*
@@ -5722,6 +5726,7 @@ eval()	eval.txt	/*eval()*
 eval-examples	eval.txt	/*eval-examples*
 eval-sandbox	eval.txt	/*eval-sandbox*
 eval.txt	eval.txt	/*eval.txt*
+evalcmd()	eval.txt	/*evalcmd()*
 eventhandler()	eval.txt	/*eventhandler()*
 eview	starting.txt	/*eview*
 evim	starting.txt	/*evim*

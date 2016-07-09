@@ -174,7 +174,7 @@ static void msg_pos_mode(void);
 static void recording_mode(int attr);
 #if defined(FEAT_WINDOWS)
 # ifdef FEAT_TABSIDEBAR
-static void draw_tabsidebar(void);
+void draw_tabsidebar(void);
 # endif
 void draw_tabline(void);
 #endif
@@ -10444,7 +10444,7 @@ recording_mode(int attr)
 
 #if defined(FEAT_WINDOWS)
 #ifdef FEAT_TABSIDEBAR
-    static void
+    void
 draw_tabsidebar(void)
 {
     int		len;
@@ -10471,8 +10471,8 @@ draw_tabsidebar(void)
 	col = 0;
 	attr = attr_fill;
 
-        if (tp != NULL)
-        {
+	if (tp != NULL)
+	{
 	    if (tp->tp_topframe == topframe)
 		attr = attr_sel;
 	    else

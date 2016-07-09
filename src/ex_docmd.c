@@ -335,6 +335,9 @@ static void	ex_later(exarg_T *eap);
 static void	ex_redir(exarg_T *eap);
 static void	ex_redrawstatus(exarg_T *eap);
 static void	ex_redrawtabline(exarg_T *eap);
+#ifdef FEAT_TABSIDEBAR
+static void	ex_redrawtabsidebar(exarg_T *eap);
+#endif
 static void	close_redir(void);
 static void	ex_mkrc(exarg_T *eap);
 static void	ex_mark(exarg_T *eap);
@@ -9647,6 +9650,28 @@ ex_redrawtabline(exarg_T *eap UNUSED)
     out_flush();
 #endif
 }
+
+#if defined(FEAT_TABSIDEBAR)
+/*
+ * ":redrawtabsidebar": force redraw of tabsidebar
+ */
+    static void
+ex_redrawtabsidebar(exarg_T *eap UNUSED)
+{
+#if defined(FEAT_WINDOWS)
+    int		r = RedrawingDisabled;
+    int		p = p_lz;
+
+    RedrawingDisabled = 0;
+    p_lz = FALSE;
+    draw_tabsidebar();
+    update_screen(VIsual_active ? INVERTED : 0);
+    RedrawingDisabled = r;
+    p_lz = p;
+    out_flush();
+#endif
+}
+#endif
 
     static void
 close_redir(void)
