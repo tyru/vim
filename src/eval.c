@@ -558,6 +558,7 @@ static void f_diff_hlID(typval_T *argvars, typval_T *rettv);
 static void f_empty(typval_T *argvars, typval_T *rettv);
 static void f_escape(typval_T *argvars, typval_T *rettv);
 static void f_eval(typval_T *argvars, typval_T *rettv);
+static void f_evalcmd(typval_T *argvars, typval_T *rettv);
 static void f_eventhandler(typval_T *argvars, typval_T *rettv);
 static void f_executable(typval_T *argvars, typval_T *rettv);
 static void f_exepath(typval_T *argvars, typval_T *rettv);
@@ -1136,6 +1137,7 @@ set_internal_string_var(char_u *name, char_u *value)
 }
 
 static lval_T	*redir_lval = NULL;
+#define EVALCMD_BUSY (redir_lval == (lval_T *)&redir_lval)
 static garray_T redir_ga;	/* only valid when redir_lval is not NULL */
 static char_u	*redir_endp = NULL;
 static char_u	*redir_varname = NULL;
@@ -1252,6 +1254,12 @@ var_redir_str(char_u *value, int value_len)
 var_redir_stop(void)
 {
     typval_T	tv;
+
+    if (EVALCMD_BUSY)
+    {
+	redir_lval = NULL;
+	return;
+    }
 
     if (redir_lval != NULL)
     {
@@ -6378,7 +6386,8 @@ tv_equal(
 	return TRUE;
     }
 
-    /* For VAR_FUNC and VAR_PARTIAL only compare the function name. */
+    /* For VAR_FUNC and VAR_PARTIAL compare the function name, bound dict and
+     * arguments. */
     if ((tv1->v_type == VAR_FUNC
 		|| (tv1->v_type == VAR_PARTIAL && tv1->vval.v_partial != NULL))
 	    && (tv2->v_type == VAR_FUNC
@@ -8559,6 +8568,7 @@ static struct fst
     {"empty",		1, 1, f_empty},
     {"escape",		2, 2, f_escape},
     {"eval",		1, 1, f_eval},
+    {"evalcmd",		1, 1, f_evalcmd},
     {"eventhandler",	0, 0, f_eventhandler},
     {"executable",	1, 1, f_executable},
     {"exepath",		1, 1, f_exepath},
@@ -9417,6 +9427,8 @@ non_zero_arg(typval_T *argvars)
 {
     return ((argvars[0].v_type == VAR_NUMBER
 		&& argvars[0].vval.v_number != 0)
+	    || (argvars[0].v_type == VAR_SPECIAL
+		&& argvars[0].vval.v_number == VVAL_TRUE)
 	    || (argvars[0].v_type == VAR_STRING
 		&& argvars[0].vval.v_string != NULL
 		&& *argvars[0].vval.v_string != NUL));
@@ -11365,6 +11377,65 @@ f_eval(typval_T *argvars, typval_T *rettv)
 	EMSG(_(e_trailing));
 }
 
+static garray_T	redir_evalcmd_ga;
+
+/*
+ * Append "value[value_len]" to the evalcmd() output.
+ */
+    void
+evalcmd_redir_str(char_u *value, int value_len)
+{
+    int		len;
+
+    if (value_len == -1)
+	len = (int)STRLEN(value);	/* Append the entire string */
+    else
+	len = value_len;		/* Append only "value_len" characters */
+    if (ga_grow(&redir_evalcmd_ga, len) == OK)
+    {
+	mch_memmove((char *)redir_evalcmd_ga.ga_data
+				       + redir_evalcmd_ga.ga_len, value, len);
+	redir_evalcmd_ga.ga_len += len;
+    }
+}
+
+/*
+ * "evalcmd()" function
+ */
+    static void
+f_evalcmd(typval_T *argvars, typval_T *rettv)
+{
+    char_u	*s;
+    int		save_msg_silent = msg_silent;
+    int		save_redir_evalcmd = redir_evalcmd;
+    garray_T	save_ga;
+
+    rettv->vval.v_string = NULL;
+    rettv->v_type = VAR_STRING;
+
+    s = get_tv_string_chk(&argvars[0]);
+    if (s != NULL)
+    {
+	if (redir_evalcmd)
+	    save_ga = redir_evalcmd_ga;
+	ga_init2(&redir_evalcmd_ga, (int)sizeof(char), 500);
+	redir_evalcmd = TRUE;
+
+	++msg_silent;
+	do_cmdline_cmd(s);
+	rettv->vval.v_string = redir_evalcmd_ga.ga_data;
+	msg_silent = save_msg_silent;
+
+	redir_evalcmd = save_redir_evalcmd;
+	if (redir_evalcmd)
+	    redir_evalcmd_ga = save_ga;
+
+	/* "silent reg" or "silent echo x" leaves msg_col somewhere in the
+	 * line.  Put it back in the first column. */
+	msg_col = 0;
+    }
+}
+
 /*
  * "eventhandler()" function
  */
@@ -11884,7 +11955,7 @@ findfilendir(
 }
 
 static void filter_map(typval_T *argvars, typval_T *rettv, int map);
-static int filter_map_one(typval_T *tv, char_u *expr, int map, int *remp);
+static int filter_map_one(typval_T *tv, typval_T *expr, int map, int *remp);
 
 /*
  * Implementation of map() and filter().
@@ -11892,8 +11963,7 @@ static int filter_map_one(typval_T *tv, char_u *expr, int map, int *remp);
     static void
 filter_map(typval_T *argvars, typval_T *rettv, int map)
 {
-    char_u	buf[NUMBUFLEN];
-    char_u	*expr;
+    typval_T	*expr;
     listitem_T	*li, *nli;
     list_T	*l = NULL;
     dictitem_T	*di;
@@ -11928,14 +11998,13 @@ filter_map(typval_T *argvars, typval_T *rettv, int map)
 	return;
     }
 
-    expr = get_tv_string_buf_chk(&argvars[1], buf);
+    expr = &argvars[1];
     /* On type errors, the preceding call has already displayed an error
      * message.  Avoid a misleading error message for an empty string that
      * was not passed as argument. */
-    if (expr != NULL)
+    if (expr->v_type != VAR_UNKNOWN)
     {
 	prepare_vimvar(VV_VAL, &save_val);
-	expr = skipwhite(expr);
 
 	/* We reset "did_emsg" to be able to detect whether an error
 	 * occurred during evaluation of the expression. */
@@ -12007,21 +12076,48 @@ filter_map(typval_T *argvars, typval_T *rettv, int map)
 }
 
     static int
-filter_map_one(typval_T *tv, char_u *expr, int map, int *remp)
+filter_map_one(typval_T *tv, typval_T *expr, int map, int *remp)
 {
     typval_T	rettv;
+    typval_T	argv[3];
+    char_u	buf[NUMBUFLEN];
     char_u	*s;
     int		retval = FAIL;
+    int		dummy;
 
     copy_tv(tv, &vimvars[VV_VAL].vv_tv);
-    s = expr;
-    if (eval1(&s, &rettv, TRUE) == FAIL)
-	goto theend;
-    if (*s != NUL)  /* check for trailing chars after expr */
+    argv[0] = vimvars[VV_KEY].vv_tv;
+    argv[1] = vimvars[VV_VAL].vv_tv;
+    if (expr->v_type == VAR_FUNC)
     {
-	EMSG2(_(e_invexpr2), s);
-	clear_tv(&rettv);
-	goto theend;
+	s = expr->vval.v_string;
+	if (call_func(s, (int)STRLEN(s),
+		    &rettv, 2, argv, 0L, 0L, &dummy, TRUE, NULL, NULL) == FAIL)
+	    goto theend;
+    }
+    else if (expr->v_type == VAR_PARTIAL)
+    {
+	partial_T   *partial = expr->vval.v_partial;
+
+	s = partial->pt_name;
+	if (call_func(s, (int)STRLEN(s),
+		    &rettv, 2, argv, 0L, 0L, &dummy, TRUE, partial, NULL)
+								      == FAIL)
+	    goto theend;
+    }
+    else
+    {
+	s = get_tv_string_buf_chk(expr, buf);
+	if (s == NULL)
+	    goto theend;
+	s = skipwhite(s);
+	if (eval1(&s, &rettv, TRUE) == FAIL)
+	    goto theend;
+	if (*s != NUL)  /* check for trailing chars after expr */
+	{
+	    EMSG2(_(e_invexpr2), s);
+	    goto theend;
+	}
     }
     if (map)
     {
@@ -16363,7 +16459,13 @@ f_mode(typval_T *argvars, typval_T *rettv)
     buf[1] = NUL;
     buf[2] = NUL;
 
-    if (VIsual_active)
+    if (time_for_testing == 93784)
+    {
+	/* Testing the two-character code. */
+	buf[0] = 'x';
+	buf[1] = '!';
+    }
+    else if (VIsual_active)
     {
 	if (VIsual_select)
 	    buf[0] = VIsual_mode + 's' - 'v';
