@@ -2347,6 +2347,9 @@ win_close(win_T *win, int free_buf)
      */
     if (win->w_buffer != NULL)
     {
+	bufref_T    bufref;
+
+	set_bufref(&bufref, curbuf);
 #ifdef FEAT_AUTOCMD
 	win->w_closing = TRUE;
 #endif
@@ -2357,7 +2360,7 @@ win_close(win_T *win, int free_buf)
 #endif
 	/* Make sure curbuf is valid. It can become invalid if 'bufhidden' is
 	 * "wipe". */
-	if (!buf_valid(curbuf))
+	if (!bufref_valid(&bufref))
 	    curbuf = firstbuf;
     }
 
@@ -6678,12 +6681,12 @@ restore_win(
  * No autocommands will be executed.  Use aucmd_prepbuf() if there are any.
  */
     void
-switch_buffer(buf_T **save_curbuf, buf_T *buf)
+switch_buffer(bufref_T *save_curbuf, buf_T *buf)
 {
 # ifdef FEAT_AUTOCMD
     block_autocmds();
 # endif
-    *save_curbuf = curbuf;
+    set_bufref(save_curbuf, curbuf);
     --curbuf->b_nwindows;
     curbuf = buf;
     curwin->w_buffer = buf;
@@ -6694,17 +6697,17 @@ switch_buffer(buf_T **save_curbuf, buf_T *buf)
  * Restore the current buffer after using switch_buffer().
  */
     void
-restore_buffer(buf_T *save_curbuf)
+restore_buffer(bufref_T *save_curbuf)
 {
 # ifdef FEAT_AUTOCMD
     unblock_autocmds();
 # endif
     /* Check for valid buffer, just in case. */
-    if (buf_valid(save_curbuf))
+    if (bufref_valid(save_curbuf))
     {
 	--curbuf->b_nwindows;
-	curwin->w_buffer = save_curbuf;
-	curbuf = save_curbuf;
+	curwin->w_buffer = save_curbuf->br_buf;
+	curbuf = save_curbuf->br_buf;
 	++curbuf->b_nwindows;
     }
 }
