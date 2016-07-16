@@ -580,7 +580,7 @@ static char *(features[]) =
 	"-syntax",
 #endif
 	    /* only interesting on Unix systems */
-#if defined(USE_SYSTEM) && (defined(UNIX) || defined(__EMX__))
+#if defined(USE_SYSTEM) && defined(UNIX)
 	"+system()",
 #endif
 #ifdef FEAT_TABSIDEBAR
@@ -617,8 +617,8 @@ static char *(features[]) =
 #else
 	"-termguicolors",
 #endif
-#if defined(UNIX) || defined(__EMX__)
-/* only Unix (or OS/2 with EMX!) can have terminfo instead of termcap */
+#if defined(UNIX)
+/* only Unix can have terminfo instead of termcap */
 # ifdef TERMINFO
 	"+terminfo",
 # else
@@ -763,6 +763,18 @@ static char *(features[]) =
 
 static int included_patches[] =
 {   /* Add new patch number below this line */
+/**/
+    2053,
+/**/
+    2052,
+/**/
+    2051,
+/**/
+    2050,
+/**/
+    2049,
+/**/
+    2048,
 /**/
     2047,
 /**/
