@@ -3542,6 +3542,11 @@ alloc_tabpage(void)
 # endif
     tp->tp_ch_used = p_ch;
 
+#ifdef FEAT_TABSIDEBAR
+    tp->tp_tabsidebar = alloc(100);
+    STRCPY(tp->tp_tabsidebar, "");
+#endif
+
     return tp;
 }
 
@@ -3567,6 +3572,10 @@ free_tabpage(tabpage_T *tp)
 
 #ifdef FEAT_PYTHON3
     python3_tabpage_free(tp);
+#endif
+
+#ifdef FEAT_TABSIDEBAR
+    vim_free(tp->tp_tabsidebar);
 #endif
 
     vim_free(tp);
