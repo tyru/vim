@@ -2046,6 +2046,7 @@ test_arglist \
 	test_join \
 	test_json \
 	test_jumps \
+	test_lambda \
 	test_langmap \
 	test_largefile \
 	test_lispwords \
@@ -2055,6 +2056,7 @@ test_arglist \
 	test_matchstrpos \
 	test_menu \
 	test_messages \
+	test_netbeans \
 	test_packadd \
 	test_partial \
 	test_perl \
