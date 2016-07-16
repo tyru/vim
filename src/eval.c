@@ -551,9 +551,6 @@ static void f_cscope_connection(typval_T *argvars, typval_T *rettv);
 static void f_cursor(typval_T *argsvars, typval_T *rettv);
 static void f_deepcopy(typval_T *argvars, typval_T *rettv);
 static void f_delete(typval_T *argvars, typval_T *rettv);
-#ifdef FEAT_TABSIDEBAR
-static void f_debugtabsidebar(typval_T *argvars, typval_T *rettv);
-#endif
 static void f_did_filetype(typval_T *argvars, typval_T *rettv);
 static void f_diff_filler(typval_T *argvars, typval_T *rettv);
 static void f_diff_hlID(typval_T *argvars, typval_T *rettv);
@@ -618,6 +615,9 @@ static void f_getpos(typval_T *argvars, typval_T *rettv);
 static void f_getqflist(typval_T *argvars, typval_T *rettv);
 static void f_getreg(typval_T *argvars, typval_T *rettv);
 static void f_getregtype(typval_T *argvars, typval_T *rettv);
+#ifdef FEAT_TABSIDEBAR
+static void f_gettabsidebar(typval_T *argvars, typval_T *rettv);
+#endif
 static void f_gettabvar(typval_T *argvars, typval_T *rettv);
 static void f_gettabwinvar(typval_T *argvars, typval_T *rettv);
 static void f_getwinposx(typval_T *argvars, typval_T *rettv);
@@ -764,6 +764,9 @@ static void f_setmatches(typval_T *argvars, typval_T *rettv);
 static void f_setpos(typval_T *argvars, typval_T *rettv);
 static void f_setqflist(typval_T *argvars, typval_T *rettv);
 static void f_setreg(typval_T *argvars, typval_T *rettv);
+#ifdef FEAT_TABSIDEBAR
+static void f_settabsidebar(typval_T *argvars, typval_T *rettv);
+#endif
 static void f_settabvar(typval_T *argvars, typval_T *rettv);
 static void f_settabwinvar(typval_T *argvars, typval_T *rettv);
 static void f_setwinvar(typval_T *argvars, typval_T *rettv);
@@ -8832,6 +8835,7 @@ static struct fst
     {"getqflist",	0, 0, f_getqflist},
     {"getreg",		0, 3, f_getreg},
     {"getregtype",	0, 1, f_getregtype},
+    {"gettabsidebar",	1, 1, f_gettabsidebar},
     {"gettabvar",	2, 3, f_gettabvar},
     {"gettabwinvar",	3, 4, f_gettabwinvar},
     {"getwinposx",	0, 0, f_getwinposx},
@@ -8980,6 +8984,9 @@ static struct fst
     {"setpos",		2, 2, f_setpos},
     {"setqflist",	1, 2, f_setqflist},
     {"setreg",		2, 3, f_setreg},
+#ifdef FEAT_TABSIDEBAR
+    {"settabsidebar",	2, 2, f_settabsidebar},
+#endif
     {"settabvar",	3, 3, f_settabvar},
     {"settabwinvar",	4, 4, f_settabwinvar},
     {"setwinvar",	3, 3, f_setwinvar},
@@ -13857,6 +13864,47 @@ f_getregtype(typval_T *argvars, typval_T *rettv)
     rettv->v_type = VAR_STRING;
     rettv->vval.v_string = vim_strsave(buf);
 }
+
+#ifdef FEAT_TABSIDEBAR
+/*
+ * "gettabsidebar()" function
+ */
+    static void
+f_gettabsidebar(typval_T *argvars, typval_T *rettv)
+{
+    tabpage_T	*save_curtab;
+    tabpage_T	*tp;
+
+    rettv->v_type = VAR_STRING;
+    rettv->vval.v_string = NULL;
+
+    if (check_restricted() || check_secure())
+	return;
+
+    tp = find_tabpage((int)get_tv_number_chk(&argvars[0], NULL));
+
+    if (tp != NULL)
+    {
+#ifdef FEAT_WINDOWS
+	save_curtab = curtab;
+	goto_tabpage_tp(tp, FALSE, FALSE);
+#endif
+
+        if (tp->tp_tabsidebar != NULL)
+	    rettv->vval.v_string = alloc((unsigned)STRLEN(tp->tp_tabsidebar) + 1);
+	    if (rettv->vval.v_string != NULL)
+	    {
+		STRCPY(rettv->vval.v_string, tp->tp_tabsidebar);
+	    }
+
+#ifdef FEAT_WINDOWS
+	/* Restore current tabpage */
+	if (valid_tabpage(save_curtab))
+	    goto_tabpage_tp(save_curtab, FALSE, FALSE);
+#endif
+    }
+}
+#endif
 
 /*
  * "gettabvar()" function
@@ -19263,6 +19311,50 @@ free_lstval:
     }
     rettv->vval.v_number = 0;
 }
+
+#ifdef FEAT_TABSIDEBAR
+/*
+ * "settabsidebar()" function
+ */
+    static void
+f_settabsidebar(typval_T *argvars, typval_T *rettv)
+{
+    tabpage_T	*save_curtab;
+    tabpage_T	*tp;
+    char_u	*tabsidebar;
+
+    rettv->vval.v_number = 0;
+
+    if (check_restricted() || check_secure())
+	return;
+
+    tp = find_tabpage((int)get_tv_number_chk(&argvars[0], NULL));
+    tabsidebar = get_tv_string_chk(&argvars[1]);
+
+    if (tp != NULL)
+    {
+#ifdef FEAT_WINDOWS
+	save_curtab = curtab;
+	goto_tabpage_tp(tp, FALSE, FALSE);
+#endif
+
+        if (tabsidebar != NULL)
+	    tp->tp_tabsidebar = alloc((unsigned)STRLEN(tabsidebar) + 1);
+	    if (tp->tp_tabsidebar != NULL)
+	    {
+		STRCPY(tp->tp_tabsidebar, tabsidebar);
+	    }
+	else
+	    tp->tp_tabsidebar = NULL;
+
+#ifdef FEAT_WINDOWS
+	/* Restore current tabpage */
+	if (valid_tabpage(save_curtab))
+	    goto_tabpage_tp(save_curtab, FALSE, FALSE);
+#endif
+    }
+}
+#endif
 
 /*
  * "settabvar()" function

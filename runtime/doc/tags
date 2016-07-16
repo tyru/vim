@@ -5732,7 +5732,6 @@ eval()	eval.txt	/*eval()*
 eval-examples	eval.txt	/*eval-examples*
 eval-sandbox	eval.txt	/*eval-sandbox*
 eval.txt	eval.txt	/*eval.txt*
-evalcmd()	eval.txt	/*evalcmd()*
 eventhandler()	eval.txt	/*eventhandler()*
 eview	starting.txt	/*eview*
 evim	starting.txt	/*evim*

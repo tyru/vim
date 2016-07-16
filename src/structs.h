@@ -2236,6 +2236,11 @@ struct tabpage_S
     int		    tp_prev_which_scrollbars[3];
 				    /* previous value of which_scrollbars */
 #endif
+
+#ifdef FEAT_TABSIDEBAR
+    char_u	    *tp_tabsidebar;
+#endif
+
 #ifdef FEAT_DIFF
     diff_T	    *tp_first_diff;
     buf_T	    *(tp_diffbuf[DB_COUNT]);
