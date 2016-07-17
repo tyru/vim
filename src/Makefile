@@ -1484,6 +1484,7 @@ BASIC_SRC = \
 	charset.c \
 	crypt.c \
 	crypt_zip.c \
+	dict.c \
 	diff.c \
 	digraph.c \
 	edit.c \
@@ -1502,6 +1503,7 @@ BASIC_SRC = \
 	if_cscope.c \
 	if_xcmdsrv.c \
 	json.c \
+	list.c \
 	main.c \
 	mark.c \
 	memfile.c \
@@ -1585,6 +1587,7 @@ OBJ_COMMON = \
 	objects/charset.o \
 	objects/crypt.o \
 	objects/crypt_zip.o \
+	objects/dict.o \
 	objects/diff.o \
 	objects/digraph.o \
 	objects/edit.o \
@@ -1603,6 +1606,7 @@ OBJ_COMMON = \
 	$(HANGULIN_OBJ) \
 	objects/if_cscope.o \
 	objects/if_xcmdsrv.o \
+	objects/list.o \
 	objects/mark.o \
 	objects/memline.o \
 	objects/menu.o \
@@ -1672,6 +1676,7 @@ PRO_AUTO = \
 	charset.pro \
 	crypt.pro \
 	crypt_zip.pro \
+	dict.pro \
 	diff.pro \
 	digraph.pro \
 	edit.pro \
@@ -1696,6 +1701,7 @@ PRO_AUTO = \
 	if_ruby.pro \
 	if_xcmdsrv.pro \
 	json.pro \
+	list.pro \
 	main.pro \
 	mark.pro \
 	mbyte.pro \
@@ -2806,6 +2812,9 @@ objects/crypt.o: crypt.c
 objects/crypt_zip.o: crypt_zip.c
 	$(CCC) -o $@ crypt_zip.c
 
+objects/dict.o: dict.c
+	$(CCC) -o $@ dict.c
+
 objects/diff.o: diff.c
 	$(CCC) -o $@ diff.c
 
@@ -2945,6 +2954,9 @@ objects/json.o: json.c
 
 objects/json_test.o: json_test.c
 	$(CCC) -o $@ json_test.c
+
+objects/list.o: list.c
+	$(CCC) -o $@ list.c
 
 objects/main.o: main.c
 	$(CCC) -o $@ main.c
@@ -3182,6 +3194,10 @@ objects/crypt_zip.o: crypt_zip.c vim.h auto/config.h feature.h os_unix.h \
  auto/osdef.h ascii.h keymap.h term.h macros.h option.h structs.h \
  regexp.h gui.h gui_beval.h proto/gui_beval.pro alloc.h ex_cmds.h proto.h \
  globals.h farsi.h arabic.h
+objects/dict.o: dict.c vim.h auto/config.h feature.h os_unix.h auto/osdef.h \
+ ascii.h keymap.h term.h macros.h option.h structs.h regexp.h gui.h \
+ gui_beval.h proto/gui_beval.pro alloc.h ex_cmds.h proto.h globals.h \
+ farsi.h arabic.h
 objects/diff.o: diff.c vim.h auto/config.h feature.h os_unix.h auto/osdef.h \
  ascii.h keymap.h term.h macros.h option.h structs.h regexp.h gui.h \
  gui_beval.h proto/gui_beval.pro alloc.h ex_cmds.h proto.h globals.h \
@@ -3251,6 +3267,10 @@ objects/if_xcmdsrv.o: if_xcmdsrv.c vim.h auto/config.h feature.h os_unix.h \
  regexp.h gui.h gui_beval.h proto/gui_beval.pro alloc.h ex_cmds.h proto.h \
  globals.h farsi.h arabic.h version.h
 objects/json.o: json.c vim.h auto/config.h feature.h os_unix.h auto/osdef.h \
+ ascii.h keymap.h term.h macros.h option.h structs.h regexp.h gui.h \
+ gui_beval.h proto/gui_beval.pro alloc.h ex_cmds.h proto.h globals.h \
+ farsi.h arabic.h
+objects/list.o: list.c vim.h auto/config.h feature.h os_unix.h auto/osdef.h \
  ascii.h keymap.h term.h macros.h option.h structs.h regexp.h gui.h \
  gui_beval.h proto/gui_beval.pro alloc.h ex_cmds.h proto.h globals.h \
  farsi.h arabic.h
