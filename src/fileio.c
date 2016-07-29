@@ -6088,7 +6088,7 @@ shorten_fnames(int force)
     char_u	*p;
 
     mch_dirname(dirname, MAXPATHL);
-    for (buf = firstbuf; buf != NULL; buf = buf->b_next)
+    FOR_ALL_BUFFERS(buf)
     {
 	if (buf->b_fname != NULL
 #ifdef FEAT_QUICKFIX
@@ -6680,7 +6680,7 @@ check_timestamps(
 	++no_wait_return;
 	did_check_timestamps = TRUE;
 	already_warned = FALSE;
-	for (buf = firstbuf; buf != NULL; )
+	FOR_ALL_BUFFERS(buf)
 	{
 	    /* Only check buffers in a window. */
 	    if (buf->b_nwindows > 0)
@@ -6699,7 +6699,6 @@ check_timestamps(
 		    continue;
 		}
 	    }
-	    buf = buf->b_next;
 	}
 	--no_wait_return;
 	need_check_timestamps = FALSE;
@@ -8101,8 +8100,8 @@ event_name2nr(char_u *start, char_u **end)
     int		i;
     int		len;
 
-    /* the event name ends with end of line, a blank or a comma */
-    for (p = start; *p && !vim_iswhite(*p) && *p != ','; ++p)
+    /* the event name ends with end of line, '|', a blank or a comma */
+    for (p = start; *p && !vim_iswhite(*p) && *p != ',' && *p != '|'; ++p)
 	;
     for (i = 0; event_names[i].name != NULL; ++i)
     {
@@ -8154,7 +8153,7 @@ find_end_event(
     }
     else
     {
-	for (pat = arg; *pat && !vim_iswhite(*pat); pat = p)
+	for (pat = arg; *pat && *pat != '|' && !vim_iswhite(*pat); pat = p)
 	{
 	    if ((int)event_name2nr(pat, &p) >= (int)NUM_EVENTS)
 	    {
@@ -8287,8 +8286,9 @@ au_event_restore(char_u *old_ei)
  * Mostly a {group} argument can optionally appear before <event>.
  */
     void
-do_autocmd(char_u *arg, int forceit)
+do_autocmd(char_u *arg_in, int forceit)
 {
+    char_u	*arg = arg_in;
     char_u	*pat;
     char_u	*envpat = NULL;
     char_u	*cmd;
@@ -8297,12 +8297,20 @@ do_autocmd(char_u *arg, int forceit)
     int		nested = FALSE;
     int		group;
 
-    /*
-     * Check for a legal group name.  If not, use AUGROUP_ALL.
-     */
-    group = au_get_grouparg(&arg);
-    if (arg == NULL)	    /* out of memory */
-	return;
+    if (*arg == '|')
+    {
+	arg = (char_u *)"";
+	group = AUGROUP_ALL;	/* no argument, use all groups */
+    }
+    else
+    {
+	/*
+	 * Check for a legal group name.  If not, use AUGROUP_ALL.
+	 */
+	group = au_get_grouparg(&arg);
+	if (arg == NULL)	    /* out of memory */
+	    return;
+    }
 
     /*
      * Scan over the events.
@@ -8312,53 +8320,61 @@ do_autocmd(char_u *arg, int forceit)
     if (pat == NULL)
 	return;
 
-    /*
-     * Scan over the pattern.  Put a NUL at the end.
-     */
     pat = skipwhite(pat);
-    cmd = pat;
-    while (*cmd && (!vim_iswhite(*cmd) || cmd[-1] == '\\'))
-	cmd++;
-    if (*cmd)
-	*cmd++ = NUL;
-
-    /* Expand environment variables in the pattern.  Set 'shellslash', we want
-     * forward slashes here. */
-    if (vim_strchr(pat, '$') != NULL || vim_strchr(pat, '~') != NULL)
+    if (*pat == '|')
     {
-#ifdef BACKSLASH_IN_FILENAME
-	int	p_ssl_save = p_ssl;
-
-	p_ssl = TRUE;
-#endif
-	envpat = expand_env_save(pat);
-#ifdef BACKSLASH_IN_FILENAME
-	p_ssl = p_ssl_save;
-#endif
-	if (envpat != NULL)
-	    pat = envpat;
+	pat = (char_u *)"";
+	cmd = (char_u *)"";
     }
-
-    /*
-     * Check for "nested" flag.
-     */
-    cmd = skipwhite(cmd);
-    if (*cmd != NUL && STRNCMP(cmd, "nested", 6) == 0 && vim_iswhite(cmd[6]))
+    else
     {
-	nested = TRUE;
-	cmd = skipwhite(cmd + 6);
-    }
+	/*
+	 * Scan over the pattern.  Put a NUL at the end.
+	 */
+	cmd = pat;
+	while (*cmd && (!vim_iswhite(*cmd) || cmd[-1] == '\\'))
+	    cmd++;
+	if (*cmd)
+	    *cmd++ = NUL;
 
-    /*
-     * Find the start of the commands.
-     * Expand <sfile> in it.
-     */
-    if (*cmd != NUL)
-    {
-	cmd = expand_sfile(cmd);
-	if (cmd == NULL)	    /* some error */
-	    return;
-	need_free = TRUE;
+	/* Expand environment variables in the pattern.  Set 'shellslash', we want
+	 * forward slashes here. */
+	if (vim_strchr(pat, '$') != NULL || vim_strchr(pat, '~') != NULL)
+	{
+#ifdef BACKSLASH_IN_FILENAME
+	    int	p_ssl_save = p_ssl;
+
+	    p_ssl = TRUE;
+#endif
+	    envpat = expand_env_save(pat);
+#ifdef BACKSLASH_IN_FILENAME
+	    p_ssl = p_ssl_save;
+#endif
+	    if (envpat != NULL)
+		pat = envpat;
+	}
+
+	/*
+	 * Check for "nested" flag.
+	 */
+	cmd = skipwhite(cmd);
+	if (*cmd != NUL && STRNCMP(cmd, "nested", 6) == 0 && vim_iswhite(cmd[6]))
+	{
+	    nested = TRUE;
+	    cmd = skipwhite(cmd + 6);
+	}
+
+	/*
+	 * Find the start of the commands.
+	 * Expand <sfile> in it.
+	 */
+	if (*cmd != NUL)
+	{
+	    cmd = expand_sfile(cmd);
+	    if (cmd == NULL)	    /* some error */
+		return;
+	    need_free = TRUE;
+	}
     }
 
     /*
@@ -8375,7 +8391,7 @@ do_autocmd(char_u *arg, int forceit)
      */
     last_event = (event_T)-1;		/* for listing the event name */
     last_group = AUGROUP_ERROR;		/* for listing the group name */
-    if (*arg == '*' || *arg == NUL)
+    if (*arg == '*' || *arg == NUL || *arg == '|')
     {
 	for (event = (event_T)0; (int)event < (int)NUM_EVENTS;
 					    event = (event_T)((int)event + 1))
@@ -8385,7 +8401,7 @@ do_autocmd(char_u *arg, int forceit)
     }
     else
     {
-	while (*arg && !vim_iswhite(*arg))
+	while (*arg && *arg != '|' && !vim_iswhite(*arg))
 	    if (do_autocmd_event(event_name2nr(arg, &arg), pat,
 					nested,	cmd, forceit, group) == FAIL)
 		break;
@@ -8410,7 +8426,8 @@ au_get_grouparg(char_u **argp)
     char_u	*arg = *argp;
     int		group = AUGROUP_ALL;
 
-    p = skiptowhite(arg);
+    for (p = arg; *p && !vim_iswhite(*p) && *p != '|'; ++p)
+	;
     if (p > arg)
     {
 	group_name = vim_strnsave(arg, (int)(p - arg));
@@ -8759,7 +8776,7 @@ ex_doautoall(exarg_T *eap)
      * gives problems when the autocommands make changes to the list of
      * buffers or windows...
      */
-    for (buf = firstbuf; buf != NULL; buf = buf->b_next)
+    FOR_ALL_BUFFERS(buf)
     {
 	if (buf->b_ml.ml_mfp != NULL)
 	{
@@ -8831,7 +8848,7 @@ aucmd_prepbuf(
 	win = curwin;
     else
 #ifdef FEAT_WINDOWS
-	for (win = firstwin; win != NULL; win = win->w_next)
+	FOR_ALL_WINDOWS(win)
 	    if (win->w_buffer == buf)
 		break;
 #else

@@ -368,6 +368,9 @@ CClink = $(CC)
 # Carbon GUI for Mac OS X
 #CONF_OPT_GUI = --enable-gui=carbon
 
+# Uncomment this line to run an indivisual test with gvim.
+#GUI_TESTARG = GUI_FLAG=-g 
+
 # DARWIN - detecting Mac OS X
 # Uncomment this line when you want to compile a Unix version of Vim on
 # Darwin.  None of the Mac specific options or files will be used.
@@ -1068,7 +1071,8 @@ SCRIPTLOC	= $(VIMRTLOC)
 ### the runtime directory is not below it.
 #VIMRUNTIMEDIR = $(VIMRTLOC)
 
-### Name of the evim file target.
+### Name of the defaults/evim/mswin file target.
+VIM_DEFAULTS_FILE = $(DESTDIR)$(SCRIPTLOC)/defaults.vim
 EVIM_FILE	= $(DESTDIR)$(SCRIPTLOC)/evim.vim
 MSWIN_FILE	= $(DESTDIR)$(SCRIPTLOC)/mswin.vim
 
@@ -2031,7 +2035,6 @@ test1 \
 	test_search_mbyte \
 	test_signs \
 	test_tagcase \
-	test_textobjects \
 	test_utf8 \
 	test_wordcount \
 	test_writefile \
@@ -2074,6 +2077,7 @@ test_arglist \
 	test_filter_map \
 	test_fnamemodify \
 	test_glob2regpat \
+	test_gn \
 	test_goto \
 	test_hardcopy \
 	test_help_tagjump \
@@ -2112,6 +2116,7 @@ test_arglist \
 	test_syntax \
 	test_tabline \
 	test_tagjump \
+	test_textobjects \
 	test_timers \
 	test_true_false \
 	test_undolevels \
@@ -2236,11 +2241,13 @@ installrtbase: $(HELPSOURCE)/vim.1 $(DEST_VIM) $(DEST_RT) \
 	chmod $(VIMSCRIPTMOD) $(SYS_SYNMENU_FILE)
 	$(INSTALL_DATA) $(SCRIPTSOURCE)/delmenu.vim $(SYS_DELMENU_FILE)
 	chmod $(VIMSCRIPTMOD) $(SYS_DELMENU_FILE)
-# install the evim file
-	$(INSTALL_DATA) $(SCRIPTSOURCE)/mswin.vim $(MSWIN_FILE)
-	chmod $(VIMSCRIPTMOD) $(MSWIN_FILE)
+# install the defaults/evim/mswin file
+	$(INSTALL_DATA) $(SCRIPTSOURCE)/defaults.vim $(VIM_DEFAULTS_FILE)
+	chmod $(VIMSCRIPTMOD) $(VIM_DEFAULTS_FILE)
 	$(INSTALL_DATA) $(SCRIPTSOURCE)/evim.vim $(EVIM_FILE)
 	chmod $(VIMSCRIPTMOD) $(EVIM_FILE)
+	$(INSTALL_DATA) $(SCRIPTSOURCE)/mswin.vim $(MSWIN_FILE)
+	chmod $(VIMSCRIPTMOD) $(MSWIN_FILE)
 # install the rgb.txt file
 	$(INSTALL_DATA) $(SCRIPTSOURCE)/rgb.txt $(SYS_RGB_FILE)
 	chmod $(VIMSCRIPTMOD) $(SYS_RGB_FILE)
@@ -2608,7 +2615,7 @@ uninstall_runtime:
 	-rm -f $(DEST_HELP)/*.??x $(DEST_HELP)/tags-??
 	-rm -f $(SYS_RGB_FILE)
 	-rm -f $(SYS_MENU_FILE) $(SYS_SYNMENU_FILE) $(SYS_DELMENU_FILE)
-	-rm -f $(SYS_BUGR_FILE) $(EVIM_FILE) $(MSWIN_FILE)
+	-rm -f $(SYS_BUGR_FILE) $(VIM_DEFAULTS_FILE) $(EVIM_FILE) $(MSWIN_FILE)
 	-rm -f $(DEST_SCRIPT)/gvimrc_example.vim $(DEST_SCRIPT)/vimrc_example.vim
 	-rm -f $(SYS_FILETYPE_FILE) $(SYS_FTOFF_FILE) $(SYS_SCRIPTS_FILE)
 	-rm -f $(SYS_INDOFF_FILE) $(SYS_INDENT_FILE)

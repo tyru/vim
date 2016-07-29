@@ -1774,6 +1774,7 @@ int vim_memcmp(void *, void *, size_t);
 # ifndef INIT
 #  define INIT(x) x
 #  define DO_INIT
+#  define COMMA ,
 # endif
 #endif
 
