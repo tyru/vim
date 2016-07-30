@@ -4735,8 +4735,7 @@ f_getregtype(typval_T *argvars, typval_T *rettv)
     static void
 f_gettabsidebar(typval_T *argvars, typval_T *rettv)
 {
-    tabpage_T	*save_curtab;
-    tabpage_T	*tp;
+    tabpage_T	*tp = NULL;
 
     rettv->v_type = VAR_STRING;
     rettv->vval.v_string = NULL;
@@ -4748,23 +4747,12 @@ f_gettabsidebar(typval_T *argvars, typval_T *rettv)
 
     if (tp != NULL)
     {
-#ifdef FEAT_WINDOWS
-	save_curtab = curtab;
-	goto_tabpage_tp(tp, FALSE, FALSE);
-#endif
-
         if (tp->tp_tabsidebar != NULL)
+	{
 	    rettv->vval.v_string = alloc((unsigned)STRLEN(tp->tp_tabsidebar) + 1);
 	    if (rettv->vval.v_string != NULL)
-	    {
 		STRCPY(rettv->vval.v_string, tp->tp_tabsidebar);
-	    }
-
-#ifdef FEAT_WINDOWS
-	/* Restore current tabpage */
-	if (valid_tabpage(save_curtab))
-	    goto_tabpage_tp(save_curtab, FALSE, FALSE);
-#endif
+	}
     }
 }
 #endif
@@ -9877,27 +9865,14 @@ f_settabsidebar(typval_T *argvars, typval_T *rettv)
     tabsidebar = get_tv_string_chk(&argvars[1]);
 
     if (tp != NULL)
-    {
-#ifdef FEAT_WINDOWS
-	save_curtab = curtab;
-	goto_tabpage_tp(tp, FALSE, FALSE);
-#endif
-
-        if (tabsidebar != NULL)
+	if (tabsidebar != NULL)
+	{
 	    tp->tp_tabsidebar = alloc((unsigned)STRLEN(tabsidebar) + 1);
 	    if (tp->tp_tabsidebar != NULL)
-	    {
 		STRCPY(tp->tp_tabsidebar, tabsidebar);
-	    }
+	}
 	else
 	    tp->tp_tabsidebar = NULL;
-
-#ifdef FEAT_WINDOWS
-	/* Restore current tabpage */
-	if (valid_tabpage(save_curtab))
-	    goto_tabpage_tp(save_curtab, FALSE, FALSE);
-#endif
-    }
 }
 #endif
 

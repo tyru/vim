@@ -817,7 +817,10 @@ static char *(p_swb_values[]) = {"useopen", "usetab", "split", "newtab", "vsplit
 #define SWB_VSPLIT		0x010
 #ifdef FEAT_TABSIDEBAR
 EXTERN long	p_stsb;		/* 'showtabsidebar' */
-EXTERN long	p_tsb;		/* 'tabsidebar' */
+/* 'tabsidebar'
+ * for global using this. for local using tabpage_T.tp_tabsidebar.
+ */
+EXTERN char_u	*p_tsb;
 EXTERN long	p_tsbc;		/* 'tabsidebarcolumns' */
 #endif
 EXTERN int	p_tbs;		/* 'tagbsearch' */
