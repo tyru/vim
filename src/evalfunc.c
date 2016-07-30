@@ -9852,9 +9852,8 @@ free_lstval:
     static void
 f_settabsidebar(typval_T *argvars, typval_T *rettv)
 {
-    tabpage_T	*save_curtab;
-    tabpage_T	*tp;
-    char_u	*tabsidebar;
+    tabpage_T	*tp = NULL;
+    char_u	*tabsidebar = NULL;
 
     rettv->vval.v_number = 0;
 
@@ -9865,6 +9864,7 @@ f_settabsidebar(typval_T *argvars, typval_T *rettv)
     tabsidebar = get_tv_string_chk(&argvars[1]);
 
     if (tp != NULL)
+    {
 	if (tabsidebar != NULL)
 	{
 	    tp->tp_tabsidebar = alloc((unsigned)STRLEN(tabsidebar) + 1);
@@ -9873,6 +9873,7 @@ f_settabsidebar(typval_T *argvars, typval_T *rettv)
 	}
 	else
 	    tp->tp_tabsidebar = NULL;
+    }
 }
 #endif
 
