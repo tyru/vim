@@ -304,6 +304,11 @@ static char *(features[]) =
 #else
 	"-keymap",
 #endif
+#ifdef FEAT_EVAL
+	"+lambda",
+#else
+	"-lambda",
+#endif
 #ifdef FEAT_LANGMAP
 	"+langmap",
 #else
@@ -763,6 +768,26 @@ static char *(features[]) =
 
 static int included_patches[] =
 {   /* Add new patch number below this line */
+/**/
+    2122,
+/**/
+    2121,
+/**/
+    2120,
+/**/
+    2119,
+/**/
+    2118,
+/**/
+    2117,
+/**/
+    2116,
+/**/
+    2115,
+/**/
+    2114,
+/**/
+    2113,
 /**/
     2112,
 /**/
