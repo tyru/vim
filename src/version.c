@@ -5510,7 +5510,7 @@ version_msg(char *s)
 	MSG_PUTS(s);
 }
 
-static void do_intro_line(int row, char_u *mesg, int add_version, int attr);
+static void do_intro_line(int row, char_u *mesg, int add_version, int attr, int colon);
 
 /*
  * Show the intro message when not editing a file.
@@ -5643,18 +5643,18 @@ intro_message(
 		    p = N_("menu  Help->Sponsor/Register  for information    ");
 	    }
 	    if (*p != NUL)
-		do_intro_line(row, (char_u *)_(p), i == 2, 0);
+		do_intro_line(row, (char_u *)_(p), i == 2, 0, colon);
 	    ++row;
 	}
 #if defined(WIN3264) && !defined(FEAT_GUI_W32)
 	if (mch_windows95())
 	{
 	    do_intro_line(++row,
-		    (char_u *)_("WARNING: Windows 95/98/ME detected"),
+		    (char_u *)_("WARNING: Windows 95/98/ME detected", colon),
 							FALSE, hl_attr(HLF_E));
 	    do_intro_line(++row,
 		(char_u *)_("type  :help windows95<Enter>  for info on this"),
-								    FALSE, 0);
+								    FALSE, 0, colon);
 	}
 #endif
     }
@@ -5669,7 +5669,8 @@ do_intro_line(
     int		row,
     char_u	*mesg,
     int		add_version,
-    int		attr)
+    int		attr,
+    int		colon)		/* TRUE for ":intro" */
 {
     char_u	vers[20];
     int		col;
@@ -5708,7 +5709,11 @@ do_intro_line(
 	}
 	col += (int)STRLEN(vers);
     }
+#ifdef FEAT_TABSIDEBAR
+    col = ((colon ? Columns : COLUMNS_WITHOUT_TABSB()) - col) / 2;
+#else
     col = (Columns - col) / 2;
+#endif
     if (col < 0)
 	col = 0;
 
@@ -5729,13 +5734,21 @@ do_intro_line(
 #endif
 		clen += byte2cells(p[l]);
 	}
-	screen_puts_len(p, l, row, col, *p == '<' ? hl_attr(HLF_8) : attr);
+	screen_puts_len(p, l, row, col
+#ifdef FEAT_TABSIDEBAR
+		+ (colon ? 0 : tabsidebar_width())
+#endif
+		, *p == '<' ? hl_attr(HLF_8) : attr);
 	col += clen;
     }
 
     /* Add the version number to the version line. */
     if (add_version)
-	screen_puts(vers, row, col, 0);
+	screen_puts(vers, row, col
+#ifdef FEAT_TABSIDEBAR
+		+ (colon ? 0 : tabsidebar_width())
+#endif
+		, 0);
 }
 
 /*
