@@ -561,6 +561,7 @@ typedef unsigned long u8char_T;	    /* long should be 32 bits or more */
 # endif
 /* These are in os_win32.c */
 extern char *(*dyn_libintl_gettext)(const char *msgid);
+extern char *(*dyn_libintl_ngettext)(const char *msgid, const char *msgid_plural, unsigned long n);
 extern char *(*dyn_libintl_bindtextdomain)(const char *domainname, const char *dirname);
 extern char *(*dyn_libintl_bind_textdomain_codeset)(const char *domainname, const char *codeset);
 extern char *(*dyn_libintl_textdomain)(const char *domainname);
@@ -574,6 +575,7 @@ extern char *(*dyn_libintl_textdomain)(const char *domainname);
 #ifdef FEAT_GETTEXT
 # ifdef DYNAMIC_GETTEXT
 #  define _(x) (*dyn_libintl_gettext)((char *)(x))
+#  define ngettext(x, xs, n) (*dyn_libintl_ngettext)((char *)(x), (char *)(xs), (n))
 #  define N_(x) x
 #  define bindtextdomain(domain, dir) (*dyn_libintl_bindtextdomain)((domain), (dir))
 #  define bind_textdomain_codeset(domain, codeset) (*dyn_libintl_bind_textdomain_codeset)((domain), (codeset))
@@ -592,6 +594,7 @@ extern char *(*dyn_libintl_textdomain)(const char *domainname);
 # endif
 #else
 # define _(x) ((char *)(x))
+# define ngettext(x, xs, n) (((n) == 1) ? (char *)(x) : (char *)(xs))
 # define N_(x) x
 # ifdef bindtextdomain
 #  undef bindtextdomain
@@ -1509,6 +1512,8 @@ typedef UINT32_TYPEDEF UINT32_T;
 # define MSG_BUF_LEN 80		/* length of buffer for small messages */
 # define MSG_BUF_CLEN  MSG_BUF_LEN	    /* cell length */
 #endif
+
+#define FOLD_TEXT_LEN  51	/* buffer size for get_foldtext() */
 
 /* Size of the buffer used for tgetent().  Unfortunately this is largely
  * undocumented, some systems use 1024.  Using a buffer that is too small
@@ -2467,6 +2472,7 @@ int vim_main2(int argc, char **argv);
 #define TFN_INT		1	/* internal function name OK */
 #define TFN_QUIET	2	/* no error messages */
 #define TFN_NO_AUTOLOAD	4	/* do not use script autoloading */
+#define TFN_NO_DEREF	8	/* do not dereference a Funcref */
 
 /* Values for get_lval() flags argument: */
 #define GLV_QUIET	TFN_QUIET	/* no error messages */
@@ -2483,6 +2489,7 @@ int vim_main2(int argc, char **argv);
 #define ERROR_DICT	4
 #define ERROR_NONE	5
 #define ERROR_OTHER	6
+#define ERROR_DELETED	7
 
 /* flags for find_name_end() */
 #define FNE_INCL_BR	1	/* include [] in name */
