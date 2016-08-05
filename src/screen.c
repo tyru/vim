@@ -10485,7 +10485,7 @@ draw_tabsidebar(void)
     struct	stl_hlrec hltab[STL_MAX_ITEM];
     struct	stl_hlrec tabtab[STL_MAX_ITEM];
     tabpage_T	*tp = first_tabpage;
-    tabpage_T	*save_curtab = curtab;
+    typval_T	v;
     win_T	*cwp;
     win_T	*ewp;
     win_T	*wp;
@@ -10500,14 +10500,16 @@ draw_tabsidebar(void)
 
 	if (tp != NULL)
 	{
-	    curtab = tp;
+	    v.v_type = VAR_NUMBER;
+	    v.vval.v_number = tabpage_index(tp);
+	    set_var((char_u *)"g:actual_curtabpage", &v, TRUE);
 
 	    if (tp->tp_topframe == topframe)
 		attr = attr_sel;
 	    else
 		attr = attr_nosel;
 
-	    if (tp == save_curtab)
+	    if (tp == curtab)
 	    {
 		cwp = curwin;
 		wp = firstwin;
@@ -10655,6 +10657,8 @@ draw_tabsidebar(void)
 		    screen_putchar(fillchar, row, col++, attr);
 	    }
 	    tp = tp->tp_next;
+
+	    do_unlet((char_u *)"g:actual_curtabpage", TRUE);
 	}
 	else
 	{
@@ -10662,12 +10666,6 @@ draw_tabsidebar(void)
 		screen_putchar(fillchar, row, col++, attr);
 	}
     }
-
-#ifdef FEAT_WINDOWS
-    /* Restore current tabpage */
-    if (valid_tabpage(save_curtab))
-	curtab = save_curtab;
-#endif
 }
 #endif
 
