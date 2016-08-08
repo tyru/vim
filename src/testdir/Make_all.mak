@@ -51,7 +51,6 @@ SCRIPTS_ALL = \
 	test57.out \
 	test60.out \
 	test62.out \
-	test63.out \
 	test64.out \
 	test65.out \
 	test66.out \
@@ -102,7 +101,6 @@ SCRIPTS_ALL = \
 	test_mapping.out \
 	test_marks.out \
 	test_nested_function.out \
-	test_options.out \
 	test_search_mbyte.out \
 	test_signs.out \
 	test_tagcase.out \
@@ -176,6 +174,7 @@ NEW_TESTS = test_arglist.res \
 	    test_history.res \
 	    test_increment.res \
 	    test_increment_dbcs.res \
+	    test_job_fails.res \
 	    test_json.res \
 	    test_langmap.res \
 	    test_man.res \

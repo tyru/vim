@@ -402,8 +402,11 @@ static void f_tan(typval_T *argvars, typval_T *rettv);
 static void f_tanh(typval_T *argvars, typval_T *rettv);
 #endif
 #ifdef FEAT_TIMERS
+static void f_timer_info(typval_T *argvars, typval_T *rettv);
+static void f_timer_pause(typval_T *argvars, typval_T *rettv);
 static void f_timer_start(typval_T *argvars, typval_T *rettv);
 static void f_timer_stop(typval_T *argvars, typval_T *rettv);
+static void f_timer_stopall(typval_T *argvars, typval_T *rettv);
 #endif
 static void f_tolower(typval_T *argvars, typval_T *rettv);
 static void f_toupper(typval_T *argvars, typval_T *rettv);
@@ -827,8 +830,11 @@ static struct fst
     {"test_null_string", 0, 0, f_test_null_string},
     {"test_settime",	1, 1, f_test_settime},
 #ifdef FEAT_TIMERS
+    {"timer_info",	0, 1, f_timer_info},
+    {"timer_pause",	2, 2, f_timer_pause},
     {"timer_start",	2, 3, f_timer_start},
     {"timer_stop",	1, 1, f_timer_stop},
+    {"timer_stopall",	0, 0, f_timer_stopall},
 #endif
     {"tolower",		1, 1, f_tolower},
     {"toupper",		1, 1, f_toupper},
@@ -4252,6 +4258,20 @@ f_getcompletion(typval_T *argvars, typval_T *rettv)
 	xpc.xp_pattern_len = (int)STRLEN(xpc.xp_pattern);
     }
 # endif
+#ifdef FEAT_CSCOPE
+    if (xpc.xp_context == EXPAND_CSCOPE)
+    {
+	set_context_in_cscope_cmd(&xpc, xpc.xp_pattern, CMD_cscope);
+	xpc.xp_pattern_len = (int)STRLEN(xpc.xp_pattern);
+    }
+#endif
+#ifdef FEAT_SIGNS
+    if (xpc.xp_context == EXPAND_SIGN)
+    {
+	set_context_in_sign_cmd(&xpc, xpc.xp_pattern);
+	xpc.xp_pattern_len = (int)STRLEN(xpc.xp_pattern);
+    }
+#endif
 
     pat = addstar(xpc.xp_pattern, xpc.xp_pattern_len, xpc.xp_context);
     if ((rettv_list_alloc(rettv) != FAIL) && (pat != NULL))
@@ -9696,11 +9716,11 @@ f_setmatches(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
 		}
 	    }
 
-	    group = get_dict_string(d, (char_u *)"group", FALSE);
+	    group = get_dict_string(d, (char_u *)"group", TRUE);
 	    priority = (int)get_dict_number(d, (char_u *)"priority");
 	    id = (int)get_dict_number(d, (char_u *)"id");
 	    conceal = dict_find(d, (char_u *)"conceal", -1) != NULL
-			      ? get_dict_string(d, (char_u *)"conceal", FALSE)
+			      ? get_dict_string(d, (char_u *)"conceal", TRUE)
 			      : NULL;
 	    if (i == 0)
 	    {
@@ -9714,6 +9734,8 @@ f_setmatches(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
 		list_unref(s);
 		s = NULL;
 	    }
+	    vim_free(group);
+	    vim_free(conceal);
 
 	    li = li->li_next;
 	}
@@ -12021,6 +12043,50 @@ free_callback(char_u *callback, partial_T *partial)
 
 #ifdef FEAT_TIMERS
 /*
+ * "timer_info([timer])" function
+ */
+    static void
+f_timer_info(typval_T *argvars, typval_T *rettv)
+{
+    timer_T *timer = NULL;
+
+    if (rettv_list_alloc(rettv) != OK)
+	return;
+    if (argvars[0].v_type != VAR_UNKNOWN)
+    {
+	if (argvars[0].v_type != VAR_NUMBER)
+	    EMSG(_(e_number_exp));
+	else
+	{
+	    timer = find_timer((int)get_tv_number(&argvars[0]));
+	    if (timer != NULL)
+		add_timer_info(rettv, timer);
+	}
+    }
+    else
+	add_timer_info_all(rettv);
+}
+
+/*
+ * "timer_pause(timer, paused)" function
+ */
+    static void
+f_timer_pause(typval_T *argvars, typval_T *rettv UNUSED)
+{
+    timer_T	*timer = NULL;
+    int		paused = (int)get_tv_number(&argvars[1]);
+
+    if (argvars[0].v_type != VAR_NUMBER)
+	EMSG(_(e_number_exp));
+    else
+    {
+	timer = find_timer((int)get_tv_number(&argvars[0]));
+	if (timer != NULL)
+	    timer->tr_paused = paused;
+    }
+}
+
+/*
  * "timer_start(time, callback [, options])" function
  */
     static void
@@ -12080,6 +12146,15 @@ f_timer_stop(typval_T *argvars, typval_T *rettv UNUSED)
     timer = find_timer((int)get_tv_number(&argvars[0]));
     if (timer != NULL)
 	stop_timer(timer);
+}
+
+/*
+ * "timer_stopall()" function
+ */
+    static void
+f_timer_stopall(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
+{
+    stop_all_timers();
 }
 #endif
 
