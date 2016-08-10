@@ -5718,8 +5718,8 @@ intro_message(
 	if (mch_windows95())
 	{
 	    do_intro_line(++row,
-		    (char_u *)_("WARNING: Windows 95/98/ME detected", colon),
-							FALSE, hl_attr(HLF_E));
+		    (char_u *)_("WARNING: Windows 95/98/ME detected"),
+							FALSE, hl_attr(HLF_E), colon);
 	    do_intro_line(++row,
 		(char_u *)_("type  :help windows95<Enter>  for info on this"),
 								    FALSE, 0, colon);
