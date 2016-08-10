@@ -212,6 +212,10 @@ redraw_win_later(
     win_T	*wp,
     int		type)
 {
+#ifdef FEAT_TABSIDEBAR
+    if (CLEAR <= type)
+	redraw_tabsidebar = TRUE;
+#endif
     if (wp->w_redr_type < type)
     {
 	wp->w_redr_type = type;
@@ -647,6 +651,10 @@ update_screen(int type)
     if (redraw_tabline || type >= NOT_VALID)
 	draw_tabline();
 #endif
+#ifdef FEAT_TABSIDEBAR
+    if (redraw_tabsidebar || must_redraw)
+	draw_tabsidebar();
+#endif
 
 #ifdef FEAT_SYN_HL
     /*
@@ -1018,6 +1026,10 @@ updateWindow(win_T *wp)
     /* When the screen was cleared redraw the tab pages line. */
     if (redraw_tabline)
 	draw_tabline();
+#ifdef FEAT_TABSIDEBAR
+    if (redraw_tabsidebar)
+	draw_tabsidebar();
+#endif
 
     if (wp->w_redr_status
 # ifdef FEAT_CMDL_INFO
@@ -1527,6 +1539,10 @@ win_update(win_T *wp)
 		/* The screen was cleared, redraw the tab pages line. */
 		if (redraw_tabline)
 		    draw_tabline();
+#endif
+#ifdef FEAT_TABSIDEBAR
+		if (redraw_tabsidebar)
+		    draw_tabsidebar();
 #endif
 	    }
 	}
@@ -5971,10 +5987,6 @@ screen_line(
     if (endcol > Columns)
 	endcol = Columns;
 
-#ifdef FEAT_TABSIDEBAR
-    draw_tabsidebar();
-#endif
-
 # ifdef FEAT_CLIPBOARD
     clip_may_clear_selection(row, row);
 # endif
@@ -6401,6 +6413,10 @@ redraw_statuslines(void)
 	    win_redr_status(wp);
     if (redraw_tabline)
 	draw_tabline();
+#ifdef FEAT_TABSIDEBAR
+    if (redraw_tabsidebar)
+	draw_tabsidebar();
+#endif
 }
 #endif
 
@@ -10490,6 +10506,8 @@ draw_tabsidebar(void)
     win_T	*ewp;
     win_T	*wp;
 
+    redraw_tabsidebar = FALSE;
+
     if (0 == tabsidebar_width())
 	return;
 
@@ -10497,6 +10515,34 @@ draw_tabsidebar(void)
     {
 	col = 0;
 	attr = attr_fill;
+
+	// -------------------------------------
+	// for DEBUG
+	if (row == 0)
+	{
+	    char_u	s[30];
+	    proftime_T	res;
+	    long	n1, n2;
+
+	    profile_start(&res);
+# ifdef WIN3264
+	    n1 = res.HighPart;
+	    n2 = res.LowPart;
+# else
+	    n1 = res.tv_sec;
+	    n2 = res.tv_usec;
+# endif
+	    sprintf((char *)s, "DEBUG: -%ld,%ld-", n1, n2);
+	    screen_puts(s, row, col, attr);
+	    len = (int)STRLEN(s);
+	    col += vim_strnsize(s, len);
+
+	    while (col < tabsidebar_width())
+		screen_putchar(fillchar, row, col++, attr);
+
+	    continue;
+	}
+	// -------------------------------------
 
 	if (tp != NULL)
 	{
@@ -10986,6 +11032,10 @@ showruler(int always)
     /* Redraw the tab pages line if needed. */
     if (redraw_tabline)
 	draw_tabline();
+#endif
+#ifdef FEAT_TABSIDEBAR
+    if (redraw_tabsidebar)
+	draw_tabsidebar();
 #endif
 }
 

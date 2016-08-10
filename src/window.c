@@ -2214,6 +2214,9 @@ close_last_window_tabpage(
 	 */
 	goto_tabpage_tp(alt_tabpage(), FALSE, TRUE);
 	redraw_tabline = TRUE;
+#ifdef FEAT_TABSIDEBAR
+	redraw_tabsidebar = TRUE;
+#endif
 
 	/* Safety check: Autocommands may have closed the window when jumping
 	 * to the other tab page. */
@@ -3651,6 +3654,9 @@ win_new_tabpage(int after)
 	 * scrollbars.  Have to update them anyway. */
 	gui_may_update_scrollbars();
 #endif
+#ifdef FEAT_TABSIDEBAR
+	redraw_tabsidebar = TRUE;
+#endif
 
 	redraw_all_later(CLEAR);
 #ifdef FEAT_AUTOCMD
@@ -4381,6 +4387,9 @@ win_enter_ext(
 #endif
     curwin->w_redr_status = TRUE;
     redraw_tabline = TRUE;
+#ifdef FEAT_TABSIDEBAR
+    redraw_tabsidebar = TRUE;
+#endif
     if (restart_edit)
 	redraw_later(VALID);	/* causes status line redraw */
 

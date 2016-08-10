@@ -870,6 +870,10 @@ vim_main2(void)
 
     TIME_MSG("before starting main loop");
 
+#ifdef FEAT_TABSIDEBAR
+    redraw_tabsidebar = TRUE;
+#endif
+
     /*
      * Call the main command loop.  This never returns.
     */
