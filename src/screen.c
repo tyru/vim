@@ -8971,6 +8971,9 @@ give_up:
      */
     if (starting == 0 && ++retry_count <= 3)
     {
+#ifdef FEAT_TABSIDEBAR
+	redraw_tabsidebar = TRUE;
+#endif
 	apply_autocmds(EVENT_VIMRESIZED, NULL, NULL, FALSE, curbuf);
 	/* In rare cases, autocommands may have altered Rows or Columns,
 	 * jump back to check if we need to allocate the screen again. */
