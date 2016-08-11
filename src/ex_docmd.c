@@ -9680,7 +9680,7 @@ ex_redrawtabsidebar(exarg_T *eap UNUSED)
 
     RedrawingDisabled = 0;
     p_lz = FALSE;
-    draw_tabsidebar();
+    draw_tabsidebar(-1);
     update_screen(VIsual_active ? INVERTED : 0);
     RedrawingDisabled = r;
     p_lz = p;
