@@ -6638,7 +6638,7 @@ win_redr_status_matches(
     clen = len;
 
     i = first_match;
-    while ((long)(clen + status_match_len(xp, L_MATCH(i)) + 2) < COLUMNS_WITHOUT_TABSB())
+    while ((long)(clen + status_match_len(xp, L_MATCH(i)) + 2) < Columns)
     {
 	if (i == match)
 	{
@@ -6753,8 +6753,7 @@ win_redr_status_matches(
 #ifdef FEAT_TABSIDEBAR
 		+ tabsidebar_width()
 #endif
-		, COLUMNS_WITHOUT_TABSB()
-		, fillchar, fillchar, attr);
+		, Columns, fillchar, fillchar, attr);
     }
 
 #ifdef FEAT_WINDOWS
@@ -10519,33 +10518,33 @@ draw_tabsidebar(void)
 	col = 0;
 	attr = attr_fill;
 
-	// -------------------------------------
-	// for DEBUG
-	if (row == 0)
-	{
-	    char_u	s[30];
-	    proftime_T	res;
-	    long	n1, n2;
-
-	    profile_start(&res);
-# ifdef WIN3264
-	    n1 = res.HighPart;
-	    n2 = res.LowPart;
-# else
-	    n1 = res.tv_sec;
-	    n2 = res.tv_usec;
-# endif
-	    sprintf((char *)s, "DEBUG: -%ld,%ld-", n1, n2);
-	    screen_puts(s, row, col, attr);
-	    len = (int)STRLEN(s);
-	    col += vim_strnsize(s, len);
-
-	    while (col < tabsidebar_width())
-		screen_putchar(fillchar, row, col++, attr);
-
-	    continue;
-	}
-	// -------------------------------------
+// 	// -------------------------------------
+// 	// for DEBUG
+// 	if (row == 0)
+// 	{
+// 	    char_u	s[30];
+// 	    proftime_T	res;
+// 	    long	n1, n2;
+//
+// 	    profile_start(&res);
+// # ifdef WIN3264
+// 	    n1 = res.HighPart;
+// 	    n2 = res.LowPart;
+// # else
+// 	    n1 = res.tv_sec;
+// 	    n2 = res.tv_usec;
+// # endif
+// 	    sprintf((char *)s, "DEBUG: -%ld,%ld-", n1, n2);
+// 	    screen_puts(s, row, col, attr);
+// 	    len = (int)STRLEN(s);
+// 	    col += vim_strnsize(s, len);
+//
+// 	    while (col < tabsidebar_width())
+// 		screen_putchar(fillchar, row, col++, attr);
+//
+// 	    continue;
+// 	}
+// 	// -------------------------------------
 
 	if (tp != NULL)
 	{
