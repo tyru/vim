@@ -513,6 +513,7 @@ update_screen(int type)
     int		did_one;
 #endif
 #ifdef FEAT_GUI
+    int		did_undraw = FALSE;
     int		gui_cursor_col;
     int		gui_cursor_row;
 #endif
@@ -716,11 +717,12 @@ update_screen(int type)
 		/* Remove the cursor before starting to do anything, because
 		 * scrolling may make it difficult to redraw the text under
 		 * it. */
-		if (gui.in_use)
+		if (gui.in_use && wp == curwin)
 		{
 		    gui_cursor_col = gui.cursor_col;
 		    gui_cursor_row = gui.cursor_row;
 		    gui_undraw_cursor();
+		    did_undraw = TRUE;
 		}
 #endif
 	    }
@@ -776,7 +778,7 @@ update_screen(int type)
     if (gui.in_use)
     {
 	out_flush();	/* required before updating the cursor */
-	if (did_one && !gui_mch_is_blink_off())
+	if (did_undraw && !gui_mch_is_blink_off())
 	{
 	    /* Put the GUI position where the cursor was, gui_update_cursor()
 	     * uses that. */
@@ -2287,23 +2289,6 @@ win_update(win_T *wp)
 #endif
 }
 
-#ifdef FEAT_SIGNS
-static int draw_signcolumn(win_T *wp);
-
-/*
- * Return TRUE when window "wp" has a column to draw signs in.
- */
-    static int
-draw_signcolumn(win_T *wp)
-{
-    return (wp->w_buffer->b_signlist != NULL
-# ifdef FEAT_NETBEANS_INTG
-				|| wp->w_buffer->b_has_sign_column
-# endif
-		    );
-}
-#endif
-
 /*
  * Clear the rest of the window and mark the unused lines with "c1".  use "c2"
  * as the filler character.
@@ -2352,7 +2337,7 @@ win_draw_end(
 	}
 # endif
 # ifdef FEAT_SIGNS
-	if (draw_signcolumn(wp))
+	if (signcolumn_on(wp))
 	{
 	    int nn = n + 2;
 
@@ -2437,7 +2422,7 @@ win_draw_end(
 	}
 #endif
 #ifdef FEAT_SIGNS
-	if (draw_signcolumn(wp))
+	if (signcolumn_on(wp))
 	{
 	    int	    nn = n + 2;
 
@@ -2595,7 +2580,7 @@ fold_line(
 
 #ifdef FEAT_SIGNS
     /* If signs are being displayed, add two spaces. */
-    if (draw_signcolumn(wp))
+    if (signcolumn_on(wp))
     {
 	len = W_WIDTH(wp) - col;
 	if (len > 0)
@@ -3765,7 +3750,7 @@ win_line(
 		draw_state = WL_SIGN;
 		/* Show the sign column when there are any signs in this
 		 * buffer or when using Netbeans. */
-		if (draw_signcolumn(wp))
+		if (signcolumn_on(wp))
 		{
 		    int	text_sign;
 # ifdef FEAT_SIGN_ICONS
@@ -9854,7 +9839,7 @@ screen_ins_lines(
 #ifdef FEAT_GUI
     /* Don't update the GUI cursor here, ScreenLines[] is invalid until the
      * scrolling is actually carried out. */
-    gui_dont_update_cursor();
+    gui_dont_update_cursor(row + off <= gui.cursor_row);
 #endif
 
     if (*T_CCS != NUL)	   /* cursor relative to region */
@@ -9956,10 +9941,10 @@ screen_ins_lines(
 }
 
 /*
- * delete lines on the screen and update ScreenLines[]
- * 'end' is the line after the scrolled part. Normally it is Rows.
- * When scrolling region used 'off' is the offset from the top for the region.
- * 'row' and 'end' are relative to the start of the region.
+ * Delete lines on the screen and update ScreenLines[].
+ * "end" is the line after the scrolled part. Normally it is Rows.
+ * When scrolling region used "off" is the offset from the top for the region.
+ * "row" and "end" are relative to the start of the region.
  *
  * Return OK for success, FAIL if the lines are not deleted.
  */
@@ -10075,7 +10060,8 @@ screen_del_lines(
 #ifdef FEAT_GUI
     /* Don't update the GUI cursor here, ScreenLines[] is invalid until the
      * scrolling is actually carried out. */
-    gui_dont_update_cursor();
+    gui_dont_update_cursor(gui.cursor_row >= row + off
+						&& gui.cursor_row < end + off);
 #endif
 
     if (*T_CCS != NUL)	    /* cursor relative to region */
