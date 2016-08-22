@@ -50,7 +50,6 @@ SCRIPTS_ALL = \
 	test56.out \
 	test57.out \
 	test60.out \
-	test62.out \
 	test64.out \
 	test65.out \
 	test66.out \
@@ -98,7 +97,6 @@ SCRIPTS_ALL = \
 	test_insertcount.out \
 	test_listchars.out \
 	test_listlbr.out \
-	test_mapping.out \
 	test_marks.out \
 	test_nested_function.out \
 	test_search_mbyte.out \

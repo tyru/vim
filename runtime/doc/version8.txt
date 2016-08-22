@@ -1,24 +1,25 @@
-*version8.txt*  For Vim version 8.0.  Last change: 2016 Aug 07
+*version8.txt*  For Vim version 8.0.  Last change: 2016 Aug 18
 
 
 		  VIM REFERENCE MANUAL    by Bram Moolenaar
 
-NOTE: THIS FILE IS STILL BEING WORKED ON
+
+NOTE: VIM 8 WAS NOT RELEASED YET, this is work in progress
+
 
 				*vim8* *vim-8* *version-8.0* *version8.0*
-Welcome to Vim 8!  A large number of bugs have been fixed and several
+Welcome to Vim 8!  A large number of bugs have been fixed and several nice
 features have been added.  This file mentions all the new items and changes to
-existing features since Vim 7.4. Bug fixes, the patches for Vim 7.4, can be
-found below |vim-7.4|.  Use this command to see the version you are using: >
+existing features since Vim 7.4. The patches up to Vim 7.4 can be found here:
+|vim-7.4|.
+
+Use this command to see the full version and features information of the Vim
+program you are using: >
 	:version
 
-See |vi_diff.txt| for an overview of differences between Vi and Vim 7.0.
-See |version4.txt|, |version5.txt|, |version6.txt| and |version7.txt| for
-differences between other versions.
-
 NEW FEATURES				|new-8|
-
-Vim script enhancements			|new-vim-script-8|
+	Vim script enhancements		|new-vim-script-8|
+	Various new items		|new-items-8|
 
 INCOMPATIBLE CHANGES			|incompatible-8|
 
@@ -28,6 +29,10 @@ COMPILE TIME CHANGES			|compile-changes-8|
 
 PATCHES					|patches-8|
 
+
+See |vi_diff.txt| for an overview of differences between Vi and Vim 8.0.
+See |version4.txt|, |version5.txt|, |version6.txt| and |version7.txt| for
+differences between other versions.
 
 ==============================================================================
 NEW FEATURES						*new-8*
@@ -128,9 +133,9 @@ The 'breakindent' option has been added to be able to wrap lines without
 changing the amount of indent.
 
 
-Windows: Direct-X support ~
+Windows: DirectX support ~
 
-This adds the 'renderoptions' option to allow for switching on Direct-X
+This adds the 'renderoptions' option to allow for switching on DirectX
 (DirectWrite) support on MS-Windows.
 
 
@@ -154,14 +159,32 @@ Many functions and commands have been added to support the new types.
 On some systems the numbers used in Vim script are now 64 bit.  This can be
 checked with the |+num64| feature.
 
+Many items were added so support |new-style-testing|.
+
 
 Various new items					*new-items-8*
 -----------------
 
 Normal mode commands: ~
 
+|g+|		g+		go to newer text state N times
+|g,|		g,		go to N newer position in change list
+|g-|		g-		go to older text state N times
+|g;|		g;		go to N older position in change list
+|g_|		g_		cursor to the last CHAR N - 1 lines lower
+
+
+Visual mode commands: ~
+
+|v_CTRL-A|	CTRL-A		add N to number in highlighted text
+|v_CTRL-X|	CTRL-X		subtract N from number in highlighted text
+|v_g_CTRL-A|	g CTRL-A	add N to number in highlighted text
+|v_g_CTRL-X|	g CTRL-X	subtract N from number in highlighted text
+
 
 Insert mode commands: ~
+
+|i_CTRL-G_U|	CTRL-G U	don't break undo with next cursor movement
 
 
 Options: ~
@@ -177,11 +200,13 @@ Options: ~
 'perldll'		name of the Perl dynamic library
 'pythondll'		name of the Python 2 dynamic library
 'pythonthreedll'	name of the Python 3 dynamic library
+'signcolumn'		when to display the sign column
 'renderoptions'		options for text rendering on Windows
 'rubydll'		name of the Ruby dynamic library
 'tagcase'		how to handle case when searching in tags files
 'tcldll'		name of the Tcl dynamic library
 'termguicolors'		use GUI colors for the terminal
+
 
 Ex commands: ~
 
@@ -191,7 +216,6 @@ Ex commands: ~
 |:chistory|		display quickfix list stack
 |:clearjumps|		clear the jump list
 |:helpclose|		close one help window
-|:keeppatterns|		following command keeps search pattern history
 |:lbottom|		scroll to the bottom of the location window
 |:ldo|			execute command in valid location list entries
 |:lfdo|			execute command in each file in location list
@@ -201,10 +225,10 @@ Ex commands: ~
 |:packloadall|		load all packages under 'packpath'
 |:smile|		make the user happy
 
+
 Ex command modifiers: ~
 
-
-Ex command arguments: ~
+|:keeppatterns|		following command keeps search pattern history
 
 
 New and extended functions: ~
@@ -238,10 +262,14 @@ New and extended functions: ~
 |ch_status()|		get status of a channel
 |execute()|		execute an Ex command and get the output
 |exepath()|		full path of an executable program
+|funcref()|		return a reference to function {name}
+|getbufinfo()|		get a list with buffer information
 |getcharsearch()|	return character search information
 |getcmdwintype()|	return the current command-line window type
 |getcompletion()|	return a list of command-line completion matches
 |getcurpos()|		get position of the cursor
+|gettabinfo()|		get a list with tab page information
+|getwininfo()|		get a list with window information
 |glob2regpat()|		convert a glob pattern into a search pattern
 |isnan()|		check for not a number
 |job_getchannel()|	get the channel used by a job
@@ -290,30 +318,96 @@ New and extended functions: ~
 
 New Vim variables: ~
 
-|v:vim_did_enter|	Set when VimEnter autocommands are triggered
+|v:beval_winid|		Window ID of the window where the mouse pointer is
+|v:completed_item|	complete items for the most recently completed word
+|v:errors|		errors found by assert functions
+|v:false|		a Number with value zero
+|v:hlsearch|		indicates whether search highlighting is on
+|v:mouse_winid|		Window ID for a mouse click obtained with |getchar()|
+|v:none|		an empty String, used for JSON
+|v:null|		an empty String, used for JSON
+|v:option_new|    	new value of the option, used by |OptionSet|
+|v:option_old|    	old value of the option, used by |OptionSet|
+|v:option_type|   	scope of the set command, used by |OptionSet|
+|v:progpath|		the command with which Vim was invoked
+|v:t_bool|		value of Boolean type
+|v:t_channel|		value of Channel type
+|v:t_dict|		value of Dictionary type
+|v:t_float|		value of Float type
+|v:t_func|		value of Funcref type
+|v:t_job|		value of Job type
+|v:t_list|		value of List type
+|v:t_none|		value of None type
+|v:t_number|		value of Number type
+|v:t_string|		value of String type
+|v:testing|		must be set before using `test_garbagecollect_now()`
+|v:true|		a Number with value one
+|v:vim_did_enter|	set just before VimEnter autocommands are triggered
 
 
 New autocommand events: ~
 
+|CmdUndefined|		a user command is used but it isn't defined
+|OptionSet|		after setting any option
+|TabClosed|		after closing a tab page
+|TabNew|		after creating a new tab page
+|TextChangedI|		after a change was made to the text in Insert mode
+|TextChanged|		after a change was made to the text in Normal mode
+|WinNew|		after creating a new window
 
 
 New highlight groups: ~
 
+EndOfBuffer		filler lines (~) after the last line in the buffer.
+			|hl-EndOfBuffer|
+
 
 New items in search patterns: ~
+
+|/\%C|	\%C		match any composing characters
 
 
 New Syntax/Indent/FTplugin files: ~
 
+AVR Assembler (Avra) syntax
+Arduino syntax
+Bazel syntax and indent and ftplugin
+Dockerfile syntax and ftplugin
+Eiffel ftplugin
+Euphoria 3 and 4 syntax
+Go syntax and indent and ftplugin
+Godoc syntax
+Groovy ftplugin
+HGcommit ftplugin
+Hog indent and ftplugin
+Innovation Data Processing upstream.pt syntax
+J syntax and indent and ftplugin
+Jproperties ftplugin
+Json syntax and indent and ftplugin
+Kivy syntax
+Less syntax and indent
+Mix syntax
+Motorola S-Record syntax
+R ftplugin
+ReStructuredText syntax and indent and ftplugin
+Registry ftplugin
+Rhelp indent and ftplugin
+Rmd (markdown with R code chunks) syntax and indent
+Rmd ftplugin
+Rnoweb ftplugin
+Rnoweb indent
+SystemVerilog syntax and indent and ftplugin
+Systemd syntax and indent and ftplugin
+Teraterm (TTL) syntax and indent
+Text ftplugin
+Vroom syntax and indent and ftplugin
+
 
 New Keymaps: ~
 
-
-New message translations: ~
-
-
-Others: ~
-
+Armenian eastern and western
+Russian jcukenwintype
+Vietnamese telex and vni
 
 ==============================================================================
 INCOMPATIBLE CHANGES				*incompatible-8*
@@ -334,16 +428,19 @@ either create a .vimrc file that does "set compatible" or start Vim with
 Support removed ~
 
 The support for MS-DOS has been removed.  It hasn't been working for a while
-and removing it cleans up the code quite a bit.
+(Vim doesn't fit in memory) and removing it cleans up the code quite a bit.
 
 The support for Windows 16 bit (Windows 95 and older) has been removed.
+
+The support for OS/2 has been removed.  It probably hasn't been working for a
+while since nobody uses it.
 
 The SNiFF+ support has been removed.
 
 
 Minor incompatibilities: ~
 
-For filetype detection: ...
+Probably...
 
 ==============================================================================
 IMPROVEMENTS						*improvements-8*
@@ -356,8 +453,13 @@ usage.  See 'cryptmethod'.
 ==============================================================================
 COMPILE TIME CHANGES					*compile-changes-8*
 
-Dropped the support for MS-DOS.  It was too big to fit in memory.
+The Vim repository was moved from Google code to github, since Google code
+was shut down.  It can now be found at https://github.com/vim/vim.
 
+Functions now use ANSI-C declarations.  At least a C-89 compatible compiler is
+required.
+
+The +visual feature is now always included.
 
 ==============================================================================
 PATCHES						*patches-8* *bug-fixes-8*
@@ -2694,7 +2796,7 @@ Patch 7.4.393
 Problem:    Text drawing on newer MS-Windows systems is suboptimal.  Some
 	    multi-byte characters are not displayed, even though the same font
 	    in Notepad can display them. (Srinath Avadhanula)
-Solution:   Add the 'renderoptions' option to enable Direct-X drawing. (Taro
+Solution:   Add the 'renderoptions' option to enable DirectX drawing. (Taro
 	    Muraoka)
 Files:	    runtime/doc/eval.txt, runtime/doc/options.txt,
 	    runtime/doc/various.txt, src/Make_cyg.mak, src/Make_ming.mak,
@@ -8167,7 +8269,7 @@ Files:      src/regexp.c, src/regexp_nfa.c, src/testdir/test36.in,
 
 Patch 7.4.1306
 Problem:    Job control doesn't work well on MS-Windows.
-Solution:   Various fixes. (Ken Takata, Ozaki Kiichi , Yukihiro Nakadaira,
+Solution:   Various fixes. (Ken Takata, Ozaki Kiichi, Yukihiro Nakadaira,
             Yasuhiro Matsumoto)
 Files:      src/Make_mvc.mak, src/eval.c, src/os_unix.c, src/os_win32.c,
             src/proto/os_unix.pro, src/proto/os_win32.pro, src/structs.h
@@ -12565,7 +12667,7 @@ Solution:   Use vim_strcat() instead of strcat().
 Files:      src/quickfix.c
 
 Patch 7.4.2065
-Problem:    Compiler warns for uninitialzed variable. (John Marriott)
+Problem:    Compiler warns for uninitialized variable. (John Marriott)
 Solution:   Set lnum to the right value.
 Files:      src/evalfunc.c
 
@@ -13147,6 +13249,329 @@ Problem:    Result of getcompletion('', 'sign') depends on previous
 Solution:   Call set_context_in_sign_cmd(). (Dominique Pelle)
 Files:      src/evalfunc.c, src/testdir/test_cmdline.vim
 
-[MORE COMING!]
+Patch 7.4.2163
+Problem:    match() and related functions tested with old style test.
+Solution:   Convert to new style test. (Hirohito Higashi)
+Files:      src/Makefile, src/testdir/Make_all.mak, src/testdir/test63.in,
+            src/testdir/test63.ok, src/testdir/test_alot.vim,
+            src/testdir/test_match.vim, src/testdir/test_matchstrpos.vim
+
+Patch 7.4.2164
+Problem:    It is not possible to use plugins in an "after" directory to tune
+            the behavior of a package.
+Solution:   First load plugins from non-after directories, then packages and
+            finally plugins in after directories.
+            Reset 'loadplugins' before executing --cmd arguments.
+Files:      src/main.c, src/vim.h, src/ex_cmds2.c, src/testdir/Makefile,
+            src/testdir/shared.vim, src/testdir/test_startup.vim,
+            src/testdir/setup.vim, runtime/doc/starting.txt
+
+Patch 7.4.2165 (after 7.4.2164)
+Problem:    Startup test fails on MS-Windows.
+Solution:   Don't check output if RunVim() returns zero.
+Files:      src/testdir/test_startup.vim
+
+Patch 7.4.2166 (after 7.4.2164)
+Problem:    Small build can't run startup test.
+Solution:   Skip the test.
+Files:      src/testdir/test_startup.vim
+
+Patch 7.4.2167 (after 7.4.2164)
+Problem:    Small build can't run tests.
+Solution:   Don't try setting 'packpath'.
+Files:      src/testdir/setup.vim
+
+Patch 7.4.2168
+Problem:    Not running the startup test on MS-Windows.
+Solution:   Write vimcmd.
+Files:      src/testdir/Make_ming.mak, src/testdir/Make_dos.mak
+
+Patch 7.4.2169 (after 7.4.2168)
+Problem:    Startup test gets stuck on MS-Windows.
+Solution:   Use double quotes.
+Files:      src/testdir/shared.vim, src/testdir/test_startup.vim
+
+Patch 7.4.2170
+Problem:    Cannot get information about timers.
+Solution:   Add timer_info().
+Files:      src/evalfunc.c, src/ex_cmds2.c, src/proto/ex_cmds2.pro,
+            runtime/doc/eval.txt
+
+Patch 7.4.2171 (after 7.4.2170)
+Problem:    MS-Windows build fails.
+Solution:   Add QueryPerformanceCounter().
+Files:      src/ex_cmds2.c
+
+Patch 7.4.2172
+Problem:    No test for "vim --help".
+Solution:   Add a test.
+Files:      src/testdir/test_startup.vim, src/testdir/shared.vim
+
+Patch 7.4.2173 (after 7.4.2172)
+Problem:    Can't test help on MS-Windows.
+Solution:   Skip the test.
+Files:      src/testdir/test_startup.vim
+
+Patch 7.4.2174
+Problem:    Adding duplicate flags to 'whichwrap' leaves commas behind.
+Solution:   Also remove the commas. (Naruhiko Nishino)
+Files:      src/Makefile, src/option.c, src/testdir/Make_all.mak,
+            src/testdir/test_alot.vim, src/testdir/test_options.in,
+            src/testdir/test_options.ok, src/testdir/test_options.vim
+
+Patch 7.4.2175
+Problem:    Insufficient testing of cscope.
+Solution:   Add more tests. (Dominique Pelle)
+Files:      src/testdir/test_cscope.vim
+
+Patch 7.4.2176
+Problem:    #ifdefs in main() are complicated.
+Solution:   Always define vim_main2().  Move params to the file level.
+            (suggested by Ken Takata)
+Files:      src/main.c, src/structs.h, src/vim.h, src/if_mzsch.c,
+            src/proto/if_mzsch.pro
+
+Patch 7.4.2177
+Problem:    No testing for -C and -N command line flags, file arguments,
+            startuptime.
+Solution:   Add tests.
+Files:      src/testdir/test_startup.vim, src/testdir/shared.vim
+
+Patch 7.4.2178
+Problem:    No test for reading from stdin.
+Solution:   Add a test.
+Files:      src/testdir/test_startup.vim, src/testdir/shared.vim
+
+Patch 7.4.2179 (after 7.4.2178)
+Problem:    Reading from stdin test fails on MS-Windows.
+Solution:   Strip the extra space.
+Files:      src/testdir/test_startup.vim
+
+Patch 7.4.2180
+Problem:    There is no easy way to stop all timers.  There is no way to
+            temporary pause a timer.
+Solution:   Add timer_stopall() and timer_pause().
+Files:      src/evalfunc.c, src/ex_cmds2.c, src/proto/ex_cmds2.pro,
+            src/structs.h, src/testdir/test_timers.vim,
+            src/testdir/shared.vim, runtime/doc/eval.txt
+
+Patch 7.4.2181
+Problem:    Compiler warning for unused variable.
+Solution:   Remove it. (Dominique Pelle)
+Files:      src/ex_cmds2.c
+
+Patch 7.4.2182
+Problem:    Color Grey40 used in startup but not in the short list.
+Solution:   Add Grey40 to the builtin colors.
+Files:      src/term.c
+
+Patch 7.4.2183
+Problem:    Sign tests are old style.
+Solution:   Turn them into new style tests. (Dominique Pelle)
+Files:      src/Makefile, src/testdir/Make_all.mak, src/testdir/test_signs.in,
+            src/testdir/test_signs.ok, src/testdir/test_signs.vim,
+
+Patch 7.4.2184
+Problem:    Tests that use RunVim() do not actually perform the test.
+Solution:   Use "return" instead of "call". (Ken Takata)
+Files:      src/testdir/shared.vim
+
+Patch 7.4.2185
+Problem:    Test glob2regpat does not test much.
+Solution:   Add a few more test cases. (Dominique Pelle)
+Files:      src/testdir/test_glob2regpat.vim
+
+Patch 7.4.2186
+Problem:    Timers test is flaky.
+Solution:   Relax the sleep time check.
+Files:      src/testdir/test_timers.vim
+
+Patch 7.4.2187 (after 7.4.2185)
+Problem:    glob2regpat test fails on Windows.
+Solution:   Remove the checks that use backslashes.
+Files:      src/testdir/test_glob2regpat.vim
+
+Patch 7.4.2188 (after 7.4.2146)
+Problem:    Completion does not work properly with some plugins.
+Solution:   Revert the part related to typing CTRL-E. (closes #972)
+Files:      src/edit.c, src/testdir/test_popup.vim
+
+Patch 7.4.2189
+Problem:    Cannot detect encoding in a fifo.
+Solution:   Extend the stdin way of detecting encoding to fifo.  Add a test
+            for detecting encoding on stdin and fifo. (Ken Takata)
+Files:      src/buffer.c, src/fileio.c, src/Makefile,
+            src/testdir/Make_all.mak, src/testdir/test_startup_utf8.vim,
+            src/vim.h
+
+Patch 7.4.2190
+Problem:    When startup test fails it's not easy to find out why.
+            GUI test fails with Gnome.
+Solution:   Add the help entry matches to a list an assert that.
+            Set $HOME for Gnome to create .gnome2 directory.
+Files:      src/testdir/test_startup.vim, src/testdir/test_gui.vim
+
+Patch 7.4.2191
+Problem:    No automatic prototype for vim_main2().
+Solution:   Move the #endif. (Ken Takata)
+Files:      src/main.c, src/vim.h, src/proto/main.pro
+
+Patch 7.4.2192
+Problem:    Generating prototypes with Cygwin doesn't work well.
+Solution:   Change #ifdefs. (Ken Takata)
+Files:      src/gui.h, src/gui_w32.c, src/ops.c, src/proto/fileio.pro,
+            src/proto/message.pro, src/proto/normal.pro, src/proto/ops.pro,
+            src/vim.h
+
+Patch 7.4.2193
+Problem:    With Gnome when the GUI can't start test_startup hangs.
+Solution:   Call gui_mch_early_init_check(). (Hirohito Higashi)
+Files:      src/gui.c, src/gui_gtk_x11.c, src/proto/gui_gtk_x11.pro
+
+Patch 7.4.2194
+Problem:    Sign tests don't cover enough.
+Solution:   Add more test cases. (Dominique Pelle)
+Files:      src/testdir/test_signs.vim
+
+Patch 7.4.2195
+Problem:    MS-Windows: The vimrun program does not support Unicode.
+Solution:   Use GetCommandLineW().  Cleanup old #ifdefs. (Ken Takata)
+Files:      src/vimrun.c
+
+Patch 7.4.2196
+Problem:    glob2regpat test doesn't test everything on MS-Windows.
+Solution:   Add patterns with backslash handling.
+Files:      src/testdir/test_glob2regpat.vim
+
+Patch 7.4.2197
+Problem:    All functions are freed on exit, which may hide leaks.
+Solution:   Only free named functions, not reference counted ones.
+Files:      src/userfunc.c
+
+Patch 7.4.2198
+Problem:    Test alot sometimes fails under valgrind. (Dominique Pelle)
+Solution:   Avoid passing a callback with the wrong number of arguments.
+Files:      src/testdir/test_partial.vim
+
+Patch 7.4.2199
+Problem:    In the GUI the cursor is hidden when redrawing any window,
+            causing flicker.
+Solution:   Only undraw the cursor when updating the window it's in.
+Files:      src/screen.c, src/gui.c, src/proto/gui.pro, src/gui_gtk_x11.c
+
+Patch 7.4.2200
+Problem:    Cannot get all information about a quickfix list.
+Solution:   Add an optional argument to get/set loc/qf list(). (Yegappan
+            Lakshmanan)
+Files:      runtime/doc/eval.txt, src/evalfunc.c, src/proto/quickfix.pro,
+            src/quickfix.c, src/tag.c, src/testdir/test_quickfix.vim
+
+Patch 7.4.2201
+Problem:    The sign column disappears when the last sign is deleted.
+Solution:   Add the 'signcolumn' option. (Christian Brabandt)
+Files:      runtime/doc/options.txt, runtime/optwin.vim, src/edit.c,
+            src/move.c, src/option.c, src/option.h, src/proto/option.pro,
+            src/screen.c, src/structs.h, src/testdir/test_options.vim
+
+Patch 7.4.2202
+Problem:    Build fails with small features.
+Solution:   Correct option initialization.
+Files:      src/option.c
+
+Patch 7.4.2203
+Problem:    Test fails with normal features.
+Solution:   Check is signs are supported.
+Files:      src/testdir/test_options.vim
+
+Patch 7.4.2204
+Problem:    It is not easy to get information about buffers, windows and
+            tabpages.
+Solution:   Add getbufinfo(), getwininfo() and gettabinfo(). (Yegappan
+            Lakshmanan)
+Files:      runtime/doc/eval.txt, runtime/doc/usr_41.txt, src/dict.c,
+            src/evalfunc.c, src/option.c, src/proto/dict.pro,
+            src/proto/option.pro, src/proto/window.pro,
+            src/testdir/Make_all.mak, src/testdir/test_bufwintabinfo.vim,
+            src/window.c, src/Makefile
+
+Patch 7.4.2205
+Problem:    'wildignore' always applies to getcompletion().
+Solution:   Add an option to use 'wildignore' or not. (Yegappan Lakshmanan)
+Files:      runtime/doc/eval.txt, src/evalfunc.c, src/testdir/test_cmdline.vim
+
+Patch 7.4.2206
+Problem:    Warning for unused function.
+Solution:   Put the function inside #ifdef. (John Marriott)
+Files:      src/evalfunc.c
+
+Patch 7.4.2207
+Problem:    The +xpm feature is not sorted properly in :version output.
+Solution:   Move it up. (Tony Mechelynck)
+Files:      src/version.c
+
+Patch 7.4.2208
+Problem:    Test for mappings is old style.
+Solution:   Convert the test to new style.
+Files:      src/testdir/test_mapping.vim, src/testdir/test_mapping.in,
+            src/testdir/test_mapping.ok, src/Makefile,
+            src/testdir/test_alot.vim, src/testdir/Make_all.mak
+
+Patch 7.4.2209
+Problem:    Cannot map <M-">. (Stephen Riehm)
+Solution:   Solve the memory access problem in another way. (Dominique Pelle)
+            Allow for using <M-\"> in a string.
+Files:      src/eval.c, src/gui_mac.c, src/misc2.c, src/option.c,
+            src/proto/misc2.pro, src/syntax.c, src/term.c,
+            src/testdir/test_mapping.vim
+
+Patch 7.4.2210
+Problem:    On OSX configure mixes up a Python framework and the Unix layout.
+Solution:   Make configure check properly. (Tim D. Smith, closes #980)
+Files:      src/configure.in, src/auto/configure
+
+Patch 7.4.2211
+Problem:    Mouse support is not automatically enabled with simple term.
+Solution:   Recognize "st" and other names. (Manuel Schiller, closes #963)
+Files:      src/os_unix.c
+
+Patch 7.4.2212
+Problem:    Mark " is not set when closing a window in another tab. (Guraga)
+Solution:   Check all tabs for the window to be valid. (based on patch by
+            Hirohito Higashi, closes #974)
+Files:      src/window.c, src/proto/window.pro, src/buffer.c,
+            src/testdir/test_viminfo.vim
+
+Patch 7.4.2213
+Problem:    Cannot highlight the "~" lines at the end of a window differently.
+Solution:   Add the EndOfBuffer highlighting. (Marco Hinz, James McCoy)
+Files:      runtime/doc/options.txt, runtime/doc/syntax.txt, src/option.c,
+            src/screen.c, src/syntax.c, src/vim.h
+
+Patch 7.4.2214
+Problem:    A font that uses ligatures messes up the screen display.
+Solution:   Put spaces between characters when building the glyph table.
+            (based on a patch from Manuel Schiller)
+Files:      src/gui_gtk_x11.c
+
+Patch 7.4.2215
+Problem:    It's not easy to find out if a window is a quickfix or location
+            list window.
+Solution:   Add "loclist" and "quickfix" entries to the dict returned by
+            getwininfo(). (Yegappan Lakshmanan)
+Files:      runtime/doc/eval.txt, src/evalfunc.c,
+            src/testdir/test_bufwintabinfo.vim
+
+Patch 7.4.2216 (after 7.4.2215)
+Problem:    Test fails without the +sign feature.
+Solution:   Only check for signcolumn with the +sign feature.
+Files:      src/testdir/test_bufwintabinfo.vim
+
+Patch 7.4.2217
+Problem:    When using matchaddpos() a character after the end of the line can
+            be highlighted.
+Solution:   Only highlight existing characters. (Hirohito Higashi)
+Files:      src/screen.c, src/structs.h, src/testdir/test_match.vim
+
+[STILL MORE COMING!]
 
  vim:tw=78:ts=8:ft=help:norl:

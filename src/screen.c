@@ -2239,7 +2239,7 @@ win_update(win_T *wp)
 
 	/* make sure the rest of the screen is blank */
 	/* put '~'s on rows that aren't part of the file. */
-	win_draw_end(wp, '~', ' ', row, wp->w_height, HLF_AT);
+	win_draw_end(wp, '~', ' ', row, wp->w_height, HLF_EOB);
     }
 
     /* Reset the type of redrawing required, the window has been updated. */
@@ -3632,6 +3632,7 @@ win_line(
 	shl->startcol = MAXCOL;
 	shl->endcol = MAXCOL;
 	shl->attr_cur = 0;
+	shl->is_addpos = FALSE;
 	v = (long)(ptr - line);
 	if (cur != NULL)
 	    cur->pos.cur = 0;
@@ -5215,14 +5216,14 @@ win_line(
 	     * needed when a '$' was displayed for 'list'. */
 #ifdef FEAT_SEARCH_EXTRA
 	    prevcol_hl_flag = FALSE;
-	    if (prevcol == (long)search_hl.startcol)
+	    if (!search_hl.is_addpos && prevcol == (long)search_hl.startcol)
 		prevcol_hl_flag = TRUE;
 	    else
 	    {
 		cur = wp->w_match_head;
 		while (cur != NULL)
 		{
-		    if (prevcol == (long)cur->hl.startcol)
+		    if (!cur->hl.is_addpos && prevcol == (long)cur->hl.startcol)
 		    {
 			prevcol_hl_flag = TRUE;
 			break;
@@ -5297,7 +5298,8 @@ win_line(
 			}
 			else
 			    shl = &cur->hl;
-			if ((ptr - line) - 1 == (long)shl->startcol)
+			if ((ptr - line) - 1 == (long)shl->startcol
+				&& (shl == &search_hl || !shl->is_addpos))
 			    char_attr = shl->attr;
 			if (shl != &search_hl && cur != NULL)
 			    cur = cur->next;
@@ -7957,6 +7959,7 @@ next_search_hl_pos(
 	shl->rm.startpos[0].col = start;
 	shl->rm.endpos[0].lnum = 0;
 	shl->rm.endpos[0].col = end;
+	shl->is_addpos = TRUE;
 	posmatch->cur = bot + 1;
 	return TRUE;
     }

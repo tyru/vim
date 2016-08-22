@@ -592,7 +592,7 @@ static struct fst
     {"getcmdtype",	0, 0, f_getcmdtype},
     {"getcmdwintype",	0, 0, f_getcmdwintype},
 #if defined(FEAT_CMDL_COMPL)
-    {"getcompletion",	2, 2, f_getcompletion},
+    {"getcompletion",	2, 3, f_getcompletion},
 #endif
     {"getcurpos",	0, 0, f_getcurpos},
     {"getcwd",		0, 2, f_getcwd},
@@ -3303,10 +3303,10 @@ f_float2nr(typval_T *argvars, typval_T *rettv)
     if (get_float_arg(argvars, &f) == OK)
     {
 # ifdef FEAT_NUM64
-	if (f < -0x7fffffffffffffff)
-	    rettv->vval.v_number = -0x7fffffffffffffff;
-	else if (f > 0x7fffffffffffffff)
-	    rettv->vval.v_number = 0x7fffffffffffffff;
+	if (f < -0x7fffffffffffffffLL)
+	    rettv->vval.v_number = -0x7fffffffffffffffLL;
+	else if (f > 0x7fffffffffffffffLL)
+	    rettv->vval.v_number = 0x7fffffffffffffffLL;
 	else
 	    rettv->vval.v_number = (varnumber_T)f;
 # else
@@ -3943,7 +3943,7 @@ get_buffer_info(buf_T *buf)
     if (dict == NULL)
 	return NULL;
 
-    dict_add_nr_str(dict, "nr", buf->b_fnum, NULL);
+    dict_add_nr_str(dict, "bufnr", buf->b_fnum, NULL);
     dict_add_nr_str(dict, "name", 0L,
 	    buf->b_ffname != NULL ? buf->b_ffname : (char_u *)"");
     dict_add_nr_str(dict, "lnum", buflist_findlnum(buf), NULL);
@@ -4039,7 +4039,7 @@ f_getbufinfo(typval_T *argvars, typval_T *rettv)
     }
 
     /* Return information about all the buffers or a specified buffer */
-    for (buf = firstbuf; buf != NULL; buf = buf->b_next)
+    FOR_ALL_BUFFERS(buf)
     {
 	if (argbuf != NULL && argbuf != buf)
 	    continue;
@@ -4394,11 +4394,19 @@ f_getcompletion(typval_T *argvars, typval_T *rettv)
 {
     char_u	*pat;
     expand_T	xpc;
+    int		filtered = FALSE;
     int		options = WILD_SILENT | WILD_USE_NL | WILD_ADD_SLASH
 					| WILD_NO_BEEP;
 
+    if (argvars[2].v_type != VAR_UNKNOWN)
+	filtered = get_tv_number_chk(&argvars[2], NULL);
+
     if (p_wic)
 	options |= WILD_ICASE;
+
+    /* For filtered results, 'wildignore' is used */
+    if (!filtered)
+	options |= WILD_KEEP_ALL;
 
     ExpandInit(&xpc);
     xpc.xp_pattern = get_tv_string(&argvars[0]);
@@ -4703,12 +4711,10 @@ f_getline(typval_T *argvars, typval_T *rettv)
     get_buffer_lines(curbuf, lnum, end, retlist, rettv);
 }
 
-static void get_qf_loc_list(int is_qf, win_T *wp, typval_T *what_arg, typval_T *rettv);
-
+#ifdef FEAT_QUICKFIX
     static void
 get_qf_loc_list(int is_qf, win_T *wp, typval_T *what_arg, typval_T *rettv)
 {
-#ifdef FEAT_QUICKFIX
     if (what_arg->v_type == VAR_UNKNOWN)
     {
 	if (rettv_list_alloc(rettv) == OK)
@@ -4731,8 +4737,8 @@ get_qf_loc_list(int is_qf, win_T *wp, typval_T *what_arg, typval_T *rettv)
 		    EMSG(_(e_dictreq));
 	    }
     }
-#endif
 }
+#endif
 
 /*
  * "getloclist()" function
@@ -5007,7 +5013,7 @@ get_tabpage_info(tabpage_T *tp, int tp_idx)
     if (dict == NULL)
 	return NULL;
 
-    dict_add_nr_str(dict, "nr", tp_idx, NULL);
+    dict_add_nr_str(dict, "tabnr", tp_idx, NULL);
 
     l = list_alloc();
     if (l != NULL)
@@ -5036,7 +5042,7 @@ f_gettabinfo(typval_T *argvars, typval_T *rettv)
 #ifdef FEAT_WINDOWS
     tabpage_T	*tp, *tparg = NULL;
     dict_T	*d;
-    int		tpnr = 1;
+    int		tpnr = 0;
 
     if (rettv_list_alloc(rettv) != OK)
 	return;
@@ -5050,8 +5056,9 @@ f_gettabinfo(typval_T *argvars, typval_T *rettv)
     }
 
     /* Get information about a specific tab page or all tab pages */
-    for (tp = first_tabpage; tp != NULL; tp = tp->tp_next, tpnr++)
+    FOR_ALL_TABPAGES(tp)
     {
+	tpnr++;
 	if (tparg != NULL && tp != tparg)
 	    continue;
 	d = get_tabpage_info(tp, tpnr);
@@ -5159,12 +5166,18 @@ get_win_info(win_T *wp, short tpnr, short winnr)
     if (dict == NULL)
 	return NULL;
 
-    dict_add_nr_str(dict, "tpnr", tpnr, NULL);
-    dict_add_nr_str(dict, "nr", winnr, NULL);
+    dict_add_nr_str(dict, "tabnr", tpnr, NULL);
+    dict_add_nr_str(dict, "winnr", winnr, NULL);
     dict_add_nr_str(dict, "winid", wp->w_id, NULL);
     dict_add_nr_str(dict, "height", wp->w_height, NULL);
     dict_add_nr_str(dict, "width", wp->w_width, NULL);
-    dict_add_nr_str(dict, "bufnum", wp->w_buffer->b_fnum, NULL);
+    dict_add_nr_str(dict, "bufnr", wp->w_buffer->b_fnum, NULL);
+
+#ifdef FEAT_QUICKFIX
+    dict_add_nr_str(dict, "quickfix", bt_quickfix(wp->w_buffer), NULL);
+    dict_add_nr_str(dict, "loclist",
+	    (bt_quickfix(wp->w_buffer) && wp->w_llist_ref != NULL), NULL);
+#endif
 
     /* Copy window variables */
     vars = dict_copy(wp->w_vars, TRUE, 0);
@@ -5190,7 +5203,7 @@ f_getwininfo(typval_T *argvars, typval_T *rettv)
     tabpage_T	*tp;
     win_T	*wp = NULL, *wparg = NULL;
     dict_T	*d;
-    short	tabnr, winnr;
+    short	tabnr = 0, winnr;
 #endif
 
     if (rettv_list_alloc(rettv) != OK)
@@ -5207,13 +5220,13 @@ f_getwininfo(typval_T *argvars, typval_T *rettv)
     /* Collect information about either all the windows across all the tab
      * pages or one particular window.
      */
-    tabnr = 1;
-    for (tp = first_tabpage; tp != NULL; tp = tp->tp_next, tabnr++)
+    FOR_ALL_TABPAGES(tp)
     {
-	wp = (tp == curtab) ? firstwin : tp->tp_firstwin;
-	winnr = 1;
-	for (; wp; wp = wp->w_next, winnr++)
+	tabnr++;
+	winnr = 0;
+	FOR_ALL_WINDOWS_IN_TAB(tp, wp)
 	{
+	    winnr++;
 	    if (wparg != NULL && wp != wparg)
 		continue;
 	    d = get_win_info(wp, tabnr, winnr);
@@ -11229,7 +11242,7 @@ f_strgetchar(typval_T *argvars, typval_T *rettv)
 		break;
 	    }
 	    --charidx;
-	    byteidx += mb_cptr2len(str + byteidx);
+	    byteidx += MB_CPTR2LEN(str + byteidx);
 	}
     }
 #else
@@ -11389,7 +11402,7 @@ f_strcharpart(typval_T *argvars, typval_T *rettv)
 	if (nchar > 0)
 	    while (nchar > 0 && nbyte < slen)
 	    {
-		nbyte += mb_cptr2len(p + nbyte);
+		nbyte += MB_CPTR2LEN(p + nbyte);
 		--nchar;
 	    }
 	else
@@ -11404,7 +11417,7 @@ f_strcharpart(typval_T *argvars, typval_T *rettv)
 		if (off < 0)
 		    len += 1;
 		else
-		    len += mb_cptr2len(p + off);
+		    len += MB_CPTR2LEN(p + off);
 		--charlen;
 	    }
 	}
