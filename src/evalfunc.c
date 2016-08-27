@@ -6033,10 +6033,6 @@ f_has(typval_T *argvars, typval_T *rettv)
 #ifdef FEAT_GUI
 	else if (STRICMP(name, "gui_running") == 0)
 	    n = (gui.in_use || gui.starting);
-# ifdef FEAT_GUI_W32
-	else if (STRICMP(name, "gui_win32s") == 0)
-	    n = gui_is_win32s();
-# endif
 # ifdef FEAT_BROWSE
 	else if (STRICMP(name, "browse") == 0)
 	    n = gui.in_use;	/* gui_mch_browse() works when GUI is running */
@@ -7457,7 +7453,7 @@ f_matchadd(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
 	return;
     if (id >= 1 && id <= 3)
     {
-	EMSGN("E798: ID is reserved for \":match\": %ld", id);
+	EMSGN(_("E798: ID is reserved for \":match\": %ld"), id);
 	return;
     }
 
@@ -7522,7 +7518,7 @@ f_matchaddpos(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
     /* id == 3 is ok because matchaddpos() is supposed to substitute :3match */
     if (id == 1 || id == 2)
     {
-	EMSGN("E798: ID is reserved for \":match\": %ld", id);
+	EMSGN(_("E798: ID is reserved for \":match\": %ld"), id);
 	return;
     }
 

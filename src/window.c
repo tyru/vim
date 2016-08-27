@@ -6815,7 +6815,7 @@ match_add(
 	return -1;
     if (id < -1 || id == 0)
     {
-	EMSGN("E799: Invalid ID: %ld (must be greater than or equal to 1)", id);
+	EMSGN(_("E799: Invalid ID: %ld (must be greater than or equal to 1)"), id);
 	return -1;
     }
     if (id != -1)
@@ -6825,7 +6825,7 @@ match_add(
 	{
 	    if (cur->id == id)
 	    {
-		EMSGN("E801: ID already taken: %ld", id);
+		EMSGN(_("E801: ID already taken: %ld"), id);
 		return -1;
 	    }
 	    cur = cur->next;
@@ -7002,7 +7002,7 @@ match_delete(win_T *wp, int id, int perr)
     if (id < 1)
     {
 	if (perr == TRUE)
-	    EMSGN("E802: Invalid ID: %ld (must be greater than or equal to 1)",
+	    EMSGN(_("E802: Invalid ID: %ld (must be greater than or equal to 1)"),
 									  id);
 	return -1;
     }
@@ -7014,7 +7014,7 @@ match_delete(win_T *wp, int id, int perr)
     if (cur == NULL)
     {
 	if (perr == TRUE)
-	    EMSGN("E803: ID not found: %ld", id);
+	    EMSGN(_("E803: ID not found: %ld"), id);
 	return -1;
     }
     if (cur == prev)

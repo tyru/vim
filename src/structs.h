@@ -92,8 +92,7 @@ typedef struct {
 # ifdef FEAT_XCLIPBOARD
 #  include <X11/Intrinsic.h>
 # endif
-# define guicolor_T long_u		/* avoid error in prototypes and
-					 * make FEAT_TERMGUICOLORS work */
+# define guicolor_T long
 # define INVALCOLOR ((guicolor_T)0x1ffffff)
 #endif
 
@@ -572,6 +571,8 @@ typedef struct
 # ifdef FEAT_AUTOCMD
     char_u	*save_ei;		/* saved value of 'eventignore' */
 # endif
+    regmatch_T	filter_regmatch;	/* set by :filter /pat/ */
+    int		filter_force;		/* set for :filter! */
 } cmdmod_T;
 
 #define MF_SEED_LEN	8
@@ -929,8 +930,8 @@ typedef struct attr_entry
 	    short_u	    fg_color;	/* foreground color number */
 	    short_u	    bg_color;	/* background color number */
 # ifdef FEAT_TERMGUICOLORS
-	    long_u	    fg_rgb;	/* foreground color RGB */
-	    long_u	    bg_rgb;	/* background color RGB */
+	    guicolor_T	    fg_rgb;	/* foreground color RGB */
+	    guicolor_T	    bg_rgb;	/* background color RGB */
 # endif
 	} cterm;
 # ifdef FEAT_GUI
@@ -2296,7 +2297,7 @@ struct file_buffer
 /*
  * Stuff for diff mode.
  */
-# define DB_COUNT 4	/* up to four buffers can be diff'ed */
+# define DB_COUNT 8	/* up to eight buffers can be diff'ed */
 
 /*
  * Each diffblock defines where a block of lines starts in each of the buffers

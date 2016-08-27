@@ -2072,6 +2072,7 @@ test_arglist \
 	test_farsi \
 	test_feedkeys \
 	test_file_perm \
+	test_filter_cmd \
 	test_filter_map \
 	test_fnamemodify \
 	test_glob2regpat \
@@ -2109,6 +2110,7 @@ test_arglist \
 	test_regexp_utf8 \
 	test_reltime \
 	test_ruby \
+	test_search \
 	test_searchpos \
 	test_set \
 	test_signs \
