@@ -20,7 +20,7 @@ func Test_oneshot()
   let slept = WaitFor('g:val == 1')
   call assert_equal(1, g:val)
   if has('reltime')
-    call assert_inrange(50, 100, slept)
+    call assert_inrange(49, 100, slept)
   else
     call assert_inrange(20, 100, slept)
   endif
@@ -32,7 +32,7 @@ func Test_repeat_three()
   let slept = WaitFor('g:val == 3')
   call assert_equal(3, g:val)
   if has('reltime')
-    call assert_inrange(150, 250, slept)
+    call assert_inrange(149, 250, slept)
   else
     call assert_inrange(80, 200, slept)
   endif
@@ -57,7 +57,7 @@ func Test_with_partial_callback()
   let slept = WaitFor('g:val == 1')
   call assert_equal(1, g:val)
   if has('reltime')
-    call assert_inrange(50, 130, slept)
+    call assert_inrange(49, 130, slept)
   else
     call assert_inrange(20, 100, slept)
   endif
@@ -126,6 +126,21 @@ func Test_paused()
   else
     call assert_inrange(0, 10, slept)
   endif
+endfunc
+
+func StopMyself(timer)
+  let g:called += 1
+  if g:called == 2
+    call timer_stop(a:timer)
+  endif
+endfunc
+
+func Test_delete_myself()
+  let g:called = 0
+  let t = timer_start(10, 'StopMyself', {'repeat': -1})
+  call WaitFor('g:called == 2')
+  call assert_equal(2, g:called)
+  call assert_equal([], timer_info(t))
 endfunc
 
 " vim: shiftwidth=2 sts=2 expandtab

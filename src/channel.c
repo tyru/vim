@@ -1,4 +1,4 @@
-/* vi:set ts=8 sts=4 sw=4:
+/* vi:set ts=8 sts=4 sw=4 noet:
  *
  * VIM - Vi IMproved	by Bram Moolenaar
  *
@@ -1424,11 +1424,14 @@ channel_write_in(channel_T *channel)
 	ch_logn(channel, "written %d lines to channel", written);
 
     in_part->ch_buf_top = lnum;
-    if (lnum > buf->b_ml.ml_line_count)
+    if (lnum > buf->b_ml.ml_line_count || lnum > in_part->ch_buf_bot)
     {
 	/* Writing is done, no longer need the buffer. */
 	in_part->ch_bufref.br_buf = NULL;
 	ch_log(channel, "Finished writing all lines to channel");
+
+	/* Close the pipe/socket, so that the other side gets EOF. */
+	may_close_part(&channel->CH_IN_FD);
     }
     else
 	ch_logn(channel, "Still %d more lines to write",
@@ -2733,6 +2736,15 @@ channel_close(channel_T *channel, int invoke_close_cb)
 }
 
 /*
+ * Close the "in" part channel "channel".
+ */
+    void
+channel_close_in(channel_T *channel)
+{
+    may_close_part(&channel->CH_IN_FD);
+}
+
+/*
  * Clear the read buffer on "channel"/"part".
  */
     static void
@@ -3456,7 +3468,7 @@ send_common(
 	    EMSG2(_("E917: Cannot use a callback with %s()"), fun);
 	    return NULL;
 	}
-	channel_set_req_callback(channel, part_send,
+	channel_set_req_callback(channel, *part_read,
 				       opt->jo_callback, opt->jo_partial, id);
     }
 

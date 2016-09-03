@@ -1,4 +1,4 @@
-/* vi:set ts=8 sts=4 sw=4:
+/* vi:set ts=8 sts=4 sw=4 noet:
  *
  * VIM - Vi IMproved	by Bram Moolenaar
  *
@@ -137,6 +137,8 @@ typedef int PSNSECINFO;
 typedef int PSNSECINFOW;
 typedef int STARTUPINFO;
 typedef int PROCESS_INFORMATION;
+typedef int LPSECURITY_ATTRIBUTES;
+# define __stdcall /* empty */
 #endif
 
 #ifndef FEAT_GUI_W32
@@ -5208,11 +5210,9 @@ mch_start_job(char *cmd, job_T *job, jobopt_T *options)
     job->jv_job_object = jo;
     job->jv_status = JOB_STARTED;
 
-    if (!use_file_for_in)
-	CloseHandle(ifd[0]);
-    if (!use_file_for_out)
-	CloseHandle(ofd[1]);
-    if (!use_out_for_err && !use_file_for_err)
+    CloseHandle(ifd[0]);
+    CloseHandle(ofd[1]);
+    if (!use_out_for_err && !use_null_for_err)
 	CloseHandle(efd[1]);
 
     job->jv_channel = channel;

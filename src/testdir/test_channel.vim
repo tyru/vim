@@ -245,7 +245,6 @@ endfunc
 
 """""""""
 
-let g:Ch_reply = ""
 func Ch_handler(chan, msg)
   unlet g:Ch_reply
   let g:Ch_reply = a:msg
@@ -271,8 +270,10 @@ endfunc
 
 func Test_channel_handler()
   call ch_log('Test_channel_handler()')
+  let g:Ch_reply = ""
   let s:chopt.callback = 'Ch_handler'
   call s:run_server('Ch_channel_handler')
+  let g:Ch_reply = ""
   let s:chopt.callback = function('Ch_handler')
   call s:run_server('Ch_channel_handler')
   unlet s:chopt.callback
@@ -443,6 +444,11 @@ func Test_raw_pipe()
     let msg = ch_readraw(job)
     call assert_equal("this\nAND this\n", substitute(msg, "\r", "", 'g'))
 
+    let g:Ch_reply = ""
+    call ch_sendraw(job, "double this\n", {'callback': 'Ch_handler'})
+    call WaitFor('"" != g:Ch_reply')
+    call assert_equal("this\nAND this\n", substitute(g:Ch_reply, "\r", "", 'g'))
+
     let reply = ch_evalraw(job, "quit\n", {'timeout': 100})
     call assert_equal("Goodbye!\n", substitute(reply, "\r", "", 'g'))
   finally
@@ -527,8 +533,20 @@ func Test_nl_err_to_out_pipe()
     call assert_equal(1, found_send)
     call assert_equal(1, found_recv)
     call assert_equal(1, found_stop)
+    " On MS-Windows need to sleep for a moment to be able to delete the file.
+    sleep 10m
     call delete('Xlog')
   endtry
+endfunc
+
+func Stop_g_job()
+  call job_stop(g:job)
+  if has('win32')
+    " On MS-Windows the server must close the file handle before we are able
+    " to delete the file.
+    call WaitFor('job_status(g:job) == "dead"')
+    sleep 10m
+  endif
 endfunc
 
 func Test_nl_read_file()
@@ -537,17 +555,17 @@ func Test_nl_read_file()
   endif
   call ch_log('Test_nl_read_file()')
   call writefile(['echo something', 'echoerr wrong', 'double this'], 'Xinput')
-  let job = job_start(s:python . " test_channel_pipe.py",
+  let g:job = job_start(s:python . " test_channel_pipe.py",
 	\ {'in_io': 'file', 'in_name': 'Xinput'})
-  call assert_equal("run", job_status(job))
+  call assert_equal("run", job_status(g:job))
   try
-    let handle = job_getchannel(job)
+    let handle = job_getchannel(g:job)
     call assert_equal("something", ch_readraw(handle))
     call assert_equal("wrong", ch_readraw(handle, {'part': 'err'}))
     call assert_equal("this", ch_readraw(handle))
     call assert_equal("AND this", ch_readraw(handle))
   finally
-    call job_stop(job)
+    call Stop_g_job()
     call delete('Xinput')
   endtry
 endfunc
@@ -557,18 +575,18 @@ func Test_nl_write_out_file()
     return
   endif
   call ch_log('Test_nl_write_out_file()')
-  let job = job_start(s:python . " test_channel_pipe.py",
+  let g:job = job_start(s:python . " test_channel_pipe.py",
 	\ {'out_io': 'file', 'out_name': 'Xoutput'})
-  call assert_equal("run", job_status(job))
+  call assert_equal("run", job_status(g:job))
   try
-    let handle = job_getchannel(job)
+    let handle = job_getchannel(g:job)
     call ch_sendraw(handle, "echo line one\n")
     call ch_sendraw(handle, "echo line two\n")
     call ch_sendraw(handle, "double this\n")
     call WaitFor('len(readfile("Xoutput")) > 2')
     call assert_equal(['line one', 'line two', 'this', 'AND this'], readfile('Xoutput'))
   finally
-    call job_stop(job)
+    call Stop_g_job()
     call delete('Xoutput')
   endtry
 endfunc
@@ -578,18 +596,18 @@ func Test_nl_write_err_file()
     return
   endif
   call ch_log('Test_nl_write_err_file()')
-  let job = job_start(s:python . " test_channel_pipe.py",
+  let g:job = job_start(s:python . " test_channel_pipe.py",
 	\ {'err_io': 'file', 'err_name': 'Xoutput'})
-  call assert_equal("run", job_status(job))
+  call assert_equal("run", job_status(g:job))
   try
-    let handle = job_getchannel(job)
+    let handle = job_getchannel(g:job)
     call ch_sendraw(handle, "echoerr line one\n")
     call ch_sendraw(handle, "echoerr line two\n")
     call ch_sendraw(handle, "doubleerr this\n")
     call WaitFor('len(readfile("Xoutput")) > 2')
     call assert_equal(['line one', 'line two', 'this', 'AND this'], readfile('Xoutput'))
   finally
-    call job_stop(job)
+    call Stop_g_job()
     call delete('Xoutput')
   endtry
 endfunc
@@ -599,11 +617,11 @@ func Test_nl_write_both_file()
     return
   endif
   call ch_log('Test_nl_write_both_file()')
-  let job = job_start(s:python . " test_channel_pipe.py",
+  let g:job = job_start(s:python . " test_channel_pipe.py",
 	\ {'out_io': 'file', 'out_name': 'Xoutput', 'err_io': 'out'})
-  call assert_equal("run", job_status(job))
+  call assert_equal("run", job_status(g:job))
   try
-    let handle = job_getchannel(job)
+    let handle = job_getchannel(g:job)
     call ch_sendraw(handle, "echoerr line one\n")
     call ch_sendraw(handle, "echo line two\n")
     call ch_sendraw(handle, "double this\n")
@@ -611,7 +629,7 @@ func Test_nl_write_both_file()
     call WaitFor('len(readfile("Xoutput")) > 5')
     call assert_equal(['line one', 'line two', 'this', 'AND this', 'that', 'AND that'], readfile('Xoutput'))
   finally
-    call job_stop(job)
+    call Stop_g_job()
     call delete('Xoutput')
   endtry
 endfunc
@@ -784,6 +802,63 @@ endfunc
 
 func Test_pipe_from_buffer_nr()
   call Run_test_pipe_from_buffer(0)
+endfunc
+
+func Run_pipe_through_sort(all, use_buffer)
+  if !executable('sort') || !has('job')
+    return
+  endif
+  let options = {'out_io': 'buffer', 'out_name': 'sortout'}
+  if a:use_buffer
+    split sortin
+    call setline(1, ['ccc', 'aaa', 'ddd', 'bbb', 'eee'])
+    let options.in_io = 'buffer'
+    let options.in_name = 'sortin'
+  endif
+  if !a:all
+    let options.in_top = 2
+    let options.in_bot = 4
+  endif
+  let g:job = job_start('sort', options)
+  call assert_equal("run", job_status(g:job))
+
+  if !a:use_buffer
+    call ch_sendraw(g:job, "ccc\naaa\nddd\nbbb\neee\n")
+    call ch_close_in(g:job)
+  endif
+
+  call WaitFor('job_status(g:job) == "dead"')
+  call assert_equal("dead", job_status(g:job))
+
+  sp sortout
+  call assert_equal('Reading from channel output...', getline(1))
+  if a:all
+    call assert_equal(['aaa', 'bbb', 'ccc', 'ddd', 'eee'], getline(2, 6))
+  else
+    call assert_equal(['aaa', 'bbb', 'ddd'], getline(2, 4))
+  endif
+
+  call job_stop(g:job)
+  unlet g:job
+  if a:use_buffer
+    bwipe! sortin
+  endif
+  bwipe! sortout
+endfunc
+
+func Test_pipe_through_sort_all()
+  call ch_log('Test_pipe_through_sort_all()')
+  call Run_pipe_through_sort(1, 1)
+endfunc
+
+func Test_pipe_through_sort_some()
+  call ch_log('Test_pipe_through_sort_some()')
+  call Run_pipe_through_sort(0, 1)
+endfunc
+
+func Test_pipe_through_sort_feed()
+  call ch_log('Test_pipe_through_sort_feed()')
+  call Run_pipe_through_sort(1, 0)
 endfunc
 
 func Test_pipe_to_nameless_buffer()
@@ -1321,7 +1396,7 @@ func Test_using_freed_memory()
 endfunc
 
 func Test_collapse_buffers()
-  if !executable('cat')
+  if !executable('cat') || !has('job')
     return
   endif
   sp test_channel.vim
@@ -1332,6 +1407,42 @@ func Test_collapse_buffers()
   call job_start('cat test_channel.vim', {'out_io': 'buffer', 'out_name': 'testout'})
   call WaitFor('line("$") > g:linecount')
   call assert_inrange(g:linecount + 1, g:linecount + 2, line('$'))
+  bwipe!
+endfunc
+
+func Test_raw_passes_nul()
+  if !executable('cat') || !has('job')
+    return
+  endif
+
+  " Test lines from the job containing NUL are stored correctly in a buffer.
+  new
+  call setline(1, ["asdf\nasdf", "xxx\n", "\nyyy"])
+  w! Xtestread
+  bwipe!
+  split testout
+  1,$delete
+  call job_start('cat Xtestread', {'out_io': 'buffer', 'out_name': 'testout'})
+  call WaitFor('line("$") > 2')
+  call assert_equal("asdf\nasdf", getline(2))
+  call assert_equal("xxx\n", getline(3))
+  call assert_equal("\nyyy", getline(4))
+
+  call delete('Xtestread')
+  bwipe!
+
+  " Test lines from a buffer with NUL bytes are written correctly to the job.
+  new mybuffer
+  call setline(1, ["asdf\nasdf", "xxx\n", "\nyyy"])
+  let g:Ch_job = job_start('cat', {'in_io': 'buffer', 'in_name': 'mybuffer', 'out_io': 'file', 'out_name': 'Xtestwrite'})
+  call WaitFor('"dead" == job_status(g:Ch_job)')
+  bwipe!
+  split Xtestwrite
+  call assert_equal("asdf\nasdf", getline(1))
+  call assert_equal("xxx\n", getline(2))
+  call assert_equal("\nyyy", getline(3))
+
+  call delete('Xtestwrite')
   bwipe!
 endfunc
 
