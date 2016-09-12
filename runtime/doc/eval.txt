@@ -1,4 +1,4 @@
-*eval.txt*	For Vim version 7.4.  Last change: 2016 Sep 01
+*eval.txt*	For Vim version 8.0.  Last change: 2016 Sep 07
 
 
 		  VIM REFERENCE MANUAL	  by Bram Moolenaar
@@ -119,7 +119,7 @@ To test for a non-empty string, use empty(): >
 							*non-zero-arg*
 Function arguments often behave slightly different from |TRUE|: If the
 argument is present and it evaluates to a non-zero Number, |v:true| or a
-non-empty String, then the value is considere to be TRUE.
+non-empty String, then the value is considered to be TRUE.
 Note that " " and "0" are also non-empty strings, thus cause the mode to be
 cleared.  A List, Dictionary or Float is not a Number or String, thus
 evaluates to FALSE.
@@ -7793,7 +7793,8 @@ timer_start({time}, {callback} [, {options}])
 
 		{options} is a dictionary.  Supported entries:
 		   "repeat"	Number of times to repeat calling the
-				callback.  -1 means forever.
+				callback.  -1 means forever.  When not present
+				the callback will be called once.
 
 		Example: >
 			func MyHandler(timer)

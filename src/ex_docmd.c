@@ -2479,12 +2479,7 @@ do_one_cmd(
 		&& !IS_USER_CMDIDX(ea.cmdidx))
 	{
 	    /* Command not allowed when editing the command line. */
-#ifdef FEAT_CMDWIN
-	    if (cmdwin_type != 0)
-		errormsg = (char_u *)_(e_cmdwin);
-	    else
-#endif
-		errormsg = (char_u *)_(e_secure);
+	    errormsg = get_text_locked_msg();
 	    goto doend;
 	}
 #ifdef FEAT_AUTOCMD
@@ -7210,7 +7205,7 @@ ex_quit(exarg_T *eap)
     /* Refuse to quit when locked or when the buffer in the last window is
      * being closed (can only happen in autocommands). */
     if (curbuf_locked() || (wp->w_buffer->b_nwindows == 1
-						  && wp->w_buffer->b_closing))
+						&& wp->w_buffer->b_locked > 0))
 	return;
 #endif
 
@@ -7292,7 +7287,7 @@ ex_quit_all(exarg_T *eap)
     apply_autocmds(EVENT_QUITPRE, NULL, NULL, FALSE, curbuf);
     /* Refuse to quit when locked or when the buffer in the last window is
      * being closed (can only happen in autocommands). */
-    if (curbuf_locked() || (curbuf->b_nwindows == 1 && curbuf->b_closing))
+    if (curbuf_locked() || (curbuf->b_nwindows == 1 && curbuf->b_locked > 0))
 	return;
 #endif
 
@@ -7674,7 +7669,7 @@ ex_exit(exarg_T *eap)
     apply_autocmds(EVENT_QUITPRE, NULL, NULL, FALSE, curbuf);
     /* Refuse to quit when locked or when the buffer in the last window is
      * being closed (can only happen in autocommands). */
-    if (curbuf_locked() || (curbuf->b_nwindows == 1 && curbuf->b_closing))
+    if (curbuf_locked() || (curbuf->b_nwindows == 1 && curbuf->b_locked > 0))
 	return;
 #endif
 
@@ -9397,6 +9392,7 @@ ex_at(exarg_T *eap)
     int		prev_len = typebuf.tb_len;
 
     curwin->w_cursor.lnum = eap->line2;
+    check_cursor_col();
 
 #ifdef USE_ON_FLY_SCROLL
     dont_scroll = TRUE;		/* disallow scrolling here */

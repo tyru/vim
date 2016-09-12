@@ -1815,7 +1815,7 @@ screen_puts_mbyte(char_u *s, int l, int attr)
     void
 msg_puts(char_u *s)
 {
- msg_puts_attr(s, 0);
+    msg_puts_attr(s, 0);
 }
 
     void
@@ -2462,7 +2462,7 @@ msg_puts_printf(char_u *str, int maxlen)
     if (!(silent_mode && p_verbose == 0))
 	mch_settmode(TMODE_COOK);	/* handle '\r' and '\n' correctly */
 #endif
-    while (*s != NUL && (maxlen < 0 || (int)(s - str) < maxlen))
+    while ((maxlen < 0 || (int)(s - str) < maxlen) && *s != NUL)
     {
 	if (!(silent_mode && p_verbose == 0))
 	{

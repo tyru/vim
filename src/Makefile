@@ -1009,8 +1009,8 @@ TOOLS = xxd/xxd$(EXEEXT)
 MAN1DIR = /man1
 
 ### Vim version (adjusted by a script)
-VIMMAJOR = 7
-VIMMINOR = 4
+VIMMAJOR = 8
+VIMMINOR = 0
 
 ### Location of Vim files (should not need to be changed, and  {{{1
 ### some things might not work when they are changed!)
@@ -2041,8 +2041,8 @@ test1 \
 	test_search_mbyte \
 	test_utf8 \
 	test_wordcount \
-	test2 test3 test4 test5 test6 test7 test8 test9 \
-	test11 test12 test13 test14 test15 test17 test18 test19 \
+	test3 test4 test5 test6 test7 test8 test9 \
+	test11 test12 test14 test15 test17 test18 test19 \
 	test20 test21 test22 test23 test24 test25 test26 test27 test28 test29 \
 	test30 test31 test32 test33 test34 test36 test37 test38 test39 \
 	test40 test41 test42 test43 test44 test45 test48 test49 \
@@ -2085,12 +2085,14 @@ test_arglist \
 	test_fnameescape \
 	test_fnamemodify \
 	test_glob2regpat \
+	test_gf \
 	test_gn \
 	test_goto \
 	test_gui \
 	test_hardcopy \
 	test_help_tagjump \
 	test_history \
+	test_hlsearch \
 	test_increment \
 	test_increment_dbcs \
 	test_job_fails \
@@ -2109,8 +2111,9 @@ test_arglist \
 	test_matchadd_conceal_utf8 \
 	test_menu \
 	test_messages \
-    	test_nested_function \
+	test_nested_function \
 	test_netbeans \
+	test_normal \
 	test_options \
 	test_packadd \
 	test_partial \
@@ -2127,6 +2130,7 @@ test_arglist \
 	test_signs \
 	test_sort \
 	test_source_utf8 \
+	test_smartindent \
 	test_startup \
 	test_startup_utf8 \
 	test_stat \
@@ -2710,6 +2714,7 @@ shadow:	runtime pixmaps
 	mkdir $(SHADOWDIR)/testdir
 	cd $(SHADOWDIR)/testdir; ln -s ../../testdir/Makefile \
 				 ../../testdir/Make_all.mak \
+				 ../../testdir/README.txt \
 				 ../../testdir/*.in \
 				 ../../testdir/*.vim \
 				 ../../testdir/*.py \
