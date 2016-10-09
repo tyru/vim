@@ -341,6 +341,12 @@ add_channel(void)
     return channel;
 }
 
+    int
+has_any_channel(void)
+{
+    return first_channel != NULL;
+}
+
 /*
  * Called when the refcount of a channel is zero.
  * Return TRUE if "channel" has a callback and the associated job wasn't
@@ -2349,8 +2355,9 @@ may_invoke_callback(channel_T *channel, int part)
     typval_T	*listtv = NULL;
     typval_T	argv[CH_JSON_MAX_ARGS];
     int		seq_nr = -1;
-    ch_mode_T	ch_mode = channel->ch_part[part].ch_mode;
-    cbq_T	*cbhead = &channel->ch_part[part].ch_cb_head;
+    chanpart_T	*ch_part = &channel->ch_part[part];
+    ch_mode_T	ch_mode = ch_part->ch_mode;
+    cbq_T	*cbhead = &ch_part->ch_cb_head;
     cbq_T	*cbitem;
     char_u	*callback = NULL;
     partial_T	*partial = NULL;
@@ -2370,10 +2377,10 @@ may_invoke_callback(channel_T *channel, int part)
 	callback = cbitem->cq_callback;
 	partial = cbitem->cq_partial;
     }
-    else if (channel->ch_part[part].ch_callback != NULL)
+    else if (ch_part->ch_callback != NULL)
     {
-	callback = channel->ch_part[part].ch_callback;
-	partial = channel->ch_part[part].ch_partial;
+	callback = ch_part->ch_callback;
+	partial = ch_part->ch_partial;
     }
     else
     {
@@ -2381,11 +2388,11 @@ may_invoke_callback(channel_T *channel, int part)
 	partial = channel->ch_partial;
     }
 
-    buffer = channel->ch_part[part].ch_bufref.br_buf;
-    if (buffer != NULL && !bufref_valid(&channel->ch_part[part].ch_bufref))
+    buffer = ch_part->ch_bufref.br_buf;
+    if (buffer != NULL && !bufref_valid(&ch_part->ch_bufref))
     {
 	/* buffer was wiped out */
-	channel->ch_part[part].ch_bufref.br_buf = NULL;
+	ch_part->ch_bufref.br_buf = NULL;
 	buffer = NULL;
     }
 
@@ -2446,7 +2453,7 @@ may_invoke_callback(channel_T *channel, int part)
 
 	if (ch_mode == MODE_NL)
 	{
-	    char_u  *nl;
+	    char_u  *nl = NULL;
 	    char_u  *buf;
 	    readq_T *node;
 
@@ -2459,9 +2466,24 @@ may_invoke_callback(channel_T *channel, int part)
 		if (nl != NULL)
 		    break;
 		if (channel_collapse(channel, part, TRUE) == FAIL)
+		{
+		    if (ch_part->ch_fd == INVALID_FD && node->rq_buflen > 0)
+			break;
 		    return FALSE; /* incomplete message */
+		}
 	    }
 	    buf = node->rq_buffer;
+
+	    if (nl == NULL)
+	    {
+		/* Flush remaining message that is missing a NL. */
+		buf = vim_realloc(buf, node->rq_buflen + 1);
+		if (buf == NULL)
+		    return FALSE;
+		node->rq_buffer = buf;
+		nl = buf + node->rq_buflen++;
+		*nl = NUL;
+	    }
 
 	    /* Convert NUL to NL, the internal representation. */
 	    for (p = buf; p < nl && p < buf + node->rq_buflen; ++p)
@@ -2590,23 +2612,41 @@ channel_has_readahead(channel_T *channel, int part)
 
 /*
  * Return a string indicating the status of the channel.
+ * If "req_part" is not negative check that part.
  */
     char *
-channel_status(channel_T *channel)
+channel_status(channel_T *channel, int req_part)
 {
     int part;
     int has_readahead = FALSE;
 
     if (channel == NULL)
 	 return "fail";
-    if (channel_is_open(channel))
-	 return "open";
-    for (part = PART_SOCK; part <= PART_ERR; ++part)
-	if (channel_has_readahead(channel, part))
-	{
+    if (req_part == PART_OUT)
+    {
+	if (channel->CH_OUT_FD != INVALID_FD)
+	    return "open";
+	if (channel_has_readahead(channel, PART_OUT))
 	    has_readahead = TRUE;
-	    break;
-	}
+    }
+    else if (req_part == PART_ERR)
+    {
+	if (channel->CH_ERR_FD != INVALID_FD)
+	    return "open";
+	if (channel_has_readahead(channel, PART_ERR))
+	    has_readahead = TRUE;
+    }
+    else
+    {
+	if (channel_is_open(channel))
+	    return "open";
+	for (part = PART_SOCK; part <= PART_ERR; ++part)
+	    if (channel_has_readahead(channel, part))
+	    {
+		has_readahead = TRUE;
+		break;
+	    }
+    }
 
     if (has_readahead)
 	return "buffered";
@@ -2619,6 +2659,7 @@ channel_part_info(channel_T *channel, dict_T *dict, char *name, int part)
     chanpart_T *chanpart = &channel->ch_part[part];
     char	namebuf[20];  /* longest is "sock_timeout" */
     size_t	tail;
+    char	*status;
     char	*s = "";
 
     vim_strncpy((char_u *)namebuf, (char_u *)name, 4);
@@ -2626,8 +2667,13 @@ channel_part_info(channel_T *channel, dict_T *dict, char *name, int part)
     tail = STRLEN(namebuf);
 
     STRCPY(namebuf + tail, "status");
-    dict_add_nr_str(dict, namebuf, 0,
-		(char_u *)(chanpart->ch_fd == INVALID_FD ? "closed" : "open"));
+    if (chanpart->ch_fd != INVALID_FD)
+	status = "open";
+    else if (channel_has_readahead(channel, part))
+	status = "buffered";
+    else
+	status = "closed";
+    dict_add_nr_str(dict, namebuf, 0, (char_u *)status);
 
     STRCPY(namebuf + tail, "mode");
     switch (chanpart->ch_mode)
@@ -2660,7 +2706,7 @@ channel_part_info(channel_T *channel, dict_T *dict, char *name, int part)
 channel_info(channel_T *channel, dict_T *dict)
 {
     dict_add_nr_str(dict, "id", channel->ch_id, NULL);
-    dict_add_nr_str(dict, "status", 0, (char_u *)channel_status(channel));
+    dict_add_nr_str(dict, "status", 0, (char_u *)channel_status(channel, -1));
 
     if (channel->ch_hostname != NULL)
     {
@@ -4244,6 +4290,8 @@ get_job_options(typval_T *tv, jobopt_T *opt, int supported)
 		val = get_tv_string(item);
 		if (STRCMP(val, "err") == 0)
 		    opt->jo_part = PART_ERR;
+		else if (STRCMP(val, "out") == 0)
+		    opt->jo_part = PART_OUT;
 		else
 		{
 		    EMSG2(_(e_invarg2), val);
