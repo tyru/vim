@@ -770,6 +770,10 @@ static char *(features[]) =
 static int included_patches[] =
 {   /* Add new patch number below this line */
 /**/
+    34,
+/**/
+    33,
+/**/
     32,
 /**/
     31,
@@ -1388,17 +1392,6 @@ intro_message(
 		do_intro_line(row, (char_u *)_(p), i == 2, 0, colon);
 	    ++row;
 	}
-#if defined(WIN3264) && !defined(FEAT_GUI_W32)
-	if (mch_windows95())
-	{
-	    do_intro_line(++row,
-		    (char_u *)_("WARNING: Windows 95/98/ME detected"),
-							FALSE, hl_attr(HLF_E), colon);
-	    do_intro_line(++row,
-		(char_u *)_("type  :help windows95<Enter>  for info on this"),
-								    FALSE, 0, colon);
-	}
-#endif
     }
 
     /* Make the wait-return message appear just below the text. */
