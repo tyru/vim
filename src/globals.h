@@ -591,9 +591,6 @@ EXTERN frame_T	*topframe;	/* top of the window frame tree */
 EXTERN tabpage_T    *first_tabpage;
 EXTERN tabpage_T    *curtab;
 EXTERN int	    redraw_tabline INIT(= FALSE);  /* need to redraw tabline */
-#ifdef FEAT_TABSIDEBAR
-EXTERN int	    redraw_tabsidebar INIT(= FALSE);  /* need to redraw tabsidebar */
-#endif
 #endif
 
 /*

@@ -212,10 +212,6 @@ redraw_win_later(
     win_T	*wp,
     int		type)
 {
-#ifdef FEAT_TABSIDEBAR
-    if (CLEAR <= type)
-	redraw_tabsidebar = TRUE;
-#endif
     if (wp->w_redr_type < type)
     {
 	wp->w_redr_type = type;
@@ -653,8 +649,7 @@ update_screen(int type)
 	draw_tabline();
 #endif
 #ifdef FEAT_TABSIDEBAR
-    if (redraw_tabsidebar || must_redraw)
-	draw_tabsidebar(-1);
+    draw_tabsidebar(-1);
 #endif
 
 #ifdef FEAT_SYN_HL
@@ -1032,8 +1027,7 @@ updateWindow(win_T *wp)
     if (redraw_tabline)
 	draw_tabline();
 #ifdef FEAT_TABSIDEBAR
-    if (redraw_tabsidebar)
-	draw_tabsidebar(-1);
+    draw_tabsidebar(-1);
 #endif
 
     if (wp->w_redr_status
@@ -1546,8 +1540,7 @@ win_update(win_T *wp)
 		    draw_tabline();
 #endif
 #ifdef FEAT_TABSIDEBAR
-		if (redraw_tabsidebar)
-		    draw_tabsidebar(-1);
+		draw_tabsidebar(-1);
 #endif
 	    }
 	}
@@ -6407,8 +6400,7 @@ redraw_statuslines(void)
     if (redraw_tabline)
 	draw_tabline();
 #ifdef FEAT_TABSIDEBAR
-    if (redraw_tabsidebar)
-	draw_tabsidebar(-1);
+    draw_tabsidebar(-1);
 #endif
 }
 #endif
@@ -8967,9 +8959,6 @@ give_up:
      */
     if (starting == 0 && ++retry_count <= 3)
     {
-#ifdef FEAT_TABSIDEBAR
-	redraw_tabsidebar = TRUE;
-#endif
 	apply_autocmds(EVENT_VIMRESIZED, NULL, NULL, FALSE, curbuf);
 	/* In rare cases, autocommands may have altered Rows or Columns,
 	 * jump back to check if we need to allocate the screen again. */
@@ -10512,8 +10501,6 @@ draw_tabsidebar(int redrawing_row)
     win_T	*ewp;
     win_T	*wp;
 
-    redraw_tabsidebar = FALSE;
-
     if (0 == tabsidebar_width())
 	return;
 
@@ -11042,8 +11029,7 @@ showruler(int always)
 	draw_tabline();
 #endif
 #ifdef FEAT_TABSIDEBAR
-    if (redraw_tabsidebar)
-	draw_tabsidebar(-1);
+    draw_tabsidebar(-1);
 #endif
 }
 

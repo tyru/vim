@@ -4200,9 +4200,6 @@ nv_addsub(cmdarg_T *cap)
     static void
 nv_page(cmdarg_T *cap)
 {
-#ifdef FEAT_TABSIDEBAR
-    redraw_tabsidebar = TRUE;
-#endif
     if (!checkclearop(cap->oap))
     {
 #ifdef FEAT_WINDOWS
@@ -4686,9 +4683,6 @@ nv_mouse(cmdarg_T *cap)
     static void
 nv_scroll_line(cmdarg_T *cap)
 {
-#ifdef FEAT_TABSIDEBAR
-    redraw_tabsidebar = TRUE;
-#endif
     if (!checkclearop(cap->oap))
 	scroll_redraw(cap->arg, cap->count1);
 }
@@ -9285,9 +9279,6 @@ nv_at(cmdarg_T *cap)
     static void
 nv_halfpage(cmdarg_T *cap)
 {
-#ifdef FEAT_TABSIDEBAR
-    redraw_tabsidebar = TRUE;
-#endif
     if ((cap->cmdchar == Ctrl_U && curwin->w_cursor.lnum == 1)
 	    || (cap->cmdchar == Ctrl_D
 		&& curwin->w_cursor.lnum == curbuf->b_ml.ml_line_count))

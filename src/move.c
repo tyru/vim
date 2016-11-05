@@ -247,9 +247,6 @@ update_topline(void)
 
 	if (check_topline)
 	{
-#ifdef FEAT_TABSIDEBAR
-	    redraw_tabsidebar = TRUE;
-#endif
 	    halfheight = curwin->w_height / 2 - 1;
 	    if (halfheight < 2)
 		halfheight = 2;
@@ -358,9 +355,6 @@ update_topline(void)
 	    }
 	    if (check_botline)
 	    {
-#ifdef FEAT_TABSIDEBAR
-		redraw_tabsidebar = TRUE;
-#endif
 #ifdef FEAT_FOLDING
 		if (hasAnyFolding(curwin))
 		{
