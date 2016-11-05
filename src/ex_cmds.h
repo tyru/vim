@@ -1162,9 +1162,11 @@ EX(CMD_redrawstatus,	"redrawstatus",	ex_redrawstatus,
 EX(CMD_redrawtabline,	"redrawtabline",	ex_redrawtabline,
 			TRLBAR|CMDWIN,
 			ADDR_LINES),
+#ifdef FEAT_TABSIDEBAR
 EX(CMD_redrawtabsidebar,	"redrawtabsidebar",	ex_redrawtabsidebar,
 			TRLBAR|CMDWIN,
 			ADDR_LINES),
+#endif
 EX(CMD_registers,	"registers",	ex_display,
 			EXTRA|NOTRLCOM|TRLBAR|CMDWIN,
 			ADDR_LINES),
