@@ -176,7 +176,7 @@ static void recording_mode(int attr);
 # ifdef FEAT_TABSIDEBAR
 void draw_tabsidebar(int redrawing_row);
 # endif
-void draw_tabline(void);
+static void draw_tabline(void);
 #endif
 #if defined(FEAT_WINDOWS) || defined(FEAT_WILDMENU) || defined(FEAT_STL_OPT)
 static int fillchar_status(int *attr, int is_curwin);
@@ -10713,7 +10713,7 @@ draw_tabsidebar(int redrawing_row)
 /*
  * Draw the tab pages line at the top of the Vim window.
  */
-    void
+    static void
 draw_tabline(void)
 {
     int		tabcount = 0;

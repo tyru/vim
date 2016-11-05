@@ -30,11 +30,6 @@ CTRL-L			Clear and redraw the screen.  The redraw may happen
 			includes an item that doesn't cause automatic
 			updating.
 
-						*:redrawt* *:redrawtabline*
-:redrawt[abline]	Redraw the tab line.  Useful to update the tab line
-			when 'tabline' includes an item that doesn't cause
-			automatic updating.
-
 							*N<Del>*
 <Del>			When entering a number: Remove the last digit.
 			Note: if you like to use <BS> for this, add this
