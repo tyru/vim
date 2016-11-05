@@ -7389,6 +7389,24 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Maximum number of tab pages to be opened by the |-p| command line
 	argument or the ":tab all" command. |tabpage|
 
+				*'tabsidebar'* *'tsb'* *g:actual_curtabpage*
+'tabsidebar' 'tsb'			number	(default empty)
+			global or local to tabpage
+			{not in Vi, although some versions have a boolean
+			verbose option}
+	When nonempty, this option determines the content of the tab page.
+	The option consists of printf style '%' items interspersed with
+	normal text. So this option is like &statusline or &tabline.
+
+	You can use |g:actual_curtabpage| in a tabsidebar's function.
+	|g:actual_curtabpage| is current tab label number.
+>
+	set tabsidebar=%!TabSideBar()
+	function! TabSideBar() abort
+	  return printf('(%2d) %%f', g:actual_curtabpage)
+	endfunction
+<
+
 						*'tabsidebarcolumns'* *'tsbc'*
 'tabsidebarcolumns' 'tsbc'		number	(default 0)
 			global
@@ -7396,7 +7414,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 			verbose option}
 	When bigger than zero, this option determines the content of the
 	tabsidebar at the left of the Vim window.
-	The column size of tabsidebar is |tabsidebarcolumns|.
+	|tabsidebarcolumns| is The column size of tabsidebar.
 
 						*'tabstop'* *'ts'*
 'tabstop' 'ts'		number	(default 8)
