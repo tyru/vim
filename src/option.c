@@ -2677,7 +2677,7 @@ static struct vimoption options[] =
     {"textwidth",   "tw",   P_NUM|P_VI_DEF|P_VIM|P_RBUF,
 			    (char_u *)&p_tw, PV_TW,
 			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
-    {"thesaurus",   "tsr",  P_STRING|P_EXPAND|P_VI_DEF|P_ONECOMMA|P_NODUP,
+    {"thesaurus",   "tsr",  P_STRING|P_EXPAND|P_VI_DEF|P_ONECOMMA|P_NODUP|P_NDNAME,
 #ifdef FEAT_INS_EXPAND
 			    (char_u *)&p_tsr, PV_TSR,
 #else
@@ -5896,9 +5896,11 @@ did_set_string_option(
 
     /* Check for a "normal" directory or file name in some options.  Disallow a
      * path separator (slash and/or backslash), wildcards and characters that
-     * are often illegal in a file name. */
+     * are often illegal in a file name. Be more permissive if "secure" is off.
+     */
     else if (((options[opt_idx].flags & P_NFNAME)
-		    && vim_strpbrk(*varp, (char_u *)"/\\*?[|;&<>\r\n") != NULL)
+		    && vim_strpbrk(*varp, (char_u *)(secure
+			    ? "/\\*?[|;&<>\r\n" : "/\\*?[<>\r\n")) != NULL)
 	  || ((options[opt_idx].flags & P_NDNAME)
 		    && vim_strpbrk(*varp, (char_u *)"*?[|;&<>\r\n") != NULL))
     {
