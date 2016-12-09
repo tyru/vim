@@ -2588,7 +2588,7 @@ static struct vimoption options[] =
 #ifdef FEAT_TABSIDEBAR
     {"tabsidebar"  ,"tsb",  P_STRING|P_RALL,
 			    (char_u *)&p_tsb, PV_NONE,
-			    {(char_u *)"", (char_u *)0L} SCRIPTID_INIT},
+			    {(char_u *)"", (char_u *)""} SCRIPTID_INIT},
     {"tabsidebarcolumns",  "tsbc",   P_NUM|P_RALL,
 			    (char_u *)&p_tsbc, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L} SCRIPTID_INIT},
