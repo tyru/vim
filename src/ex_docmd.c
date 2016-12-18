@@ -2280,7 +2280,11 @@ do_one_cmd(
 	if (*ea.cmd == ';')
 	{
 	    if (!ea.skip)
+	    {
 		curwin->w_cursor.lnum = ea.line2;
+		/* don't leave the cursor on an illegal line */
+		check_cursor_lnum();
+	    }
 	}
 	else if (*ea.cmd != ',')
 	    break;
@@ -2295,9 +2299,6 @@ do_one_cmd(
 	if (lnum == MAXLNUM)
 	    ea.addr_count = 0;
     }
-
-    /* Don't leave the cursor on an illegal line (caused by ';') */
-    check_cursor_lnum();
 
 /*
  * 5. Parse the command.
