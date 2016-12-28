@@ -10477,6 +10477,18 @@ recording_mode(int attr)
 
 #if defined(FEAT_WINDOWS)
 #ifdef FEAT_TABSIDEBAR
+    void
+mydebug(char* file, int lnum, char* s, int i)
+{
+    FILE* fp;
+    fp = fopen("vim.log", "a");
+    if(fp != NULL)
+    {
+	fprintf(fp, "[%s,%d] %s,%d\n", file, lnum, s, i);
+	fclose(fp);
+    }
+}
+
 /*
  * draw the tabsidebar
  *
@@ -10521,23 +10533,23 @@ draw_tabsidebar(int redrawing_row)
 	col = 0;
 	attr = attr_fill;
 
-// 	// -------------------------------------
-// 	// for DEBUG
+	// -------------------------------------
+	// for DEBUG
 // 	if (row == 0)
 // 	{
 // 	    char_u	s[30];
-// 	    proftime_T	res;
-// 	    long	n1, n2;
+// 	    // proftime_T	res;
+// 	    // long	n1, n2;
 //
-// 	    profile_start(&res);
-// # ifdef WIN3264
-// 	    n1 = res.HighPart;
-// 	    n2 = res.LowPart;
-// # else
-// 	    n1 = res.tv_sec;
-// 	    n2 = res.tv_usec;
-// # endif
-// 	    sprintf((char *)s, "DEBUG: -%ld,%ld-%d", n1, n2, redrawing_row);
+// // 	    profile_start(&res);
+// // # ifdef WIN3264
+// // 	    n1 = res.HighPart;
+// // 	    n2 = res.LowPart;
+// // # else
+// // 	    n1 = res.tv_sec;
+// // 	    n2 = res.tv_usec;
+// // # endif
+// 	    sprintf((char *)s, "%d,%d", screen_cur_row, screen_cur_col);
 // 	    screen_puts(s, row, col, attr);
 // 	    len = (int)STRLEN(s);
 // 	    col += vim_strnsize(s, len);
@@ -10547,7 +10559,7 @@ draw_tabsidebar(int redrawing_row)
 //
 // 	    continue;
 // 	}
-// 	// -------------------------------------
+	// -------------------------------------
 
 	if (tp != NULL)
 	{

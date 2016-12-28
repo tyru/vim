@@ -3620,7 +3620,8 @@ free_tabpage(tabpage_T *tp)
 #endif
 
 #ifdef FEAT_TABSIDEBAR
-    vim_free(tp->tp_tabsidebar);
+    if(tp != NULL)
+	vim_free(tp->tp_tabsidebar);
 #endif
 
     vim_free(tp);
@@ -6084,8 +6085,10 @@ tabsidebar_width(void)
 {
     switch (p_stsb)
     {
-	case 0: return 0;
-	case 1: return (first_tabpage->tp_next == NULL) ? 0 : p_tsbc;
+	case 0:
+	    return 0;
+	case 1:
+	    return (first_tabpage->tp_next == NULL) ? 0 : p_tsbc;
     }
     return p_tsbc;
 }
