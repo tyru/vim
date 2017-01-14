@@ -144,6 +144,7 @@ NEW_TESTS = test_arglist.res \
 	    test_channel.res \
 	    test_charsearch.res \
 	    test_cmdline.res \
+	    test_command_count.res \
 	    test_crypt.res \
 	    test_cscope.res \
 	    test_diffmode.res \
@@ -184,6 +185,7 @@ NEW_TESTS = test_arglist.res \
 	    test_stat.res \
 	    test_substitute.res \
 	    test_syntax.res \
+	    test_system.res \
 	    test_textobjects.res \
 	    test_undo.res \
 	    test_usercommands.res \
