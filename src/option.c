@@ -3057,6 +3057,8 @@ static struct vimoption options[] =
     p_term("t_ZR", T_CZR)
     p_term("t_8f", T_8F)
     p_term("t_8b", T_8B)
+    p_term("t_BE", T_BE)
+    p_term("t_BD", T_BD)
 
 /* terminal key codes are not in here */
 
@@ -6633,6 +6635,15 @@ did_set_string_option(
 	     * background/foreground colors. */
 	    mch_set_normal_colors();
 #endif
+	}
+	if (varp == &T_BE && termcap_active)
+	{
+	    if (*T_BE == NUL)
+		/* When clearing t_BE we assume the user no longer wants
+		 * bracketed paste, thus disable it by writing t_BD. */
+		out_str(T_BD);
+	    else
+		out_str(T_BE);
 	}
     }
 
