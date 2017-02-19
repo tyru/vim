@@ -210,13 +210,13 @@ function! GetTeXIndent() " {{{
     " LH modification : \begin does not always start a line
     " ZYC modification : \end after \begin won't cause wrong indent anymore
     if line =~ '\\begin{.*}' && line !~ g:tex_noindent_env
-        let ind = ind + &sw
+        let ind = ind + shiftwidth()
         let stay = 0
 
         if g:tex_indent_items
             " Add another sw for item-environments
             if line =~ g:tex_itemize_env
-                let ind = ind + &sw
+                let ind = ind + shiftwidth()
                 let stay = 0
             endif
         endif
@@ -235,19 +235,19 @@ function! GetTeXIndent() " {{{
         if g:tex_indent_items
             " Remove another sw for item-environments
             if cline =~ g:tex_itemize_env
-                let ind = ind - &sw
+                let ind = ind - shiftwidth()
                 let stay = 0
             endif
         endif
 
-        let ind = ind - &sw
+        let ind = ind - shiftwidth()
         let stay = 0
     endif
 
     if g:tex_indent_brace
         let char = line[strlen(line)-1]
         if char == '[' || char == '{'
-            let ind += &sw
+            let ind += shiftwidth()
             let stay = 0
         endif
 
@@ -255,7 +255,7 @@ function! GetTeXIndent() " {{{
         let char = cline[cind]
         if (char == ']' || char == '}') &&
                     \ s:CheckPairedIsLastCharacter(v:lnum, cind)
-            let ind -= &sw
+            let ind -= shiftwidth()
             let stay = 0
         endif
 
@@ -263,7 +263,7 @@ function! GetTeXIndent() " {{{
             let char = line[i]
             if char == ']' || char == '}'
                 if s:CheckPairedIsLastCharacter(lnum, i)
-                    let ind -= &sw
+                    let ind -= shiftwidth()
                     let stay = 0
                 endif
             endif
@@ -276,12 +276,12 @@ function! GetTeXIndent() " {{{
     if g:tex_indent_items
         " '\item' or '\bibitem' itself:
         if cline =~ g:tex_items
-            let ind = ind - &sw
+            let ind = ind - shiftwidth()
             let stay = 0
         endif
         " lines following to '\item' are intented once again:
         if line =~ g:tex_items
-            let ind = ind + &sw
+            let ind = ind + shiftwidth()
             let stay = 0
         endif
     endif
@@ -310,12 +310,12 @@ function! s:GetLastBeginIndentation(lnum) " {{{
         endif
         if matchend == 0
             if line =~ g:tex_itemize_env
-                return indent(lnum) + 2 * &sw
+                return indent(lnum) + 2 * shiftwidth()
             endif
             if line =~ g:tex_noindent_env
                 return indent(lnum)
             endif
-            return indent(lnum) + &sw
+            return indent(lnum) + shiftwidth()
         endif
     endfor
     return -1
@@ -343,7 +343,7 @@ function! s:GetEndIndentation(lnum) " {{{
             let min_indent = min([min_indent, indent(lnum)])
         endif
     endfor
-    return min_indent - &sw
+    return min_indent - shiftwidth()
 endfunction
 
 " Most of the code is from matchparen.vim
