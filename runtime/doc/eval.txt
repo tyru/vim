@@ -1,4 +1,4 @@
-*eval.txt*	For Vim version 8.0.  Last change: 2017 Jan 14
+*eval.txt*	For Vim version 8.0.  Last change: 2017 Feb 17
 
 
 		  VIM REFERENCE MANUAL	  by Bram Moolenaar
@@ -1329,7 +1329,8 @@ b:changedtick	The total number of changes to the current buffer.  It is
 		    :	let my_changedtick = b:changedtick
 		    :	call My_Update()
 		    :endif
-<
+<		You cannot change or delete the b:changedtick variable.
+
 						*window-variable* *w:var* *w:*
 A variable name that is preceded with "w:" is local to the current window.  It
 is deleted when the window is closed.
@@ -2222,8 +2223,8 @@ matchstr({expr}, {pat}[, {start}[, {count}]])
 				String	{count}'th match of {pat} in {expr}
 matchstrpos({expr}, {pat}[, {start}[, {count}]])
 				List	{count}'th match of {pat} in {expr}
-max({list})			Number	maximum value of items in {list}
-min({list})			Number	minimum value of items in {list}
+max({expr})			Number	maximum value of items in {expr}
+min({expr})			Number	minimum value of items in {expr}
 mkdir({name} [, {path} [, {prot}]])
 				Number	create directory {name}
 mode([expr])			String	current editing mode
@@ -2239,6 +2240,7 @@ printf({fmt}, {expr1}...)	String	format text
 pumvisible()			Number	whether popup menu is visible
 pyeval({expr})			any	evaluate |Python| expression
 py3eval({expr})			any	evaluate |python3| expression
+pyxeval({expr})			any	evaluate |python_x| expression
 range({expr} [, {max} [, {stride}]])
 				List	items from {expr} to {max}
 readfile({fname} [, {binary} [, {max}]])
@@ -4171,6 +4173,10 @@ getchar([expr])						*getchar()*
 			  exe "normal " . v:mouse_col . "|"
 			endif
 <
+		When using bracketed paste only the first character is
+		returned, the rest of the pasted text is dropped.
+		|xterm-bracketed-paste|.
+
 		There is no prompt, you will somehow have to make clear to the
 		user that a character has to be typed.
 		There is no mapping for the character.
@@ -4366,8 +4372,8 @@ getfontname([{name}])					*getfontname()*
 		Only works when the GUI is running, thus not in your vimrc or
 		gvimrc file.  Use the |GUIEnter| autocommand to use this
 		function just after the GUI has started.
-		Note that the GTK 2 GUI accepts any font name, thus checking
-		for a valid name does not work.
+		Note that the GTK GUI accepts any font name, thus checking for
+		a valid name does not work.
 
 getfperm({fname})					*getfperm()*
 		The result is a String, which is the read, write, and execute
@@ -5806,16 +5812,20 @@ matchstrpos({expr}, {pat}[, {start}[, {count}]])		*matchstrpos()*
 		The type isn't changed, it's not necessarily a String.
 
 							*max()*
-max({list})	Return the maximum value of all items in {list}.
-		If {list} is not a list or one of the items in {list} cannot
-		be used as a Number this results in an error.
-		An empty |List| results in zero.
+max({expr})	Return the maximum value of all items in {expr}.
+		{expr} can be a list or a dictionary.  For a dictionary,
+		it returns the maximum of all values in the dictionary.
+		If {expr} is neither a list nor a dictionary, or one of the
+		items in {expr} cannot be used as a Number this results in
+                an error.  An empty |List| or |Dictionary| results in zero.
 
 							*min()*
-min({list})	Return the minimum value of all items in {list}.
-		If {list} is not a list or one of the items in {list} cannot
-		be used as a Number this results in an error.
-		An empty |List| results in zero.
+min({expr})	Return the minimum value of all items in {expr}.
+		{expr} can be a list or a dictionary.  For a dictionary,
+		it returns the minimum of all values in the dictionary.
+		If {expr} is neither a list nor a dictionary, or one of the
+		items in {expr} cannot be used as a Number this results in
+                an error.  An empty |List| or |Dictionary| results in zero.
 
 							*mkdir()* *E739*
 mkdir({name} [, {path} [, {prot}]])
@@ -5849,9 +5859,13 @@ mode([expr])	Return a string that indicates the current mode.
 			S	Select by line
 			CTRL-S	Select blockwise
 			i	Insert
+			ic	Insert mode completion |compl-generic|
+			ix	Insert mode |i_CTRL-X| completion
 			R	Replace |R|
+			Rc	Replace mode completion |compl-generic|
 			Rv	Virtual Replace |gR|
-			c	Command-line
+			Rx	Replace mode |i_CTRL-X| completion
+			c	Command-line editing
 			cv	Vim Ex mode |gQ|
 			ce	Normal Ex mode |Q|
 			r	Hit-enter prompt
@@ -5975,7 +5989,7 @@ printf({fmt}, {expr1} ...)				*printf()*
 		  %e	floating point number as 1.23e3, inf, -inf or nan
 		  %E	floating point number as 1.23E3, INF, -INF or NAN
 		  %g	floating point number, as %f or %e depending on value
-		  %G	floating point number, as %f or %E depending on value
+		  %G	floating point number, as %F or %E depending on value
 		  %%	the % character itself
 
 		Conversion specifications start with '%' and end with the
@@ -6172,6 +6186,14 @@ pyeval({expr})						*pyeval()*
 		Dictionaries are represented as Vim |Dictionary| type, 
 		non-string keys result in error.
 		{only available when compiled with the |+python| feature}
+
+pyxeval({expr})						*pyxeval()*
+		Evaluate Python expression {expr} and return its result
+		converted to Vim data structures.
+		Uses Python 2 or 3, see |python_x| and 'pyxversion'.
+		See also: |pyeval()|, |py3eval()|
+		{only available when compiled with the |+python| or the
+		|+python3| feature}
 
 							*E726* *E727*
 range({expr} [, {max} [, {stride}]])				*range()*
@@ -6799,10 +6821,12 @@ setpos({expr}, {list})
 		    [bufnum, lnum, col, off, curswant]
 
 		"bufnum" is the buffer number.  Zero can be used for the
-		current buffer.  Setting the cursor is only possible for
-		the current buffer.  To set a mark in another buffer you can
-		use the |bufnr()| function to turn a file name into a buffer
-		number.
+		current buffer.  When setting an uppercase mark "bufnum" is
+		used for the mark position.  For other marks it specifies the
+		buffer to set the mark in.  You can use the |bufnr()| function
+		to turn a file name into a buffer number.
+		For setting the cursor and the ' mark "bufnum" is ignored,
+		since these are associated with a window, not a buffer.
 		Does not change the jumplist.
 
 		"lnum" and "col" are the position in the buffer.  The first
@@ -7807,6 +7831,8 @@ test_settime({expr})					*test_settime()*
 		Set the time Vim uses internally.  Currently only used for
 		timestamps in the history, as they are used in viminfo, and
 		for undo.
+		Using a value of 1 makes Vim not sleep after a warning or
+		error message.
 		{expr} must evaluate to a number.  When the value is zero the
 		normal behavior is restored.
 
@@ -8158,7 +8184,7 @@ winnr([{arg}])	The result is a Number, which is the number of the current
 		is returned.
 		The number can be used with |CTRL-W_w| and ":wincmd w"
 		|:wincmd|.
-		Also see |tabpagewinnr()|.
+		Also see |tabpagewinnr()| and |win_getid()|.
 
 							*winrestcmd()*
 winrestcmd()	Returns a sequence of |:resize| commands that should restore
@@ -8425,6 +8451,7 @@ printer			Compiled with |:hardcopy| support.
 profile			Compiled with |:profile| support.
 python			Compiled with Python 2.x interface. |has-python|
 python3			Compiled with Python 3.x interface. |has-python|
+pythonx			Compiled with |python_x| interface. |has-pythonx|
 qnx			QNX version of Vim.
 quickfix		Compiled with |quickfix| support.
 reltime			Compiled with |reltime()| support.
@@ -8462,6 +8489,7 @@ toolbar			Compiled with support for |gui-toolbar|.
 ttyin			input is a terminal (tty)
 ttyout			output is a terminal (tty)
 unix			Unix version of Vim.
+unnamedplus		Compiled with support for "unnamedplus" in 'clipboard'
 user_commands		User-defined commands.
 vertsplit		Compiled with vertically split windows |:vsplit|.
 vim_starting		True while initial source'ing takes place. |startup|
@@ -8965,6 +8993,11 @@ This does NOT work: >
 			value and the global value are changed.
 			Example: >
 				:let &path = &path . ',/usr/local/include'
+<			This also works for terminal codes in the form t_xx.
+			But only for alphanumerical names.  Example: >
+				:let &t_k1 = "\<Esc>[234;"
+<			When the code does not exist yet it will be created as
+			a terminal key code, there is no error.
 
 :let &{option-name} .= {expr1}
 			For a string option: Append {expr1} to the value.
@@ -9072,9 +9105,12 @@ This does NOT work: >
 				:lockvar v
 				:let v = 'asdf'		" fails!
 				:unlet v
-<							*E741*
+<							*E741* *E940*
 			If you try to change a locked variable you get an
-			error message: "E741: Value is locked: {name}"
+			error message: "E741: Value is locked: {name}".
+			If you try to lock or unlock a built-in variable you
+			get an error message: "E940: Cannot lock or unlock
+			variable {name}".
 
 			[depth] is relevant when locking a |List| or
 			|Dictionary|.  It specifies how deep the locking goes:

@@ -479,6 +479,17 @@ struct vimoption
 # define HIGHLIGHT_INIT "8:SpecialKey,@:NonText,d:Directory,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,t:Title,v:Visual,w:WarningMsg,W:WildMenu,>:SignColumn,*:TabLine,#:TabLineSel,_:TabLineFill"
 #endif
 
+/* Default python version for pyx* commands */
+#if defined(FEAT_PYTHON) && defined(FEAT_PYTHON3)
+# define DEFAULT_PYTHON_VER	0
+#elif defined(FEAT_PYTHON3)
+# define DEFAULT_PYTHON_VER	3
+#elif defined(FEAT_PYTHON)
+# define DEFAULT_PYTHON_VER	2
+#else
+# define DEFAULT_PYTHON_VER	0
+#endif
+
 /*
  * options[] is initialized here.
  * The order of the options MUST be alphabetic for ":set all" and findoption().
@@ -2143,6 +2154,14 @@ static struct vimoption options[] =
 			    {(char_u *)DYNAMIC_PYTHON_DLL, (char_u *)0L}
 			    SCRIPTID_INIT},
 #endif
+    {"pyxversion", "pyx",   P_NUM|P_VI_DEF|P_SECURE,
+#if defined(FEAT_PYTHON) || defined(FEAT_PYTHON3)
+			    (char_u *)&p_pyx, PV_NONE,
+#else
+			    (char_u *)NULL, PV_NONE,
+#endif
+			    {(char_u *)DEFAULT_PYTHON_VER, (char_u *)0L}
+			    SCRIPTID_INIT},
     {"quoteescape", "qe",   P_STRING|P_ALLOCED|P_VI_DEF,
 #ifdef FEAT_TEXTOBJ
 			    (char_u *)&p_qe, PV_QE,
@@ -3773,7 +3792,7 @@ free_all_options(void)
 	if (options[i].indir == PV_NONE)
 	{
 	    /* global option: free value and default value. */
-	    if (options[i].flags & P_ALLOCED && options[i].var != NULL)
+	    if ((options[i].flags & P_ALLOCED) && options[i].var != NULL)
 		free_string_option(*(char_u **)options[i].var);
 	    if (options[i].flags & P_DEF_ALLOCED)
 		free_string_option(options[i].def_val[VI_DEFAULT]);
@@ -4952,7 +4971,7 @@ do_set(
 			    if (flags & P_FLAGLIST)
 			    {
 				/* Remove flags that appear twice. */
-				for (s = newval; *s; ++s)
+				for (s = newval; *s;)
 				{
 				    /* if options have P_FLAGLIST and
 				     * P_ONECOMMA such as 'whichwrap' */
@@ -4964,7 +4983,7 @@ do_set(
 					    /* Remove the duplicated value and
 					     * the next comma. */
 					    STRMOVE(s, s + 2);
-					    s -= 2;
+					    continue;
 					}
 				    }
 				    else
@@ -4973,9 +4992,10 @@ do_set(
 					      && vim_strchr(s + 1, *s) != NULL)
 					{
 					    STRMOVE(s, s + 1);
-					    --s;
+					    continue;
 					}
 				    }
+				    ++s;
 				}
 			    }
 
@@ -5926,8 +5946,15 @@ did_set_string_option(
 	else if (set_termname(T_NAME) == FAIL)
 	    errmsg = (char_u *)N_("E522: Not found in termcap");
 	else
+	{
 	    /* Screen colors may have changed. */
 	    redraw_later_clear();
+
+	    /* Both 'term' and 'ttytype' point to T_NAME, only set the
+	     * P_ALLOCED flag on 'term'. */
+	    opt_idx = findoption((char_u *)"term");
+	    free_oldval = (options[opt_idx].flags & P_ALLOCED);
+	}
     }
 
     /* 'backupcopy' */
@@ -7014,7 +7041,7 @@ did_set_string_option(
 		    /* skip optional filename after 'k' and 's' */
 		    while (*s && *s != ',' && *s != ' ')
 		    {
-			if (*s == '\\')
+			if (*s == '\\' && s[1] != NUL)
 			    ++s;
 			++s;
 		    }
@@ -8865,6 +8892,15 @@ set_num_option(
 	mzvim_reset_timer();
 #endif
 
+#if defined(FEAT_PYTHON) || defined(FEAT_PYTHON3)
+    /* 'pyxversion' */
+    else if (pp == &p_pyx)
+    {
+	if (p_pyx != 0 && p_pyx != 2 && p_pyx != 3)
+	    errmsg = e_invarg;
+    }
+#endif
+
     /* sync undo before 'undolevels' changes */
     else if (pp == &p_ul)
     {
@@ -9208,7 +9244,35 @@ get_option_value(
 
     opt_idx = findoption(name);
     if (opt_idx < 0)		    /* unknown option */
+    {
+	int key;
+
+	if (STRLEN(name) == 4 && name[0] == 't' && name[1] == '_'
+		&& (key = find_key_option(name)) != 0)
+	{
+	    char_u key_name[2];
+	    char_u *p;
+
+	    if (key < 0)
+	    {
+		key_name[0] = KEY2TERMCAP0(key);
+		key_name[1] = KEY2TERMCAP1(key);
+	    }
+	    else
+	    {
+		key_name[0] = KS_KEY;
+		key_name[1] = (key & 0xff);
+	    }
+	    p = find_termcode(key_name);
+	    if (p != NULL)
+	    {
+		if (stringval != NULL)
+		    *stringval = vim_strsave(p);
+		return 0;
+	    }
+	}
 	return -3;
+    }
 
     varp = get_varp_scope(&(options[opt_idx]), opt_flags);
 
@@ -9466,7 +9530,33 @@ set_option_value(
 
     opt_idx = findoption(name);
     if (opt_idx < 0)
+    {
+	int key;
+
+	if (STRLEN(name) == 4 && name[0] == 't' && name[1] == '_'
+		&& (key = find_key_option(name)) != 0)
+	{
+	    char_u key_name[2];
+
+	    if (key < 0)
+	    {
+		key_name[0] = KEY2TERMCAP0(key);
+		key_name[1] = KEY2TERMCAP1(key);
+	    }
+	    else
+	    {
+		key_name[0] = KS_KEY;
+		key_name[1] = (key & 0xff);
+	    }
+	    add_termcode(key_name, string, FALSE);
+	    if (full_screen)
+		ttest(FALSE);
+	    redraw_all_later(CLEAR);
+	    return NULL;
+	}
+
 	EMSG2(_("E355: Unknown option: %s"), name);
+    }
     else
     {
 	flags = options[opt_idx].flags;

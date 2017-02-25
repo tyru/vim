@@ -492,7 +492,7 @@ get_breakindent_win(
     static int	    prev_indent = 0;  /* cached indent value */
     static long	    prev_ts     = 0L; /* cached tabstop value */
     static char_u   *prev_line = NULL; /* cached pointer to line */
-    static int	    prev_tick = 0;   /* changedtick of cached value */
+    static varnumber_T prev_tick = 0;   /* changedtick of cached value */
     int		    bri = 0;
     /* window width minus window margin space, i.e. what rests for text */
     const int	    eff_wwidth = W_WIDTH(wp)
@@ -502,11 +502,11 @@ get_breakindent_win(
 
     /* used cached indent, unless pointer or 'tabstop' changed */
     if (prev_line != line || prev_ts != wp->w_buffer->b_p_ts
-				  || prev_tick != wp->w_buffer->b_changedtick)
+				  || prev_tick != *wp->w_buffer->b_changedtick)
     {
 	prev_line = line;
 	prev_ts = wp->w_buffer->b_p_ts;
-	prev_tick = wp->w_buffer->b_changedtick;
+	prev_tick = *wp->w_buffer->b_changedtick;
 	prev_indent = get_indent_str(line,
 				     (int)wp->w_buffer->b_p_ts, wp->w_p_list);
     }
@@ -2768,7 +2768,7 @@ changed(void)
 	}
 	changed_int();
     }
-    ++curbuf->b_changedtick;
+    ++*curbuf->b_changedtick;
 }
 
 /*
@@ -3195,7 +3195,7 @@ unchanged(
 	need_maketitle = TRUE;	    /* set window title later */
 #endif
     }
-    ++buf->b_changedtick;
+    ++*buf->b_changedtick;
 #ifdef FEAT_NETBEANS_INTG
     netbeans_unmodified(buf);
 #endif
@@ -3264,7 +3264,11 @@ change_warning(
 #endif
 	msg_clr_eos();
 	(void)msg_end();
-	if (msg_silent == 0 && !silent_mode)
+	if (msg_silent == 0 && !silent_mode
+#ifdef FEAT_EVAL
+		&& time_for_testing != 1
+#endif
+		)
 	{
 	    out_flush();
 	    ui_delay(1000L, TRUE); /* give the user time to think about it */
@@ -4024,15 +4028,12 @@ expand_env_esc(
 		 */
 #  if defined(HAVE_GETPWNAM) && defined(HAVE_PWD_H)
 		{
-		    struct passwd *pw;
-
 		    /* Note: memory allocated by getpwnam() is never freed.
 		     * Calling endpwent() apparently doesn't help. */
-		    pw = getpwnam((char *)dst + 1);
-		    if (pw != NULL)
-			var = (char_u *)pw->pw_dir;
-		    else
-			var = NULL;
+		    struct passwd *pw = (*dst == NUL)
+					? NULL : getpwnam((char *)dst + 1);
+
+		    var = (pw == NULL) ? NULL : (char_u *)pw->pw_dir;
 		}
 		if (var == NULL)
 #  endif
@@ -4453,9 +4454,6 @@ vim_setenv(char_u *name, char_u *val)
     {
 	sprintf((char *)envbuf, "%s=%s", name, val);
 	putenv((char *)envbuf);
-# ifdef libintl_putenv
-	libintl_putenv((char *)envbuf);
-# endif
     }
 #endif
 #ifdef FEAT_GETTEXT
@@ -9651,7 +9649,7 @@ expand_wildcards(
 # endif
 	    if (match_file_list(p_wig, (*files)[i], ffname))
 	    {
-		/* remove this matching files from the list */
+		/* remove this matching file from the list */
 		vim_free((*files)[i]);
 		for (j = i; j + 1 < *num_files; ++j)
 		    (*files)[j] = (*files)[j + 1];
@@ -10735,14 +10733,15 @@ has_env_var(char_u *p)
 static int has_special_wildchar(char_u *p);
 
 /*
- * Return TRUE if "p" contains a special wildcard character.
- * Allowing for escaping.
+ * Return TRUE if "p" contains a special wildcard character, one that Vim
+ * cannot expand, requires using a shell.
  */
     static int
 has_special_wildchar(char_u *p)
 {
     for ( ; *p; mb_ptr_adv(p))
     {
+	/* Allow for escaping. */
 	if (*p == '\\' && p[1] != NUL)
 	    ++p;
 	else if (vim_strchr((char_u *)SPECIAL_WILDCHAR, *p) != NULL)

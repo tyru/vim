@@ -2,7 +2,10 @@
 # Common Makefile, defines the list of tests to run.
 #
 
-NO_PLUGIN = -U NONE --noplugin --not-a-term
+# Options for protecting the tests against undesirable interaction with the
+# environment
+NO_PLUGINS = --noplugin --not-a-term
+NO_INITS = -U NONE $(NO_PLUGINS)
 
 # The first script creates small.vim.
 SCRIPTS_FIRST = \
@@ -82,9 +85,7 @@ SCRIPTS_ALL = \
 	test_getcwd.out \
 	test_insertcount.out \
 	test_listchars.out \
-	test_listlbr.out \
 	test_search_mbyte.out \
-	test_utf8.out \
 	test_wordcount.out
 
 
@@ -102,8 +103,7 @@ SCRIPTS_MORE2 = \
 	test12.out \
 	test25.out \
 	test49.out \
-	test97.out \
-	test_listlbr_utf8.out
+	test97.out
 
 
 # Tests that run on most systems, but not MingW and Cygwin.
@@ -120,8 +120,7 @@ SCRIPTS_MORE4 = \
 	test59.out \
 	test72.out \
 	test78.out \
-	test83.out \
-	test89.out
+	test83.out
 
 
 # Tests specifically for MS-Windows.
@@ -156,7 +155,9 @@ NEW_TESTS = test_arglist.res \
 	    test_gf.res \
 	    test_gn.res \
 	    test_gui.res \
+	    test_gui_init.res \
 	    test_hardcopy.res \
+	    test_help.res \
 	    test_hide.res \
 	    test_history.res \
 	    test_hlsearch.res \
@@ -165,6 +166,9 @@ NEW_TESTS = test_arglist.res \
 	    test_job_fails.res \
 	    test_json.res \
 	    test_langmap.res \
+	    test_listlbr.res \
+	    test_listlbr_utf8.res \
+	    test_lua.res \
 	    test_man.res \
 	    test_marks.res \
 	    test_matchadd_conceal.res \
@@ -173,10 +177,15 @@ NEW_TESTS = test_arglist.res \
 	    test_nested_function.res \
 	    test_netbeans.res \
 	    test_normal.res \
-	    test_paste.res \
+	    test_number.res \
 	    test_packadd.res \
+	    test_paste.res \
 	    test_perl.res \
 	    test_profile.res \
+	    test_python2.res \
+	    test_python3.res \
+	    test_pyx2.res \
+	    test_pyx3.res \
 	    test_quickfix.res \
 	    test_retab.res \
 	    test_ruby.res \
@@ -189,11 +198,12 @@ NEW_TESTS = test_arglist.res \
 	    test_substitute.res \
 	    test_syntax.res \
 	    test_system.res \
+	    test_tcl.res \
 	    test_textobjects.res \
 	    test_undo.res \
 	    test_usercommands.res \
 	    test_viminfo.res \
-	    test_viml.res \
+	    test_vimscript.res \
 	    test_visual.res \
 	    test_window_id.res \
 	    test_writefile.res \

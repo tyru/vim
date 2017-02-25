@@ -1118,6 +1118,10 @@ main_loop(
 	    skip_redraw = FALSE;
 	else if (do_redraw || stuff_empty())
 	{
+# ifdef FEAT_GUI
+	    /* If ui_breakcheck() was used a resize may have been postponed. */
+	    gui_may_resize_shell();
+# endif
 #if defined(FEAT_AUTOCMD) || defined(FEAT_CONCEAL)
 	    /* Trigger CursorMoved if the cursor moved. */
 	    if (!finish_op && (
@@ -1160,13 +1164,13 @@ main_loop(
 #ifdef FEAT_AUTOCMD
 	    /* Trigger TextChanged if b_changedtick differs. */
 	    if (!finish_op && has_textchanged()
-		    && last_changedtick != curbuf->b_changedtick)
+		    && last_changedtick != *curbuf->b_changedtick)
 	    {
 		if (last_changedtick_buf == curbuf)
 		    apply_autocmds(EVENT_TEXTCHANGED, NULL, NULL,
 							       FALSE, curbuf);
 		last_changedtick_buf = curbuf;
-		last_changedtick = curbuf->b_changedtick;
+		last_changedtick = *curbuf->b_changedtick;
 	    }
 #endif
 
@@ -1384,11 +1388,11 @@ getout(int exitval)
 		    /* Autocmd must have close the buffer already, skip. */
 		    continue;
 		buf = wp->w_buffer;
-		if (buf->b_changedtick != -1)
+		if (buf->b_ct_val != -1)
 		{
 		    apply_autocmds(EVENT_BUFWINLEAVE, buf->b_fname,
 						    buf->b_fname, FALSE, buf);
-		    buf->b_changedtick = -1;  /* note that we did it already */
+		    buf->b_ct_val = -1;  /* note that we did it already */
 		    /* start all over, autocommands may mess up the lists */
 		    next_tp = first_tabpage;
 		    break;

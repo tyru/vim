@@ -292,6 +292,9 @@ static void f_py3eval(typval_T *argvars, typval_T *rettv);
 #ifdef FEAT_PYTHON
 static void f_pyeval(typval_T *argvars, typval_T *rettv);
 #endif
+#if defined(FEAT_PYTHON) || defined(FEAT_PYTHON3)
+static void f_pyxeval(typval_T *argvars, typval_T *rettv);
+#endif
 static void f_range(typval_T *argvars, typval_T *rettv);
 static void f_readfile(typval_T *argvars, typval_T *rettv);
 static void f_reltime(typval_T *argvars, typval_T *rettv);
@@ -724,6 +727,9 @@ static struct fst
 #endif
 #ifdef FEAT_PYTHON
     {"pyeval",		1, 1, f_pyeval},
+#endif
+#if defined(FEAT_PYTHON) || defined(FEAT_PYTHON3)
+    {"pyxeval",		1, 1, f_pyxeval},
 #endif
     {"range",		1, 3, f_range},
     {"readfile",	1, 3, f_readfile},
@@ -2545,7 +2551,7 @@ f_diff_hlID(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
 #ifdef FEAT_DIFF
     linenr_T		lnum = get_tv_lnum(argvars);
     static linenr_T	prev_lnum = 0;
-    static int		changedtick = 0;
+    static varnumber_T	changedtick = 0;
     static int		fnum = 0;
     static int		change_start = 0;
     static int		change_end = 0;
@@ -2556,7 +2562,7 @@ f_diff_hlID(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
     if (lnum < 0)	/* ignore type error in {lnum} arg */
 	lnum = 0;
     if (lnum != prev_lnum
-	    || changedtick != curbuf->b_changedtick
+	    || changedtick != *curbuf->b_changedtick
 	    || fnum != curbuf->b_fnum)
     {
 	/* New line, buffer, change: need to get the values. */
@@ -2578,7 +2584,7 @@ f_diff_hlID(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
 	else
 	    hlID = (hlf_T)0;
 	prev_lnum = lnum;
-	changedtick = curbuf->b_changedtick;
+	changedtick = *curbuf->b_changedtick;
 	fnum = curbuf->b_fnum;
     }
 
@@ -2825,7 +2831,17 @@ f_execute(typval_T *argvars, typval_T *rettv)
 	--list->lv_refcount;
     }
 
-    rettv->vval.v_string = redir_execute_ga.ga_data;
+    /* Need to append a NUL to the result. */
+    if (ga_grow(&redir_execute_ga, 1) == OK)
+    {
+	((char *)redir_execute_ga.ga_data)[redir_execute_ga.ga_len] = NUL;
+	rettv->vval.v_string = redir_execute_ga.ga_data;
+    }
+    else
+    {
+	ga_clear(&redir_execute_ga);
+	rettv->vval.v_string = NULL;
+    }
     msg_silent = save_msg_silent;
     emsg_silent = save_emsg_silent;
     emsg_noredir = save_emsg_noredir;
@@ -3953,7 +3969,7 @@ get_buffer_info(buf_T *buf)
     dict_add_nr_str(dict, "loaded", buf->b_ml.ml_mfp != NULL, NULL);
     dict_add_nr_str(dict, "listed", buf->b_p_bl, NULL);
     dict_add_nr_str(dict, "changed", bufIsChanged(buf), NULL);
-    dict_add_nr_str(dict, "changedtick", buf->b_changedtick, NULL);
+    dict_add_nr_str(dict, "changedtick", *buf->b_changedtick, NULL);
     dict_add_nr_str(dict, "hidden",
 		    buf->b_ml.ml_mfp != NULL && buf->b_nwindows == 0,
 		    NULL);
@@ -4185,12 +4201,6 @@ f_getbufvar(typval_T *argvars, typval_T *rettv)
 	    else if (get_option_tv(&varname, rettv, TRUE) == OK)
 		/* buffer-local-option */
 		done = TRUE;
-	}
-	else if (STRCMP(varname, "changedtick") == 0)
-	{
-	    rettv->v_type = VAR_NUMBER;
-	    rettv->vval.v_number = curbuf->b_changedtick;
-	    done = TRUE;
 	}
 	else
 	{
@@ -5775,15 +5785,13 @@ f_has(typval_T *argvars, typval_T *rettv)
 #ifdef FEAT_PERSISTENT_UNDO
 	"persistent_undo",
 #endif
-#ifdef FEAT_PYTHON
-#ifndef DYNAMIC_PYTHON
+#if defined(FEAT_PYTHON) && !defined(DYNAMIC_PYTHON)
 	"python",
+	"pythonx",
 #endif
-#endif
-#ifdef FEAT_PYTHON3
-#ifndef DYNAMIC_PYTHON3
+#if defined(FEAT_PYTHON3) && !defined(DYNAMIC_PYTHON3)
 	"python3",
-#endif
+	"pythonx",
 #endif
 #ifdef FEAT_POSTSCRIPT
 	"postscript",
@@ -6016,17 +6024,30 @@ f_has(typval_T *argvars, typval_T *rettv)
 	else if (STRICMP(name, "ruby") == 0)
 	    n = ruby_enabled(FALSE);
 #endif
-#ifdef FEAT_PYTHON
 #ifdef DYNAMIC_PYTHON
 	else if (STRICMP(name, "python") == 0)
 	    n = python_enabled(FALSE);
 #endif
-#endif
-#ifdef FEAT_PYTHON3
 #ifdef DYNAMIC_PYTHON3
 	else if (STRICMP(name, "python3") == 0)
 	    n = python3_enabled(FALSE);
 #endif
+#if defined(DYNAMIC_PYTHON) || defined(DYNAMIC_PYTHON3)
+	else if (STRICMP(name, "pythonx") == 0)
+	{
+# if defined(DYNAMIC_PYTHON) && defined(DYNAMIC_PYTHON3)
+	    if (p_pyx == 0)
+		n = python3_enabled(FALSE) || python_enabled(FALSE);
+	    else if (p_pyx == 3)
+		n = python3_enabled(FALSE);
+	    else if (p_pyx == 2)
+		n = python_enabled(FALSE);
+# elif defined(DYNAMIC_PYTHON)
+	    n = python_enabled(FALSE);
+# elif defined(DYNAMIC_PYTHON3)
+	    n = python3_enabled(FALSE);
+# endif
+	}
 #endif
 #ifdef DYNAMIC_PERL
 	else if (STRICMP(name, "perl") == 0)
@@ -6584,7 +6605,7 @@ f_islocked(typval_T *argvars, typval_T *rettv)
 
     rettv->vval.v_number = -1;
     end = get_lval(get_tv_string(&argvars[0]), NULL, &lv, FALSE, FALSE,
-					GLV_NO_AUTOLOAD, FNE_CHECK_START);
+			     GLV_NO_AUTOLOAD | GLV_READ_ONLY, FNE_CHECK_START);
     if (end != NULL && lv.ll_name != NULL)
     {
 	if (*end != NUL)
@@ -6593,21 +6614,16 @@ f_islocked(typval_T *argvars, typval_T *rettv)
 	{
 	    if (lv.ll_tv == NULL)
 	    {
-		if (check_changedtick(lv.ll_name))
-		    rettv->vval.v_number = 1;	    /* always locked */
-		else
+		di = find_var(lv.ll_name, NULL, TRUE);
+		if (di != NULL)
 		{
-		    di = find_var(lv.ll_name, NULL, TRUE);
-		    if (di != NULL)
-		    {
-			/* Consider a variable locked when:
-			 * 1. the variable itself is locked
-			 * 2. the value of the variable is locked.
-			 * 3. the List or Dict value is locked.
-			 */
-			rettv->vval.v_number = ((di->di_flags & DI_FLAGS_LOCK)
-						  || tv_islocked(&di->di_tv));
-		    }
+		    /* Consider a variable locked when:
+		     * 1. the variable itself is locked
+		     * 2. the value of the variable is locked.
+		     * 3. the List or Dict value is locked.
+		     */
+		    rettv->vval.v_number = ((di->di_flags & DI_FLAGS_LOCK)
+						   || tv_islocked(&di->di_tv));
 		}
 	    }
 	    else if (lv.ll_range)
@@ -7800,21 +7816,26 @@ f_mode(typval_T *argvars, typval_T *rettv)
 	}
 	else
 #endif
-	if (State & REPLACE_FLAG)
-	    buf[0] = 'R';
-	else
-	    buf[0] = 'i';
+	{
+	    if (State & REPLACE_FLAG)
+		buf[0] = 'R';
+	    else
+		buf[0] = 'i';
+#ifdef FEAT_INS_EXPAND
+	    if (ins_compl_active())
+		buf[1] = 'c';
+	    else if (ctrl_x_mode == 1)
+		buf[1] = 'x';
+#endif
+	}
     }
-    else if (State & CMDLINE)
+    else if ((State & CMDLINE) || exmode_active)
     {
 	buf[0] = 'c';
-	if (exmode_active)
+	if (exmode_active == EXMODE_VIM)
 	    buf[1] = 'v';
-    }
-    else if (exmode_active)
-    {
-	buf[0] = 'c';
-	buf[1] = 'e';
+	else if (exmode_active == EXMODE_NORMAL)
+	    buf[1] = 'e';
     }
     else
     {
@@ -8051,6 +8072,9 @@ f_py3eval(typval_T *argvars, typval_T *rettv)
     char_u	*str;
     char_u	buf[NUMBUFLEN];
 
+    if (p_pyx == 0)
+	p_pyx = 3;
+
     str = get_tv_string_buf(&argvars[0], buf);
     do_py3eval(str, rettv);
 }
@@ -8066,8 +8090,32 @@ f_pyeval(typval_T *argvars, typval_T *rettv)
     char_u	*str;
     char_u	buf[NUMBUFLEN];
 
+    if (p_pyx == 0)
+	p_pyx = 2;
+
     str = get_tv_string_buf(&argvars[0], buf);
     do_pyeval(str, rettv);
+}
+#endif
+
+#if defined(FEAT_PYTHON) || defined(FEAT_PYTHON3)
+/*
+ * "pyxeval()" function
+ */
+    static void
+f_pyxeval(typval_T *argvars, typval_T *rettv)
+{
+# if defined(FEAT_PYTHON) && defined(FEAT_PYTHON3)
+    init_pyxversion();
+    if (p_pyx == 2)
+	f_pyeval(argvars, rettv);
+    else
+	f_py3eval(argvars, rettv);
+# elif defined(FEAT_PYTHON)
+    f_pyeval(argvars, rettv);
+# elif defined(FEAT_PYTHON3)
+    f_py3eval(argvars, rettv);
+# endif
 }
 #endif
 
@@ -10136,20 +10184,15 @@ f_setpos(typval_T *argvars, typval_T *rettv)
 		pos.col = 0;
 	    if (name[0] == '.' && name[1] == NUL)
 	    {
-		/* set cursor */
-		if (fnum == curbuf->b_fnum)
+		/* set cursor; "fnum" is ignored */
+		curwin->w_cursor = pos;
+		if (curswant >= 0)
 		{
-		    curwin->w_cursor = pos;
-		    if (curswant >= 0)
-		    {
-			curwin->w_curswant = curswant - 1;
-			curwin->w_set_curswant = FALSE;
-		    }
-		    check_cursor();
-		    rettv->vval.v_number = 0;
+		    curwin->w_curswant = curswant - 1;
+		    curwin->w_set_curswant = FALSE;
 		}
-		else
-		    EMSG(_(e_invarg));
+		check_cursor();
+		rettv->vval.v_number = 0;
 	    }
 	    else if (name[0] == '\'' && name[1] != NUL && name[2] == NUL)
 	    {
@@ -11573,8 +11616,8 @@ f_submatch(typval_T *argvars, typval_T *rettv)
 	return;
     if (no < 0 || no >= NSUBEXP)
     {
-        EMSGN(_("E935: invalid submatch number: %d"), no);
-        return;
+	EMSGN(_("E935: invalid submatch number: %d"), no);
+	return;
     }
     if (argvars[1].v_type != VAR_UNKNOWN)
 	retList = (int)get_tv_number_chk(&argvars[1], &error);
