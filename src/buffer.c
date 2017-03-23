@@ -111,7 +111,7 @@ read_buffer(
     {
 	/* Set or reset 'modified' before executing autocommands, so that
 	 * it can be changed there. */
-	if (!readonlymode && !bufempty())
+	if (!readonlymode && !BUFEMPTY())
 	    changed();
 	else if (retval == OK)
 	    unchanged(curbuf, FALSE);
@@ -832,7 +832,6 @@ free_buffer(buf_T *buf)
     free_buffer_stuff(buf, TRUE);
 #ifdef FEAT_EVAL
     unref_var_dict(buf->b_vars);
-    buf->b_changedtick = &buf->b_ct_val;
 #endif
 #ifdef FEAT_LUA
     lua_buffer_free(buf);
@@ -874,31 +873,22 @@ free_buffer(buf_T *buf)
 }
 
 /*
- * Initializes buf->b_changedtick.
+ * Initializes b:changedtick.
  */
     static void
 init_changedtick(buf_T *buf)
 {
-#ifdef FEAT_EVAL
-    dictitem_T *di = dictitem_alloc((char_u *)"changedtick");
+    dictitem_T *di = (dictitem_T *)&buf->b_ct_di;
 
-    if (di != NULL)
-    {
-	di->di_flags |= DI_FLAGS_FIX | DI_FLAGS_RO;
-	di->di_tv.v_type = VAR_NUMBER;
-	di->di_tv.v_lock = VAR_FIXED;
-	di->di_tv.vval.v_number = 0;
-	if (dict_add(buf->b_vars, di) == OK)
-	    buf->b_changedtick = &di->di_tv.vval.v_number;
-	else
-	{
-	    vim_free(di);
-	    buf->b_changedtick = &buf->b_ct_val;
-	}
-    }
-    else
+    di->di_flags = DI_FLAGS_FIX | DI_FLAGS_RO;
+    di->di_tv.v_type = VAR_NUMBER;
+    di->di_tv.v_lock = VAR_FIXED;
+    di->di_tv.vval.v_number = 0;
+
+#ifdef FEAT_EVAL
+    STRCPY(buf->b_ct_di.di_key, "changedtick");
+    (void)dict_add(buf->b_vars, di);
 #endif
-	buf->b_changedtick = &buf->b_ct_val;
 }
 
 /*
@@ -919,12 +909,12 @@ free_buffer_stuff(
     }
 #ifdef FEAT_EVAL
     {
-	varnumber_T tick = *buf->b_changedtick;
+	varnumber_T tick = CHANGEDTICK(buf);
 
 	vars_clear(&buf->b_vars->dv_hashtab); /* free all buffer variables */
 	hash_init(&buf->b_vars->dv_hashtab);
 	init_changedtick(buf);
-	*buf->b_changedtick = tick;
+	CHANGEDTICK(buf) = tick;
     }
 #endif
 #ifdef FEAT_USR_CMDS
@@ -1969,7 +1959,7 @@ buflist_new(
 	    && curbuf != NULL
 	    && curbuf->b_ffname == NULL
 	    && curbuf->b_nwindows <= 1
-	    && (curbuf->b_ml.ml_mfp == NULL || bufempty()))
+	    && (curbuf->b_ml.ml_mfp == NULL || BUFEMPTY()))
     {
 	buf = curbuf;
 #ifdef FEAT_AUTOCMD
@@ -2265,6 +2255,9 @@ free_buf_options(
     clear_string_option(&buf->b_p_lw);
 #endif
     clear_string_option(&buf->b_p_bkc);
+#ifdef FEAT_MBYTE
+    clear_string_option(&buf->b_p_menc);
+#endif
 }
 
 /*
@@ -2341,7 +2334,7 @@ buflist_getfile(
 	/* If 'switchbuf' contains "split", "vsplit" or "newtab" and the
 	 * current buffer isn't empty: open new tab or window */
 	if (wp == NULL && (swb_flags & (SWB_VSPLIT | SWB_SPLIT | SWB_NEWTAB))
-							       && !bufempty())
+							       && !BUFEMPTY())
 	{
 	    if (swb_flags & SWB_NEWTAB)
 		tabpage_new();
@@ -5024,7 +5017,7 @@ do_arg_all(
 #ifdef FEAT_WINDOWS
     /* ":drop all" should re-use an empty window to avoid "--remote-tab"
      * leaving an empty tab page when executed locally. */
-    if (keep_tabs && bufempty() && curbuf->b_nwindows == 1
+    if (keep_tabs && BUFEMPTY() && curbuf->b_nwindows == 1
 			    && curbuf->b_ffname == NULL && !curbuf->b_changed)
 	use_firstwin = TRUE;
 #endif
@@ -6028,7 +6021,7 @@ sign_list_placed(buf_T *rbuf)
 	if (buf->b_signlist != NULL)
 	{
 	    vim_snprintf(lbuf, BUFSIZ, _("Signs for %s:"), buf->b_fname);
-	    MSG_PUTS_ATTR(lbuf, hl_attr(HLF_D));
+	    MSG_PUTS_ATTR(lbuf, HL_ATTR(HLF_D));
 	    msg_putchar('\n');
 	}
 	for (p = buf->b_signlist; p != NULL && !got_int; p = p->next)

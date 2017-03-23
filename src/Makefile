@@ -2033,7 +2033,6 @@ scripttests:
 	fi
 	cd testdir; $(MAKE) -f Makefile $(GUI_TESTTARGET) VIMPROG=../$(VIMTARGET) $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
 
-
 # Run the tests with the GUI.  Assumes vim/gvim was already built
 testgui:
 	cd testdir; $(MAKE) -f Makefile $(GUI_TESTTARGET) VIMPROG=../$(VIMTARGET) GUI_FLAG=-g $(GUI_TESTARG) SCRIPTSOURCE=../$(SCRIPTSOURCE)
@@ -2089,6 +2088,7 @@ test1 \
 
 # Run individual NEW style test, assuming that Vim was already compiled.
 test_arglist \
+	test_arabic \
 	test_assert \
 	test_assign \
 	test_autochdir \
@@ -2096,10 +2096,14 @@ test_arglist \
 	test_backspace_opt \
 	test_breakindent \
 	test_bufwintabinfo \
+	test_cd \
 	test_cdo \
+	test_changedtick \
 	test_channel \
 	test_charsearch \
-	test_changedtick \
+	test_charsearch_utf8 \
+	test_cindent \
+	test_clientserver \
 	test_cmdline \
 	test_command_count \
 	test_crypt \
@@ -2110,6 +2114,7 @@ test_arglist \
 	test_digraph \
 	test_functions \
 	test_display \
+	test_edit \
 	test_ex_undo \
 	test_execute_func \
 	test_expand \
@@ -2153,6 +2158,7 @@ test_arglist \
 	test_listlbr \
 	test_listlbr_utf8 \
 	test_lua \
+	test_makeencoding \
 	test_man \
 	test_mapping \
 	test_marks \
@@ -2180,6 +2186,7 @@ test_arglist \
 	test_pyx2 \
 	test_pyx3 \
 	test_quickfix \
+	test_quotestar \
 	test_recover \
 	test_regexp_latin \
 	test_regexp_utf8 \
@@ -2193,6 +2200,7 @@ test_arglist \
 	test_smartindent \
 	test_sort \
 	test_source_utf8 \
+	test_spell \
 	test_startup \
 	test_startup_utf8 \
 	test_stat \
@@ -2205,6 +2213,7 @@ test_arglist \
 	test_tabpage \
 	test_tagcase \
 	test_tagjump \
+	test_taglist \
 	test_tcl \
 	test_textobjects \
 	test_timers \
@@ -2752,6 +2761,7 @@ clean celan: testclean
 	-rm -f *.o objects/* core $(VIMTARGET).core $(VIMTARGET) vim xxd/*.o
 	-rm -f $(TOOLS) auto/osdef.h auto/pathdef.c auto/if_perl.c auto/gui_gtk_gresources.c auto/gui_gtk_gresources.h
 	-rm -f conftest* *~ auto/link.sed
+	-rm -f testdir/opt_test.vim
 	-rm -f $(UNITTEST_TARGETS)
 	-rm -f runtime pixmaps
 	-rm -rf $(APPDIR)

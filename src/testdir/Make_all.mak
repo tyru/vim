@@ -133,15 +133,19 @@ SCRIPTS_GUI =
 
 # Tests using runtest.vim.vim.
 # Keep test_alot*.res as the last one, sort the others.
-NEW_TESTS = test_arglist.res \
+NEW_TESTS = test_arabic.res \
+	    test_arglist.res \
 	    test_assert.res \
 	    test_autochdir.res \
+	    test_autocmd.res \
 	    test_backspace_opt.res \
 	    test_breakindent.res \
 	    test_bufwintabinfo.res \
 	    test_cdo.res \
 	    test_channel.res \
 	    test_charsearch.res \
+	    test_cindent.res \
+	    test_clientserver.res \
 	    test_cmdline.res \
 	    test_command_count.res \
 	    test_crypt.res \
@@ -149,6 +153,7 @@ NEW_TESTS = test_arglist.res \
 	    test_diffmode.res \
 	    test_digraph.res \
 	    test_display.res \
+	    test_edit.res \
 	    test_farsi.res \
 	    test_fnameescape.res \
 	    test_fold.res \
@@ -169,6 +174,7 @@ NEW_TESTS = test_arglist.res \
 	    test_listlbr.res \
 	    test_listlbr_utf8.res \
 	    test_lua.res \
+	    test_makeencoding.res \
 	    test_man.res \
 	    test_marks.res \
 	    test_matchadd_conceal.res \
@@ -178,6 +184,7 @@ NEW_TESTS = test_arglist.res \
 	    test_netbeans.res \
 	    test_normal.res \
 	    test_number.res \
+	    test_options.res \
 	    test_packadd.res \
 	    test_paste.res \
 	    test_perl.res \
@@ -187,11 +194,13 @@ NEW_TESTS = test_arglist.res \
 	    test_pyx2.res \
 	    test_pyx3.res \
 	    test_quickfix.res \
+	    test_quotestar.res \
 	    test_retab.res \
 	    test_ruby.res \
 	    test_search.res \
 	    test_signs.res \
 	    test_smartindent.res \
+	    test_spell.res \
 	    test_startup.res \
 	    test_startup_utf8.res \
 	    test_stat.res \
@@ -217,3 +226,4 @@ test49.out: test49.vim
 
 test60.out: test60.vim
 
+test_options.res test_alot.res: opt_test.vim

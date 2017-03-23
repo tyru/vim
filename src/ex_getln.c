@@ -234,7 +234,7 @@ getcmdline(
 
     ccline.overstrike = FALSE;		    /* always start in insert mode */
 #ifdef FEAT_SEARCH_EXTRA
-    clearpos(&match_end);
+    CLEAR_POS(&match_end);
     save_cursor = curwin->w_cursor;	    /* may be restored later */
     search_start = curwin->w_cursor;
     old_curswant = curwin->w_curswant;
@@ -258,6 +258,7 @@ getcmdline(
 	return NULL;			    /* out of memory */
     ccline.cmdlen = ccline.cmdpos = 0;
     ccline.cmdbuff[0] = NUL;
+    sb_text_start_cmdline();
 
     /* autoindent for :insert and :append */
     if (firstc <= 0)
@@ -1479,7 +1480,7 @@ getcmdline(
 		    if (did_incsearch)
 		    {
 			curwin->w_cursor = match_end;
-			if (!equalpos(curwin->w_cursor, search_start))
+			if (!EQUAL_POS(curwin->w_cursor, search_start))
 			{
 			    c = gchar_cursor();
 			    /* If 'ignorecase' and 'smartcase' are set and the
@@ -1707,7 +1708,7 @@ getcmdline(
 			    search_start = t;
 			    (void)decl(&search_start);
 			}
-			if (lt(t, search_start) && c == Ctrl_G)
+			if (LT_POS(t, search_start) && c == Ctrl_G)
 			{
 			    /* wrap around */
 			    search_start = t;
@@ -2007,7 +2008,7 @@ returncmd:
 	    curwin->w_cursor = save_cursor;
 	else
 	{
-	    if (!equalpos(save_cursor, search_start))
+	    if (!EQUAL_POS(save_cursor, search_start))
 	    {
 		/* put the '" mark at the original position */
 		curwin->w_cursor = save_cursor;
@@ -2083,6 +2084,7 @@ returncmd:
 #ifdef CURSOR_SHAPE
     ui_cursor_shape();		/* may show different cursor shape */
 #endif
+    sb_text_end_cmdline();
 
     {
 	char_u *p = ccline.cmdbuff;
@@ -2369,9 +2371,16 @@ getexmodeline(
 	if (ga_grow(&line_ga, 40) == FAIL)
 	    break;
 
-	/* Get one character at a time. */
+	/*
+	 * Get one character at a time.
+	 */
 	prev_char = c1;
-	c1 = vgetc();
+
+	/* Check for a ":normal" command and no more characters left. */
+	if (ex_normal_busy > 0 && typebuf.tb_len == 0)
+	    c1 = '\n';
+	else
+	    c1 = vgetc();
 
 	/*
 	 * Handle line editing.
@@ -4171,14 +4180,14 @@ showmatches(expand_T *xp, int wildmenu UNUSED)
 	    lines = (num_files + columns - 1) / columns;
 	}
 
-	attr = hl_attr(HLF_D);	/* find out highlighting for directories */
+	attr = HL_ATTR(HLF_D);	/* find out highlighting for directories */
 
 	if (xp->xp_context == EXPAND_TAGS_LISTFILES)
 	{
-	    MSG_PUTS_ATTR(_("tagname"), hl_attr(HLF_T));
+	    MSG_PUTS_ATTR(_("tagname"), HL_ATTR(HLF_T));
 	    msg_clr_eos();
 	    msg_advance(maxlen - 3);
-	    MSG_PUTS_ATTR(_(" kind file\n"), hl_attr(HLF_T));
+	    MSG_PUTS_ATTR(_(" kind file\n"), HL_ATTR(HLF_T));
 	}
 
 	/* list the files line by line */
@@ -4189,12 +4198,12 @@ showmatches(expand_T *xp, int wildmenu UNUSED)
 	    {
 		if (xp->xp_context == EXPAND_TAGS_LISTFILES)
 		{
-		    msg_outtrans_attr(files_found[k], hl_attr(HLF_D));
+		    msg_outtrans_attr(files_found[k], HL_ATTR(HLF_D));
 		    p = files_found[k] + STRLEN(files_found[k]) + 1;
 		    msg_advance(maxlen + 1);
 		    msg_puts(p);
 		    msg_advance(maxlen + 3);
-		    msg_puts_long_attr(p + 2, hl_attr(HLF_D));
+		    msg_puts_long_attr(p + 2, HL_ATTR(HLF_D));
 		    break;
 		}
 		for (j = maxlen - lastlen; --j >= 0; )
@@ -4289,7 +4298,7 @@ sm_gettail(char_u *s)
 	    t = p;
 	    had_sep = FALSE;
 	}
-	mb_ptr_adv(p);
+	MB_PTR_ADV(p);
     }
     return t;
 }
@@ -5363,7 +5372,7 @@ ExpandRTDir(
 	if (e - 4 > s && STRNICMP(e - 4, ".vim", 4) == 0)
 	{
 	    e -= 4;
-	    for (s = e; s > match; mb_ptr_back(match, s))
+	    for (s = e; s > match; MB_PTR_BACK(match, s))
 		if (s < match || vim_ispathsep(*s))
 		    break;
 	    ++s;
@@ -6020,7 +6029,7 @@ remove_key_from_history(void)
 		if (p == NULL)
 		    break;
 		++p;
-		for (i = 0; p[i] && !vim_iswhite(p[i]); ++i)
+		for (i = 0; p[i] && !VIM_ISWHITE(p[i]); ++i)
 		    if (p[i] == '\\' && p[i + 1])
 			++i;
 		STRMOVE(p, p + i);
