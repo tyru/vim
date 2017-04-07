@@ -2355,18 +2355,19 @@ parse_line:
 		}
 		else
 		{
-#define TAG_SEP 0x01
+#define TAG_SEP 0x02
 		    size_t tag_fname_len = STRLEN(tag_fname);
 #ifdef FEAT_EMACS_TAGS
 		    size_t ebuf_len = 0;
 #endif
 
 		    /* Save the tag in a buffer.
-		     * Use 0x01 to separate fields (Can't use NUL, because the
-		     * hash key is terminated by NUL).
-		     * Emacs tag: <mtt><tag_fname><0x01><ebuf><0x01><lbuf><NUL>
-		     * other tag: <mtt><tag_fname><0x01><0x01><lbuf><NUL>
-		     * without Emacs tags: <mtt><tag_fname><0x01><lbuf><NUL>
+		     * Use 0x02 to separate fields (Can't use NUL because the
+		     * hash key is terminated by NUL, or Ctrl_A because that is
+		     * part of some Emacs tag files -- see parse_tag_line).
+		     * Emacs tag: <mtt><tag_fname><0x02><ebuf><0x02><lbuf><NUL>
+		     * other tag: <mtt><tag_fname><0x02><0x02><lbuf><NUL>
+		     * without Emacs tags: <mtt><tag_fname><0x02><lbuf><NUL>
 		     * Here <mtt> is the "mtt" value plus 1 to avoid NUL.
 		     */
 		    len = (int)tag_fname_len + (int)STRLEN(lbuf) + 3;
@@ -3203,8 +3204,12 @@ jumpto_tag(
      * open a new tab page. */
     if (postponed_split || cmdmod.tab != 0)
     {
-	win_split(postponed_split > 0 ? postponed_split : 0,
-						       postponed_split_flags);
+	if (win_split(postponed_split > 0 ? postponed_split : 0,
+						postponed_split_flags) == FAIL)
+	{
+	    --RedrawingDisabled;
+	    goto erret;
+	}
 	RESET_BINDING(curwin);
     }
 #endif

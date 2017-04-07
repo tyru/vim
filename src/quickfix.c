@@ -717,7 +717,8 @@ qf_get_next_file_line(qfstate_T *state)
 
 #ifdef FEAT_MBYTE
     /* Convert a line if it contains a non-ASCII character. */
-    if (state->vc.vc_type != CONV_NONE && has_non_ascii(state->linebuf)) {
+    if (state->vc.vc_type != CONV_NONE && has_non_ascii(state->linebuf))
+    {
 	char_u	*line;
 
 	line = string_convert(&state->vc, state->linebuf, &state->linelen);
@@ -917,7 +918,8 @@ restofline:
 	    }
 	    if (fmt_ptr->flags == '+' && !qi->qf_multiscan)	/* %+ */
 	    {
-		if (linelen > fields->errmsglen) {
+		if (linelen > fields->errmsglen)
+		{
 		    /* linelen + null terminator */
 		    if ((fields->errmsg = vim_realloc(fields->errmsg,
 				    linelen + 1)) == NULL)
@@ -931,7 +933,8 @@ restofline:
 		if (regmatch.startp[i] == NULL || regmatch.endp[i] == NULL)
 		    continue;
 		len = (int)(regmatch.endp[i] - regmatch.startp[i]);
-		if (len > fields->errmsglen) {
+		if (len > fields->errmsglen)
+		{
 		    /* len + null terminator */
 		    if ((fields->errmsg = vim_realloc(fields->errmsg, len + 1))
 			    == NULL)
@@ -1013,7 +1016,8 @@ restofline:
 	fields->namebuf[0] = NUL;	/* no match found, remove file name */
 	fields->lnum = 0;			/* don't jump to this line */
 	fields->valid = FALSE;
-	if (linelen > fields->errmsglen) {
+	if (linelen > fields->errmsglen)
+	{
 	    /* linelen + null terminator */
 	    if ((fields->errmsg = vim_realloc(fields->errmsg,
 			    linelen + 1)) == NULL)
@@ -4798,7 +4802,8 @@ qf_add_entries(
 	qi->qf_lists[qi->qf_curlist].qf_nonevalid = TRUE;
     else
 	qi->qf_lists[qi->qf_curlist].qf_nonevalid = FALSE;
-    if (action != 'a') {
+    if (action != 'a')
+    {
 	qi->qf_lists[qi->qf_curlist].qf_ptr =
 	    qi->qf_lists[qi->qf_curlist].qf_start;
 	if (qi->qf_lists[qi->qf_curlist].qf_count > 0)
@@ -4862,6 +4867,71 @@ qf_set_properties(qf_info_T *qi, dict_T *what, int action)
 }
 
 /*
+ * Find the non-location list window with the specified location list.
+ */
+    static win_T *
+find_win_with_ll(qf_info_T *qi)
+{
+    win_T	*wp = NULL;
+
+    FOR_ALL_WINDOWS(wp)
+	if ((wp->w_llist == qi) && !bt_quickfix(wp->w_buffer))
+	    return wp;
+
+    return NULL;
+}
+
+/*
+ * Free the entire quickfix/location list stack.
+ * If the quickfix/location list window is open, then clear it.
+ */
+    static void
+qf_free_stack(win_T *wp, qf_info_T *qi)
+{
+    win_T	*qfwin = qf_find_win(qi);
+    win_T	*llwin = NULL;
+    win_T	*orig_wp = wp;
+
+    if (qfwin != NULL)
+    {
+	/* If the quickfix/location list window is open, then clear it */
+	if (qi->qf_curlist < qi->qf_listcount)
+	    qf_free(qi, qi->qf_curlist);
+	qf_update_buffer(qi, NULL);
+    }
+
+    if (wp != NULL && IS_LL_WINDOW(wp))
+    {
+	/* If in the location list window, then use the non-location list
+	 * window with this location list (if present)
+	 */
+	llwin = find_win_with_ll(qi);
+	if (llwin != NULL)
+	    wp = llwin;
+    }
+
+    qf_free_all(wp);
+    if (wp == NULL)
+    {
+	/* quickfix list */
+	qi->qf_curlist = 0;
+	qi->qf_listcount = 0;
+    }
+    else if (IS_LL_WINDOW(orig_wp))
+    {
+	/* If the location list window is open, then create a new empty
+	 * location list */
+	qf_info_T *new_ll = ll_new_list();
+	orig_wp->w_llist_ref = new_ll;
+	if (llwin != NULL)
+	{
+	    llwin->w_llist = new_ll;
+	    new_ll->qf_refcount++;
+	}
+    }
+}
+
+/*
  * Populate the quickfix list with the items supplied in the list
  * of dictionaries. "title" will be copied to w:quickfix_title.
  * "action" is 'a' for add, 'r' for replace.  Otherwise create a new list.
@@ -4884,7 +4954,12 @@ set_errorlist(
 	    return FAIL;
     }
 
-    if (what != NULL)
+    if (action == 'f')
+    {
+	/* Free the entire quickfix or location list stack */
+	qf_free_stack(wp, qi);
+    }
+    else if (what != NULL)
 	retval = qf_set_properties(qi, what, action);
     else
 	retval = qf_add_entries(qi, list, title, action);
@@ -5187,7 +5262,8 @@ ex_helpgrep(exarg_T *eap)
 			    /* Convert a line if 'encoding' is not utf-8 and
 			     * the line contains a non-ASCII character. */
 			    if (vc.vc_type != CONV_NONE
-						   && has_non_ascii(IObuff)) {
+						   && has_non_ascii(IObuff))
+			    {
 				line = string_convert(&vc, IObuff, NULL);
 				if (line == NULL)
 				    line = IObuff;
