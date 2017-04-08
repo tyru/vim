@@ -72,6 +72,7 @@ src/testdir/mzscheme.vim
 src/testdir/lua.vim
 src/testdir/small.vim
 src/testdir/tiny.vim
+src/testdir/test.ok
 src/testdir/test*.out
 src/testdir/test*.failed
 src/testdir/test.log

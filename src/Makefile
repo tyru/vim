@@ -2223,6 +2223,7 @@ test_arglist \
 	test_system \
 	test_tabline \
 	test_tabpage \
+	test_tabsidebar \
 	test_tagcase \
 	test_tagjump \
 	test_taglist \

@@ -10446,7 +10446,10 @@ f_settabsidebar(typval_T *argvars, typval_T *rettv)
 	{
 	    tp->tp_tabsidebar = alloc((unsigned)STRLEN(tabsidebar) + 1);
 	    if (tp->tp_tabsidebar != NULL)
+	    {
 		STRCPY(tp->tp_tabsidebar, tabsidebar);
+		rettv->vval.v_number = 1;
+	    }
 	}
 	else
 	    tp->tp_tabsidebar = NULL;
