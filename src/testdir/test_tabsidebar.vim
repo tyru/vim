@@ -1,7 +1,14 @@
 " Tests for tabsidebar
 
-function! Test_settabsidebar()
+function! s:cleanup()
   silent! tabonly!
+  set tabsidebar&
+  set showtabsidebar&
+  set tabsidebarcolumns&
+endfunc
+
+function! Test_settabsidebar()
+  call s:cleanup()
   let text = "Test_settabsidebar"
   let n = 3
   for i in range(1, n)
@@ -14,13 +21,11 @@ function! Test_settabsidebar()
   endfor
   call assert_equal(0, settabsidebar(n + 2, text))
   call assert_equal(0, settabsidebar(n + 3, text))
-  for i in range(1, n)
-    quit
-  endfor
+  call s:cleanup()
 endfunc
 
 function! Test_gettabsidebar()
-  silent! tabonly!
+  call s:cleanup()
   let text = 'Test_gettabsidebar'
   let n = 3
   for i in range(1, n)
@@ -36,10 +41,11 @@ function! Test_gettabsidebar()
   endfor
   call assert_equal("", gettabsidebar(n + 2))
   call assert_equal("", gettabsidebar(n + 3))
+  call s:cleanup()
 endfunc
 
 function! Test_tabsidebar()
-  silent! tabonly!
+  call s:cleanup()
   set showtabsidebar=2
   set tabsidebarcolumns=20
   call settabsidebar(1, "Test_tabsidebar")
@@ -84,6 +90,7 @@ function! Test_tabsidebar()
   call assert_equal('4', nr2char(screenchar(4, 1)))
 
   call assert_equal('5', nr2char(screenchar(5, 1)))
+  call s:cleanup()
 endfunc
 
 " vim: shiftwidth=2 sts=2 expandtab
