@@ -10550,34 +10550,6 @@ draw_tabsidebar(int redrawing_row)
 	col = 0;
 	attr = attr_fill;
 
-	// -------------------------------------
-	// for DEBUG
-// 	if (row == 0)
-// 	{
-// 	    char_u	s[30];
-// 	    // proftime_T	res;
-// 	    // long	n1, n2;
-//
-// // 	    profile_start(&res);
-// // # ifdef WIN3264
-// // 	    n1 = res.HighPart;
-// // 	    n2 = res.LowPart;
-// // # else
-// // 	    n1 = res.tv_sec;
-// // 	    n2 = res.tv_usec;
-// // # endif
-// 	    sprintf((char *)s, "%d,%d", screen_cur_row, screen_cur_col);
-// 	    screen_puts(s, row, col, attr);
-// 	    len = (int)STRLEN(s);
-// 	    col += vim_strnsize(s, len);
-//
-// 	    while (col < tabsidebar_width())
-// 		screen_putchar(fillchar, row, col++, attr);
-//
-// 	    continue;
-// 	}
-	// -------------------------------------
-
 	if (tp != NULL)
 	{
 	    if (row == redrawing_row || redrawing_row == -1)
@@ -10697,15 +10669,15 @@ draw_tabsidebar(int redrawing_row)
 				    attr
 #endif
 				    );
-			    col += len;
+				col += len;
+			    }
 			}
-		    }
-		    if (modified)
-			if (tabsidebar_width() > col + 1)
-			    screen_puts_len((char_u *)"+", 1, row, col++, attr);
+			if (modified)
+			    if (tabsidebar_width() > col + 1)
+				screen_puts_len((char_u *)"+", 1, row, col++, attr);
 
-		    if (tabsidebar_width() > col + 1)
-			screen_putchar(fillchar, row, col++, attr);
+			if (tabsidebar_width() > col + 1)
+			    screen_putchar(fillchar, row, col++, attr);
 		    }
 
 		    room = tabsidebar_width() - col - 1;

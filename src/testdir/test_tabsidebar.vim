@@ -2,6 +2,8 @@
 
 function! s:cleanup()
   silent! tabonly!
+  set tabline&
+  set showtabline&
   set tabsidebar&
   set showtabsidebar&
   set tabsidebarcolumns&
@@ -47,49 +49,103 @@ endfunc
 function! Test_tabsidebar()
   call s:cleanup()
   set showtabsidebar=2
-  set tabsidebarcolumns=20
+  set tabsidebarcolumns=10
   call settabsidebar(1, "Test_tabsidebar")
   tabnew
   call settabsidebar(2, "vim")
   tabnew
   call settabsidebar(3, "%{g:actual_curtabpage}")
   tabnew
-  call settabsidebar(4, "%{g:actual_curtabpage}")
+  call settabsidebar(4, "%=!")
   tabnew
   call settabsidebar(5, "%{g:actual_curtabpage}")
+  tabnew
+  set tabsidebar=hi
+  tabnew
+  call settabsidebar(7, "%{g:actual_curtabpage}")
+  tabnew
+  call settabsidebar(8, "%{g:actual_curtabpage}")
+  tabnew
+  call settabsidebar(9, "%{g:actual_curtabpage}")
+  tabnew
+  call settabsidebar(10, "%{g:actual_curtabpage}")
   redraw!
 
-  call assert_equal('T', nr2char(screenchar(1, 1)))
-  call assert_equal('e', nr2char(screenchar(1, 2)))
-  call assert_equal('s', nr2char(screenchar(1, 3)))
-  call assert_equal('t', nr2char(screenchar(1, 4)))
-  call assert_equal('_', nr2char(screenchar(1, 5)))
-  call assert_equal('t', nr2char(screenchar(1, 6)))
-  call assert_equal('a', nr2char(screenchar(1, 7)))
+  call assert_equal('<', nr2char(screenchar(1, 1)))
+  call assert_equal('a', nr2char(screenchar(1, 2)))
+  call assert_equal('b', nr2char(screenchar(1, 3)))
+  call assert_equal('s', nr2char(screenchar(1, 4)))
+  call assert_equal('i', nr2char(screenchar(1, 5)))
+  call assert_equal('d', nr2char(screenchar(1, 6)))
+  call assert_equal('e', nr2char(screenchar(1, 7)))
   call assert_equal('b', nr2char(screenchar(1, 8)))
-  call assert_equal('s', nr2char(screenchar(1, 9)))
-  call assert_equal('i', nr2char(screenchar(1, 10)))
-  call assert_equal('d', nr2char(screenchar(1, 11)))
-  call assert_equal('e', nr2char(screenchar(1, 12)))
-  call assert_equal('b', nr2char(screenchar(1, 13)))
-  call assert_equal('a', nr2char(screenchar(1, 14)))
-  call assert_equal('r', nr2char(screenchar(1, 15)))
+  call assert_equal('a', nr2char(screenchar(1, 9)))
+  call assert_equal('r', nr2char(screenchar(1, 10)))
 
   call assert_equal('v', nr2char(screenchar(2, 1)))
   call assert_equal('i', nr2char(screenchar(2, 2)))
   call assert_equal('m', nr2char(screenchar(2, 3)))
-  call assert_equal(' ', nr2char(screenchar(2, 4)))
-  call assert_equal(' ', nr2char(screenchar(2, 5)))
-  call assert_equal(' ', nr2char(screenchar(2, 6)))
-  call assert_equal(' ', nr2char(screenchar(2, 7)))
-  call assert_equal(' ', nr2char(screenchar(2, 8)))
-  call assert_equal(' ', nr2char(screenchar(2, 9)))
+  for i in range(4, &tabsidebarcolumns)
+    call assert_equal(' ', nr2char(screenchar(2, i)))
+  endfor
 
   call assert_equal('3', nr2char(screenchar(3, 1)))
 
-  call assert_equal('4', nr2char(screenchar(4, 1)))
+  for i in range(1, &tabsidebarcolumns - 1)
+    call assert_equal(' ', nr2char(screenchar(4, i)))
+  endfor
+  call assert_equal('!', nr2char(screenchar(4, &tabsidebarcolumns)))
 
   call assert_equal('5', nr2char(screenchar(5, 1)))
+
+  call assert_equal('h', nr2char(screenchar(6, 1)))
+  call assert_equal('i', nr2char(screenchar(6, 2)))
+
+  call assert_equal('7', nr2char(screenchar(7, 1)))
+
+  call assert_equal('8', nr2char(screenchar(8, 1)))
+
+  call assert_equal('9', nr2char(screenchar(9, 1)))
+
+  call assert_equal('1', nr2char(screenchar(10, 1)))
+  call assert_equal('0', nr2char(screenchar(10, 2)))
+
+  call s:cleanup()
+endfunc
+
+function! Test_tabsidebar_local_or_global()
+  call s:cleanup()
+  let text1 = 'abc'
+  let text2 = 'def'
+  let text3 = 'ghi'
+  tabnew
+  tabnew
+  call settabsidebar(1, text1)
+  call settabsidebar(2, text2)
+  call settabsidebar(3, text3)
+
+  call assert_equal(text1, gettabsidebar(1))
+  call assert_equal(text2, gettabsidebar(2))
+  call assert_equal(text3, gettabsidebar(3))
+
+  tabclose
+
+  call assert_equal(text1, gettabsidebar(1))
+  call assert_equal(text2, gettabsidebar(2))
+  call assert_equal('', gettabsidebar(3))
+
+  tabclose
+
+  call assert_equal(text1, gettabsidebar(1))
+  call assert_equal('', gettabsidebar(2))
+  call assert_equal('', gettabsidebar(3))
+
+  tabnew
+
+  call assert_equal(text1, gettabsidebar(1))
+  call assert_equal('', gettabsidebar(2))
+  call assert_equal('', gettabsidebar(3))
+
   call s:cleanup()
 endfunc
 
