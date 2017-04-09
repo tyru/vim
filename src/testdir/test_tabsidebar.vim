@@ -2,6 +2,7 @@
 
 function! s:cleanup()
   silent! tabonly!
+  silent! only!
   set tabline&
   set showtabline&
   set tabsidebar&
@@ -145,6 +146,52 @@ function! Test_tabsidebar_local_or_global()
   call assert_equal(text1, gettabsidebar(1))
   call assert_equal('', gettabsidebar(2))
   call assert_equal('', gettabsidebar(3))
+
+  call s:cleanup()
+endfunc
+
+function! Test_tabsidebar_width()
+  let cnt = 12
+
+  for show in range(0, 2)
+    for cols in range(8, 9)
+      call s:cleanup()
+      let &showtabsidebar = show
+      let &tabsidebarcolumns = cols
+      let total = winwidth('%')
+      for i in range(1, cnt)
+        vsplit
+      endfor
+      let n = 0
+      for i in range(1, winnr('$'))
+        let n += winwidth(i)
+      endfor
+      call assert_equal(total, n + cnt)
+    endfor
+  endfor
+
+  call s:cleanup()
+endfunc
+
+function! Test_tabsidebar_tabline()
+  for cols in range(4, 10) + range(10, 4, -1)
+    call s:cleanup()
+    set showtabline=2
+    set tabline=123
+    set showtabsidebar=2
+    let &tabsidebarcolumns = cols
+    set tabsidebar=abc
+    redraw!
+    call assert_equal('a', nr2char(screenchar(1, 1)))
+    call assert_equal('b', nr2char(screenchar(1, 2)))
+    call assert_equal('c', nr2char(screenchar(1, 3)))
+    for i in range(4, cols)
+      call assert_equal(' ', nr2char(screenchar(1, i)))
+    endfor
+    call assert_equal('1', nr2char(screenchar(1, cols + 1)))
+    call assert_equal('2', nr2char(screenchar(1, cols + 2)))
+    call assert_equal('3', nr2char(screenchar(1, cols + 3)))
+  endfor
 
   call s:cleanup()
 endfunc
