@@ -5343,6 +5343,7 @@ f_getwinposx(typval_T *argvars UNUSED, typval_T *rettv)
 
 	if (gui_mch_get_winpos(&x, &y) == OK)
 	    rettv->vval.v_number = x;
+	return;
     }
 #endif
 #if defined(HAVE_TGETENT) && defined(FEAT_TERMRESPONSE)
@@ -5369,6 +5370,7 @@ f_getwinposy(typval_T *argvars UNUSED, typval_T *rettv)
 
 	if (gui_mch_get_winpos(&x, &y) == OK)
 	    rettv->vval.v_number = y;
+	return;
     }
 #endif
 #if defined(HAVE_TGETENT) && defined(FEAT_TERMRESPONSE)
@@ -7759,6 +7761,7 @@ static int mkdir_recurse(char_u *dir, int prot);
 /*
  * Create the directory in which "dir" is located, and higher levels when
  * needed.
+ * Return OK or FAIL.
  */
     static int
 mkdir_recurse(char_u *dir, int prot)
