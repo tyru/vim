@@ -234,7 +234,7 @@ newwindow:
 /* cursor to previous window with wrap around */
     case 'W':
 		CHECK_CMDWIN
-		if (firstwin == lastwin && Prenum != 1)	/* just one window */
+		if (ONE_WINDOW && Prenum != 1)	/* just one window */
 		    beep_flush();
 		else
 		{
@@ -791,7 +791,7 @@ win_split_ins(
 	oldwin = curwin;
 
     /* add a status line when p_ls == 1 and splitting the first window */
-    if (lastwin == firstwin && p_ls == 1 && oldwin->w_status_height == 0)
+    if (ONE_WINDOW && p_ls == 1 && oldwin->w_status_height == 0)
     {
 	if (oldwin->w_height <= p_wmh && new_wp == NULL)
 	{
@@ -870,9 +870,9 @@ win_split_ins(
 
 	/* We don't like to take lines for the new window from a
 	 * 'winfixwidth' window.  Take them from a window to the left or right
-	 * instead, if possible. */
+	 * instead, if possible. Add one for the separator. */
 	if (oldwin->w_p_wfw)
-	    win_setwidth_win(oldwin->w_width + new_size, oldwin);
+	    win_setwidth_win(oldwin->w_width + new_size + 1, oldwin);
 
 	/* Only make all windows the same width if one of them (except oldwin)
 	 * is wider than one of the split windows. */
@@ -1492,7 +1492,7 @@ win_exchange(long Prenum)
     win_T	*wp2;
     int		temp;
 
-    if (lastwin == firstwin)	    /* just one window */
+    if (ONE_WINDOW)	    /* just one window */
     {
 	beep_flush();
 	return;
@@ -1593,7 +1593,7 @@ win_rotate(int upwards, int count)
     frame_T	*frp;
     int		n;
 
-    if (firstwin == lastwin)		/* nothing to do */
+    if (ONE_WINDOW)		/* nothing to do */
     {
 	beep_flush();
 	return;
@@ -1674,7 +1674,7 @@ win_totop(int size, int flags)
     int		dir;
     int		height = curwin->w_height;
 
-    if (lastwin == firstwin)
+    if (ONE_WINDOW)
     {
 	beep_flush();
 	return;
@@ -2107,7 +2107,7 @@ win_equal_rec(
 }
 
 /*
- * close all windows for buffer 'buf'
+ * Close all windows for buffer "buf".
  */
     void
 close_windows(
@@ -2123,7 +2123,7 @@ close_windows(
 
     ++RedrawingDisabled;
 
-    for (wp = firstwin; wp != NULL && lastwin != firstwin; )
+    for (wp = firstwin; wp != NULL && !ONE_WINDOW; )
     {
 	if (wp->w_buffer == buf && (!keep_curwin || wp != curwin)
 #ifdef FEAT_AUTOCMD
@@ -2131,7 +2131,10 @@ close_windows(
 #endif
 		)
 	{
-	    win_close(wp, FALSE);
+	    if (win_close(wp, FALSE) == FAIL)
+		/* If closing the window fails give up, to avoid looping
+		 * forever. */
+		break;
 
 	    /* Start all over, autocommands may change the window layout. */
 	    wp = firstwin;
@@ -2206,7 +2209,7 @@ one_window(void)
     }
     return TRUE;
 #else
-    return firstwin == lastwin;
+    return ONE_WINDOW;
 #endif
 }
 
@@ -2220,7 +2223,7 @@ close_last_window_tabpage(
     int		free_buf,
     tabpage_T   *prev_curtab)
 {
-    if (firstwin == lastwin)
+    if (ONE_WINDOW)
     {
 #ifdef FEAT_AUTOCMD
 	buf_T	*old_curbuf = curbuf;
@@ -2236,9 +2239,6 @@ close_last_window_tabpage(
 	 */
 	goto_tabpage_tp(alt_tabpage(), FALSE, TRUE);
 	redraw_tabline = TRUE;
-#ifdef FEAT_TABSIDEBAR
-	redraw_tabsidebar = TRUE;
-#endif
 
 	/* Safety check: Autocommands may have closed the window when jumping
 	 * to the other tab page. */
@@ -2460,6 +2460,10 @@ win_close(win_T *win, int free_buf)
 #endif
 	curbuf = curwin->w_buffer;
 	close_curwin = TRUE;
+
+	/* The cursor position may be invalid if the buffer changed after last
+	 * using the window. */
+	check_cursor();
     }
     if (p_ea && (*p_ead == 'b' || *p_ead == dir))
 	win_equal(curwin, TRUE, dir);
@@ -2548,7 +2552,7 @@ win_close_othertab(win_T *win, int free_buf, tabpage_T *tp)
 		;
 	    if (ptp == NULL)
 	    {
-		EMSG2(_(e_intern2), "win_close_othertab()");
+		internal_error("win_close_othertab()");
 		return;
 	    }
 	    ptp->tp_next = tp->tp_next;
@@ -2635,7 +2639,7 @@ winframe_remove(
     /*
      * If there is only one window there is nothing to remove.
      */
-    if (tp == NULL ? firstwin == lastwin : tp->tp_firstwin == tp->tp_lastwin)
+    if (tp == NULL ? ONE_WINDOW : tp->tp_firstwin == tp->tp_lastwin)
 	return NULL;
 
     /*
@@ -2790,7 +2794,7 @@ win_altframe(
     frame_T	*frp;
     int		b;
 
-    if (tp == NULL ? firstwin == lastwin : tp->tp_firstwin == tp->tp_lastwin)
+    if (tp == NULL ? ONE_WINDOW : tp->tp_firstwin == tp->tp_lastwin)
 	/* Last window in this tab page, will go to next tab page. */
 	return alt_tabpage()->tp_curwin->w_frame;
 
@@ -3383,7 +3387,7 @@ close_others(
 	}
     }
 
-    if (message && lastwin != firstwin)
+    if (message && !ONE_WINDOW)
 	EMSG(_("E445: Other window contains changes"));
 }
 
@@ -3622,9 +3626,18 @@ free_tabpage(tabpage_T *tp)
     python3_tabpage_free(tp);
 #endif
 
-#ifdef FEAT_TABSIDEBAR
-    vim_free(tp->tp_tabsidebar);
-#endif
+// TODO: why?
+//---------------------------------
+//Vim: Caught deadly signal ABRT
+//Vim: Finished.
+//Abort trap: 6
+//---------------------------------
+
+// #ifdef FEAT_TABSIDEBAR
+//     if(tp != NULL)
+// 	if(tp->tp_tabsidebar != NULL)
+// 	    free(tp->tp_tabsidebar);
+// #endif
 
     vim_free(tp);
 }
@@ -3689,9 +3702,6 @@ win_new_tabpage(int after)
 	/* When 'guioptions' includes 'L' or 'R' may have to remove or add
 	 * scrollbars.  Have to update them anyway. */
 	gui_may_update_scrollbars();
-#endif
-#ifdef FEAT_TABSIDEBAR
-	redraw_tabsidebar = TRUE;
 #endif
 
 	redraw_all_later(CLEAR);
@@ -3774,6 +3784,59 @@ valid_tabpage(tabpage_T *tpc)
 	if (tp == tpc)
 	    return TRUE;
     return FALSE;
+}
+
+/*
+ * Return TRUE when "tpc" points to a valid tab page and at least one window is
+ * valid.
+ */
+    int
+valid_tabpage_win(tabpage_T *tpc)
+{
+    tabpage_T	*tp;
+    win_T	*wp;
+
+    FOR_ALL_TABPAGES(tp)
+    {
+	if (tp == tpc)
+	{
+	    FOR_ALL_WINDOWS_IN_TAB(tp, wp)
+	    {
+		if (win_valid_any_tab(wp))
+		    return TRUE;
+	    }
+	    return FALSE;
+	}
+    }
+    /* shouldn't happen */
+    return FALSE;
+}
+
+/*
+ * Close tabpage "tab", assuming it has no windows in it.
+ * There must be another tabpage or this will crash.
+ */
+    void
+close_tabpage(tabpage_T *tab)
+{
+    tabpage_T	*ptp;
+
+    if (tab == first_tabpage)
+    {
+	first_tabpage = tab->tp_next;
+	ptp = first_tabpage;
+    }
+    else
+    {
+	for (ptp = first_tabpage; ptp != NULL && ptp->tp_next != tab;
+							    ptp = ptp->tp_next)
+	    ;
+	assert(ptp != NULL);
+	ptp->tp_next = tab->tp_next;
+    }
+
+    goto_tabpage_tp(ptp, FALSE, FALSE);
+    free_tabpage(tab);
 }
 
 /*
@@ -4418,9 +4481,6 @@ win_enter_ext(
 #endif
     curwin->w_redr_status = TRUE;
     redraw_tabline = TRUE;
-#ifdef FEAT_TABSIDEBAR
-    redraw_tabsidebar = TRUE;
-#endif
     if (restart_edit)
 	redraw_later(VALID);	/* causes status line redraw */
 
@@ -5749,7 +5809,10 @@ win_new_height(win_T *wp, int height)
     wp->w_height = height;
     wp->w_skipcol = 0;
 
-    scroll_to_fraction(wp, prev_height);
+    /* There is no point in adjusting the scroll position when exiting.  Some
+     * values might be invalid. */
+    if (!exiting)
+	scroll_to_fraction(wp, prev_height);
 }
 
     void
@@ -6019,7 +6082,7 @@ last_status(
 {
     /* Don't make a difference between horizontal or vertical split. */
     last_status_rec(topframe, (p_ls == 2
-			  || (p_ls == 1 && (morewin || lastwin != firstwin))));
+			  || (p_ls == 1 && (morewin || !ONE_WINDOW))));
 }
 
     static void
@@ -6093,8 +6156,10 @@ tabsidebar_width(void)
 {
     switch (p_stsb)
     {
-	case 0: return 0;
-	case 1: return (first_tabpage->tp_next == NULL) ? 0 : p_tsbc;
+	case 0:
+	    return 0;
+	case 1:
+	    return (first_tabpage->tp_next == NULL) ? 0 : p_tsbc;
     }
     return p_tsbc;
 }
@@ -6188,7 +6253,7 @@ file_name_in_line(
      */
     ptr = line + col;
     while (*ptr != NUL && !vim_isfilec(*ptr))
-	mb_ptr_adv(ptr);
+	MB_PTR_ADV(ptr);
     if (*ptr == NUL)		/* nothing found */
     {
 	if (options & FNAME_MESS)
@@ -6612,7 +6677,7 @@ restore_snapshot(
 
 /*
  * Check if frames "sn" and "fr" have the same layout, same following frames
- * and same children.
+ * and same children.  And the window pointer is valid.
  */
     static int
 check_snapshot_rec(frame_T *sn, frame_T *fr)
@@ -6623,7 +6688,8 @@ check_snapshot_rec(frame_T *sn, frame_T *fr)
 	    || (sn->fr_next != NULL
 		&& check_snapshot_rec(sn->fr_next, fr->fr_next) == FAIL)
 	    || (sn->fr_child != NULL
-		&& check_snapshot_rec(sn->fr_child, fr->fr_child) == FAIL))
+		&& check_snapshot_rec(sn->fr_child, fr->fr_child) == FAIL)
+	    || (sn->fr_win != NULL && !win_valid(sn->fr_win)))
 	return FAIL;
     return OK;
 }
@@ -7197,7 +7263,10 @@ win_getid(typval_T *argvars)
 		    break;
 	    if (tp == NULL)
 		return -1;
-	    wp = tp->tp_firstwin;
+	    if (tp == curtab)
+		wp = firstwin;
+	    else
+		wp = tp->tp_firstwin;
 	}
 	for ( ; wp != NULL; wp = wp->w_next)
 	    if (--winnr == 0)

@@ -1,5 +1,4 @@
 /* screen.c */
-void draw_tabline(void);
 void draw_tabsidebar(int redrawing_row);
 void redraw_later(int type);
 void redraw_win_later(win_T *wp, int type);

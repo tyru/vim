@@ -57,6 +57,9 @@ static void main_start_gui(void);
 # if defined(HAS_SWAP_EXISTS_ACTION)
 static void check_swap_exists_action(void);
 # endif
+# ifdef FEAT_EVAL
+static void set_progpath(char_u *argv0);
+# endif
 # if defined(FEAT_CLIENTSERVER) || defined(PROTO)
 static void exec_on_server(mparm_T *parmp);
 static void prepare_server(mparm_T *parmp);
@@ -86,14 +89,15 @@ static char *(main_errors[]) =
 };
 
 #ifndef PROTO		/* don't want a prototype for main() */
+
+/* Various parameters passed between main() and other functions. */
+static mparm_T	params;
+
 #ifndef NO_VIM_MAIN	/* skip this for unittests */
 
 static char_u *start_dir = NULL;	/* current working dir on startup */
 
 static int has_dash_c_arg = FALSE;
-
-/* Various parameters passed between main() and other functions. */
-static mparm_T	params;
 
     int
 # ifdef VIMDLL
@@ -556,11 +560,16 @@ vim_main2(void)
      */
     if (params.edit_type == EDIT_QF)
     {
+	char_u	*enc = NULL;
+
+# ifdef FEAT_MBYTE
+	enc = p_menc;
+# endif
 	if (params.use_ef != NULL)
 	    set_string_option_direct((char_u *)"ef", -1,
 					   params.use_ef, OPT_FREE, SID_CARG);
 	vim_snprintf((char *)IObuff, IOSIZE, "cfile %s", p_ef);
-	if (qf_init(NULL, p_ef, p_efm, TRUE, IObuff) < 0)
+	if (qf_init(NULL, p_ef, p_efm, TRUE, IObuff, enc) < 0)
 	{
 	    out_char('\n');
 	    mch_exit(3);
@@ -871,10 +880,6 @@ vim_main2(void)
 
     TIME_MSG("before starting main loop");
 
-#ifdef FEAT_TABSIDEBAR
-    redraw_tabsidebar = TRUE;
-#endif
-
     /*
      * Call the main command loop.  This never returns.
     */
@@ -977,7 +982,7 @@ common_init(mparm_T *paramp)
      * (needed for :! to * work). mch_check_win() will also handle the -d or
      * -dev argument.
      */
-    paramp->stdout_isatty = (mch_check_win(paramp->argc, paramp->argv) != FAIL);
+    stdout_isatty = (mch_check_win(paramp->argc, paramp->argv) != FAIL);
     TIME_MSG("window checked");
 
     /*
@@ -1006,6 +1011,15 @@ common_init(mparm_T *paramp)
 #ifdef FEAT_EVAL
     set_lang_var();		/* set v:lang and v:ctype */
 #endif
+}
+
+/*
+ * Return TRUE when the --not-a-term argument was found.
+ */
+    int
+is_not_a_term()
+{
+    return params.not_a_term;
 }
 
 /*
@@ -1122,6 +1136,10 @@ main_loop(
 	    skip_redraw = FALSE;
 	else if (do_redraw || stuff_empty())
 	{
+# ifdef FEAT_GUI
+	    /* If ui_breakcheck() was used a resize may have been postponed. */
+	    gui_may_resize_shell();
+# endif
 #if defined(FEAT_AUTOCMD) || defined(FEAT_CONCEAL)
 	    /* Trigger CursorMoved if the cursor moved. */
 	    if (!finish_op && (
@@ -1136,7 +1154,7 @@ main_loop(
 # endif
 			)
 # ifdef FEAT_AUTOCMD
-		 && !equalpos(last_cursormoved, curwin->w_cursor)
+		 && !EQUAL_POS(last_cursormoved, curwin->w_cursor)
 # endif
 		 )
 	    {
@@ -1162,15 +1180,15 @@ main_loop(
 #endif
 
 #ifdef FEAT_AUTOCMD
-	    /* Trigger TextChanged if b_changedtick differs. */
+	    /* Trigger TextChanged if b:changedtick differs. */
 	    if (!finish_op && has_textchanged()
-		    && last_changedtick != curbuf->b_changedtick)
+		    && last_changedtick != CHANGEDTICK(curbuf))
 	    {
 		if (last_changedtick_buf == curbuf)
 		    apply_autocmds(EVENT_TEXTCHANGED, NULL, NULL,
 							       FALSE, curbuf);
 		last_changedtick_buf = curbuf;
-		last_changedtick = curbuf->b_changedtick;
+		last_changedtick = CHANGEDTICK(curbuf);
 	    }
 #endif
 
@@ -1388,11 +1406,11 @@ getout(int exitval)
 		    /* Autocmd must have close the buffer already, skip. */
 		    continue;
 		buf = wp->w_buffer;
-		if (buf->b_changedtick != -1)
+		if (CHANGEDTICK(buf) != -1)
 		{
 		    apply_autocmds(EVENT_BUFWINLEAVE, buf->b_fname,
 						    buf->b_fname, FALSE, buf);
-		    buf->b_changedtick = -1;  /* note that we did it already */
+		    CHANGEDTICK(buf) = -1;  /* note that we did it already */
 		    /* start all over, autocommands may mess up the lists */
 		    next_tp = first_tabpage;
 		    break;
@@ -1694,7 +1712,7 @@ parse_command_name(mparm_T *parmp)
 
 #ifdef FEAT_EVAL
     set_vim_var_string(VV_PROGNAME, initstr, -1);
-    set_vim_var_string(VV_PROGPATH, (char_u *)parmp->argv[0], -1);
+    set_progpath((char_u *)parmp->argv[0]);
 #endif
 
     if (TOLOWER_ASC(initstr[0]) == 'r')
@@ -1832,6 +1850,7 @@ command_line_scan(mparm_T *parmp)
 				/* "--literal" take files literally */
 				/* "--nofork" don't fork */
 				/* "--not-a-term" don't warn for not a term */
+				/* "--ttyfail" exit if not a term */
 				/* "--noplugin[s]" skip plugins */
 				/* "--cmd <cmd>" execute cmd before vimrc */
 		if (STRICMP(argv[0] + argv_idx, "help") == 0)
@@ -1861,6 +1880,8 @@ command_line_scan(mparm_T *parmp)
 		    p_lpl = FALSE;
 		else if (STRNICMP(argv[0] + argv_idx, "not-a-term", 10) == 0)
 		    parmp->not_a_term = TRUE;
+		else if (STRNICMP(argv[0] + argv_idx, "ttyfail", 7) == 0)
+		    parmp->tty_fail = TRUE;
 		else if (STRNICMP(argv[0] + argv_idx, "cmd", 3) == 0)
 		{
 		    want_argument = TRUE;
@@ -2493,7 +2514,7 @@ check_tty(mparm_T *parmp)
 	if (!input_isatty)
 	    silent_mode = TRUE;
     }
-    else if (parmp->want_full_screen && (!parmp->stdout_isatty || !input_isatty)
+    else if (parmp->want_full_screen && (!stdout_isatty || !input_isatty)
 #ifdef FEAT_GUI
 	    /* don't want the delay when started from the desktop */
 	    && !gui.starting
@@ -2508,7 +2529,7 @@ check_tty(mparm_T *parmp)
 	 * input buffer so fast I can't even kill the process in under 2
 	 * minutes (and it beeps continuously the whole time :-)
 	 */
-	if (netbeans_active() && (!parmp->stdout_isatty || !input_isatty))
+	if (netbeans_active() && (!stdout_isatty || !input_isatty))
 	{
 	    mch_errmsg(_("Vim: Error: Failure to start gvim from NetBeans\n"));
 	    exit(1);
@@ -2521,11 +2542,13 @@ check_tty(mparm_T *parmp)
 	    exit(1);
 	}
 #endif
-	if (!parmp->stdout_isatty)
+	if (!stdout_isatty)
 	    mch_errmsg(_("Vim: Warning: Output is not to a terminal\n"));
 	if (!input_isatty)
 	    mch_errmsg(_("Vim: Warning: Input is not from a terminal\n"));
 	out_flush();
+	if (parmp->tty_fail && (!stdout_isatty || !input_isatty))
+	    exit(1);
 	if (scriptin[0] == NULL)
 	    ui_delay(2000L, TRUE);
 	TIME_MSG("Warning delay");
@@ -3291,6 +3314,7 @@ usage(void)
 #endif
     main_msg(_("-T <terminal>\tSet terminal type to <terminal>"));
     main_msg(_("--not-a-term\t\tSkip warning for input/output not being a terminal"));
+    main_msg(_("--ttyfail\t\tExit if input or output is not a terminal"));
     main_msg(_("-u <vimrc>\t\tUse <vimrc> instead of any .vimrc"));
 #ifdef FEAT_GUI
     main_msg(_("-U <gvimrc>\t\tUse <gvimrc> instead of any .gvimrc"));
@@ -3411,7 +3435,7 @@ check_swap_exists_action(void)
 }
 #endif
 
-#endif
+#endif /* NO_VIM_MAIN */
 
 #if defined(STARTUPTIME) || defined(PROTO)
 static void time_diff(struct timeval *then, struct timeval *now);
@@ -3518,6 +3542,53 @@ time_msg(
 }
 
 #endif
+
+#if !defined(NO_VIM_MAIN) && defined(FEAT_EVAL)
+    static void
+set_progpath(char_u *argv0)
+{
+    char_u *val = argv0;
+
+# ifdef PROC_EXE_LINK
+    char    buf[PATH_MAX + 1];
+    ssize_t len;
+
+    len = readlink(PROC_EXE_LINK, buf, PATH_MAX);
+    if (len > 0)
+    {
+	buf[len] = NUL;
+	val = (char_u *)buf;
+    }
+# else
+    /* A relative path containing a "/" will become invalid when using ":cd",
+     * turn it into a full path.
+     * On MS-Windows "vim" should be expanded to "vim.exe", thus always do
+     * this. */
+#  ifdef WIN32
+    char_u *path = NULL;
+
+    if (mch_can_exe(argv0, &path, FALSE) && path != NULL)
+	val = path;
+#  else
+    char_u buf[MAXPATHL];
+
+    if (!mch_isFullName(argv0))
+    {
+	if (gettail(argv0) != argv0
+			   && vim_FullName(argv0, buf, MAXPATHL, TRUE) != FAIL)
+	    val = buf;
+    }
+#  endif
+# endif
+
+    set_vim_var_string(VV_PROGPATH, val, -1);
+
+# ifdef WIN32
+    vim_free(path);
+# endif
+}
+
+#endif /* NO_VIM_MAIN */
 
 #if (defined(FEAT_CLIENTSERVER) && !defined(NO_VIM_MAIN)) || defined(PROTO)
 
@@ -3730,10 +3801,10 @@ cmdsrv_main(
 	    }
 	    else
 		ret = serverSendToVim(xterm_dpy, sname, *serverStr,
-						    NULL, &srv, 0, 0, silent);
+						  NULL, &srv, 0, 0, 0, silent);
 # else
 	    /* Win32 always works? */
-	    ret = serverSendToVim(sname, *serverStr, NULL, &srv, 0, silent);
+	    ret = serverSendToVim(sname, *serverStr, NULL, &srv, 0, 0, silent);
 # endif
 	    if (ret < 0)
 	    {
@@ -3793,11 +3864,11 @@ cmdsrv_main(
 		while (memchr(done, 0, numFiles) != NULL)
 		{
 # ifdef WIN32
-		    p = serverGetReply(srv, NULL, TRUE, TRUE);
+		    p = serverGetReply(srv, NULL, TRUE, TRUE, 0);
 		    if (p == NULL)
 			break;
 # else
-		    if (serverReadReply(xterm_dpy, srv, &p, TRUE) < 0)
+		    if (serverReadReply(xterm_dpy, srv, &p, TRUE, -1) < 0)
 			break;
 # endif
 		    j = atoi((char *)p);
@@ -3824,12 +3895,12 @@ cmdsrv_main(
 # ifdef WIN32
 	    /* Win32 always works? */
 	    if (serverSendToVim(sname, (char_u *)argv[i + 1],
-						    &res, NULL, 1, FALSE) < 0)
+						  &res, NULL, 1, 0, FALSE) < 0)
 # else
 	    if (xterm_dpy == NULL)
 		mch_errmsg(_("No display: Send expression failed.\n"));
 	    else if (serverSendToVim(xterm_dpy, sname, (char_u *)argv[i + 1],
-						 &res, NULL, 1, 1, FALSE) < 0)
+					       &res, NULL, 1, 0, 1, FALSE) < 0)
 # endif
 	    {
 		if (res != NULL && *res != NUL)
@@ -4079,6 +4150,11 @@ eval_client_expr_to_string(char_u *expr)
     char_u	*res;
     int		save_dbl = debug_break_level;
     int		save_ro = redir_off;
+    void	*fc;
+
+    /* Evaluate the expression at the toplevel, don't use variables local to
+     * the calling function. */
+    fc = clear_current_funccal();
 
      /* Disable debugging, otherwise Vim hangs, waiting for "cont" to be
       * typed. */
@@ -4095,6 +4171,7 @@ eval_client_expr_to_string(char_u *expr)
     --emsg_silent;
     if (emsg_silent < 0)
 	emsg_silent = 0;
+    restore_current_funccal(fc);
 
     /* A client can tell us to redraw, but not to display the cursor, so do
      * that here. */
@@ -4106,6 +4183,41 @@ eval_client_expr_to_string(char_u *expr)
 #endif
 
     return res;
+}
+
+/*
+ * Evaluate a command or expression sent to ourselves.
+ */
+    int
+sendToLocalVim(char_u *cmd, int asExpr, char_u **result)
+{
+    if (asExpr)
+    {
+	char_u *ret;
+
+	ret = eval_client_expr_to_string(cmd);
+	if (result != NULL)
+	{
+	    if (ret == NULL)
+	    {
+		char	*err = _(e_invexprmsg);
+		size_t	len = STRLEN(cmd) + STRLEN(err) + 5;
+		char_u	*msg;
+
+		msg = alloc((unsigned)len);
+		if (msg != NULL)
+		    vim_snprintf((char *)msg, len, "%s: \"%s\"", err, cmd);
+		*result = msg;
+	    }
+	    else
+		*result = ret;
+	}
+	else
+	    vim_free(ret);
+	return ret == NULL ? -1 : 0;
+    }
+    server_to_input_buf(cmd);
+    return 0;
 }
 
 /*

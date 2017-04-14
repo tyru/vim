@@ -1,9 +1,10 @@
 /* os_win32.c */
 HINSTANCE vimLoadLib(char *name);
+HINSTANCE find_imported_module_by_funcname(HINSTANCE hInst, const char *funcname);
+void *get_dll_import_func(HINSTANCE hInst, const char *funcname);
 int dyn_libintl_init(void);
 void dyn_libintl_end(void);
 void PlatformId(void);
-int mch_windows95(void);
 void mch_setmouse(int on);
 void mch_update_cursor(void);
 int mch_char_avail(void);
@@ -42,6 +43,7 @@ void mch_set_winsize_now(void);
 int mch_call_shell(char_u *cmd, int options);
 void mch_start_job(char *cmd, job_T *job, jobopt_T *options);
 char *mch_job_status(job_T *job);
+job_T *mch_detect_ended_job(job_T *job_list);
 int mch_stop_job(job_T *job, char_u *how);
 void mch_clear_job(job_T *job);
 void mch_set_normal_colors(void);
@@ -63,4 +65,5 @@ void free_cmd_argsW(void);
 void used_file_arg(char *name, int literal, int full_path, int diff_mode);
 void set_alist_count(void);
 void fix_arg_enc(void);
+int mch_setenv(char *var, char *value, int x);
 /* vim: set ft=c : */
