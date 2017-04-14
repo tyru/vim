@@ -10535,6 +10535,7 @@ draw_tabsidebar(int redrawing_row)
     int		width;
     int		wincount;
     int		tabpages_count = 0;
+    int		i;
     struct	stl_hlrec hltab[STL_MAX_ITEM];
     struct	stl_hlrec tabtab[STL_MAX_ITEM];
     tabpage_T	*tp = NULL;
@@ -10552,7 +10553,7 @@ draw_tabsidebar(int redrawing_row)
 
     /* move first tabpage redrawed */
     tp = first_tabpage;
-    for (int n = tabpage_index(curtab); ((Rows - p_ch) < n) && (tp != NULL); n--)
+    for (i = tabpage_index(curtab); ((Rows - p_ch) < i) && (tp != NULL); i--)
 	tp = tp->tp_next;
 
     for (row = 0; row < Rows - p_ch; row++)
