@@ -6859,7 +6859,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 	See |tab-page| for more information about tab pages.
 
 						*'showtabsidebar'* *'stsb'*
-'showtabsidebar' 'stsb'	number	(default 1)
+'showtabsidebar' 'stsb'	number	(default 0)
 			global
 			{not in Vi}
 			{not available when compiled without the |+windows|
