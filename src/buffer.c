@@ -372,7 +372,7 @@ open_buffer(
 set_bufref(bufref_T *bufref, buf_T *buf)
 {
     bufref->br_buf = buf;
-    bufref->br_fnum = buf->b_fnum;
+    bufref->br_fnum = buf == NULL ? 0 : buf->b_fnum;
     bufref->br_buf_free_count = buf_free_count;
 }
 
@@ -2352,8 +2352,8 @@ buflist_getfile(
 #endif
 
     ++RedrawingDisabled;
-    if (getfile(buf->b_fnum, NULL, NULL, (options & GETF_SETMARK),
-							  lnum, forceit) <= 0)
+    if (GETFILE_SUCCESS(getfile(buf->b_fnum, NULL, NULL,
+				     (options & GETF_SETMARK), lnum, forceit)))
     {
 	--RedrawingDisabled;
 
