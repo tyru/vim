@@ -630,6 +630,8 @@ extern int (*dyn_libintl_putenv)(const char *envstring);
  * flags for update_screen()
  * The higher the value, the higher the priority
  */
+#define VALID_NO_UPDATE		 5  /* no new changes, keep the command line if
+				       possible */
 #define VALID			10  /* buffer not changed, or changes marked
 				       with b_mod_* */
 #define INVERTED		20  /* redisplay inverted part that changed */
@@ -961,6 +963,14 @@ extern int (*dyn_libintl_putenv)(const char *envstring);
 #define GETF_SETMARK	0x01	/* set pcmark before jumping */
 #define GETF_ALT	0x02	/* jumping to alternate file (not buf num) */
 #define GETF_SWITCH	0x04	/* respect 'switchbuf' settings when jumping */
+
+/* Return values of getfile() */
+#define GETFILE_ERROR	    1	/* normal error */
+#define GETFILE_NOT_WRITTEN 2	/* "not written" error */
+#define GETFILE_SAME_FILE   0	/* success, same file */
+#define GETFILE_OPEN_OTHER -1	/* success, opened another file */
+#define GETFILE_UNUSED	    8
+#define GETFILE_SUCCESS(x)  ((x) <= 0)
 
 /* Values for buflist_new() flags */
 #define BLN_CURBUF	1	/* may re-use curbuf for new buffer */
@@ -1429,6 +1439,7 @@ typedef enum
     , HLF_CUC	    /* 'cursurcolumn' */
     , HLF_CUL	    /* 'cursurline' */
     , HLF_MC	    /* 'colorcolumn' */
+    , HLF_QFL	    /* quickfix window line currently selected */
     , HLF_TSB	    /* tabsidebar */
     , HLF_TSBS	    /* tabsidebar selected */
     , HLF_TSBF	    /* tabsidebar filler */
@@ -1441,7 +1452,7 @@ typedef enum
 		  'n', 'N', 'r', 's', 'S', 'c', 't', 'v', 'V', 'w', 'W', \
 		  'f', 'F', 'A', 'C', 'D', 'T', '-', '>', \
 		  'B', 'P', 'R', 'L', \
-		  '+', '=', 'x', 'X', '*', '#', '_', '!', '.', 'o', '$', '%', '^' }
+		  '+', '=', 'x', 'X', '*', '#', '_', '!', '.', 'o', 'q', '$', '%', '^' }
 
 /*
  * Boolean constants

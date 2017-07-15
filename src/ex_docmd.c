@@ -491,87 +491,16 @@ static void	ex_folddo(exarg_T *eap);
 #ifndef FEAT_PROFILE
 # define ex_profile		ex_ni
 #endif
+#ifndef FEAT_TERMINAL
+# define ex_terminal		ex_ni
+#endif
 
 /*
  * Declare cmdnames[].
  */
 #define DO_DECLARE_EXCMD
 #include "ex_cmds.h"
-
-/* Beginning of automatically generated code by create_cmdidxs.pl
- *
- * Table giving the index of the first command in cmdnames[] to lookup
- * based on the first letter of a command.
- */
-static const unsigned short cmdidxs1[26] =
-{
-  /* a */ 0,
-  /* b */ 19,
-  /* c */ 42,
-  /* d */ 103,
-  /* e */ 125,
-  /* f */ 145,
-  /* g */ 161,
-  /* h */ 167,
-  /* i */ 176,
-  /* j */ 194,
-  /* k */ 196,
-  /* l */ 201,
-  /* m */ 259,
-  /* n */ 277,
-  /* o */ 297,
-  /* p */ 309,
-  /* q */ 348,
-  /* r */ 351,
-  /* s */ 371,
-  /* t */ 438,
-  /* u */ 473,
-  /* v */ 484,
-  /* w */ 502,
-  /* x */ 517,
-  /* y */ 526,
-  /* z */ 527
-};
-
-/*
- * Table giving the index of the first command in cmdnames[] to lookup
- * based on the first 2 letters of a command.
- * Values in cmdidxs2[c1][c2] are relative to cmdidxs1[c1] so that they
- * fit in a byte.
- */
-static const unsigned char cmdidxs2[26][26] =
-{ /*         a   b   c   d   e   f   g   h   i   j   k   l   m   n   o   p   q   r   s   t   u   v   w   x   y   z */
-  /* a */ {  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  5,  6,  0,  0,  0,  7, 15,  0, 16,  0,  0,  0,  0,  0, },
-  /* b */ {  0,  0,  0,  4,  5,  7,  0,  0,  0,  0,  0,  8,  9, 10, 11, 12,  0, 13,  0,  0,  0,  0, 22,  0,  0,  0, },
-  /* c */ {  0, 10, 12, 14, 16, 18, 21,  0,  0,  0,  0, 29, 33, 36, 42, 51, 53, 54, 55,  0, 57,  0, 60,  0,  0,  0, },
-  /* d */ {  0,  0,  0,  0,  0,  0,  0,  0,  6, 15,  0, 16,  0,  0, 17,  0,  0, 19, 20,  0,  0,  0,  0,  0,  0,  0, },
-  /* e */ {  0,  0,  2,  0,  0,  0,  0,  0,  0,  0,  0,  7,  9, 10,  0,  0,  0,  0,  0,  0,  0,  0,  0, 16,  0,  0, },
-  /* f */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  9,  0,  0,  0,  0,  0, 15,  0,  0,  0,  0,  0, },
-  /* g */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  2,  0,  0,  4,  5,  0,  0,  0,  0, },
-  /* h */ {  0,  0,  0,  0,  0,  0,  0,  0,  6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, },
-  /* i */ {  0,  0,  0,  0,  0,  3,  0,  0,  0,  4,  0,  5,  6,  0,  0,  0,  0,  0, 13,  0, 15,  0,  0,  0,  0,  0, },
-  /* j */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0, },
-  /* k */ {  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, },
-  /* l */ {  0,  9, 11, 15, 16, 20, 23, 28,  0,  0,  0, 30, 33, 36, 40, 46,  0, 48, 57, 49, 50, 54, 56,  0,  0,  0, },
-  /* m */ {  0,  0,  0,  0,  7,  0,  0,  0,  0,  0, 10,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, },
-  /* n */ {  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  5,  8, 10,  0,  0,  0,  0,  0, 17,  0,  0,  0,  0,  0, },
-  /* o */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  5,  0,  0,  0,  0,  0,  0,  9,  0, 11,  0,  0,  0, },
-  /* p */ {  0,  0,  3,  0,  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  7,  9,  0,  0, 16, 17, 26,  0, 27,  0, 28,  0, },
-  /* q */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, },
-  /* r */ {  0,  0,  0,  0,  0,  0,  0,  0, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 14, 19,  0,  0,  0,  0, },
-  /* s */ {  0,  6, 15,  0, 18, 22,  0, 24, 25,  0,  0, 28, 30, 34, 38, 40,  0, 48,  0, 49,  0, 61, 62,  0, 63,  0, },
-  /* t */ {  0,  0, 19,  0, 22, 23,  0, 24,  0, 25,  0, 26, 27, 28, 29, 30,  0, 31, 33,  0, 34,  0,  0,  0,  0,  0, },
-  /* u */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 10,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, },
-  /* v */ {  0,  0,  0,  0,  1,  0,  0,  0,  4,  0,  0,  0,  9, 12,  0,  0,  0,  0, 15,  0, 16,  0,  0,  0,  0,  0, },
-  /* w */ {  0,  0,  0,  0,  0,  0,  0,  3,  4,  0,  0,  0,  0,  8,  0,  9, 10,  0, 12,  0, 13, 14,  0,  0,  0,  0, },
-  /* x */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  5,  0,  0,  0,  0,  0,  0,  7,  0,  0,  0,  0,  0, },
-  /* y */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, },
-  /* z */ {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, }
-};
-
-static const int command_count = 540;
-
-/* End of automatically generated code by create_cmdidxs.pl */
+#include "ex_cmdidxs.h"
 
 static char_u dollar_command[2] = {'$', 0};
 
@@ -2447,7 +2376,8 @@ do_one_cmd(
 	goto doend;
     }
     /* Check for wrong commands. */
-    if (*p == '!' && ea.cmd[1] == 0151 && ea.cmd[0] == 78)
+    if (*p == '!' && ea.cmd[1] == 0151 && ea.cmd[0] == 78
+	    && !IS_USER_CMDIDX(ea.cmdidx))
     {
 	errormsg = uc_fun_cmd();
 	goto doend;
@@ -3049,7 +2979,10 @@ do_one_cmd(
 
 doend:
     if (curwin->w_cursor.lnum == 0)	/* can happen with zero line number */
+    {
 	curwin->w_cursor.lnum = 1;
+	curwin->w_cursor.col = 0;
+    }
 
     if (errormsg != NULL && *errormsg != NUL && !did_emsg)
     {
@@ -4630,7 +4563,7 @@ get_address(
 			curwin->w_cursor.col = 0;
 		    searchcmdlen = 0;
 		    if (!do_search(NULL, c, cmd, 1L,
-				       SEARCH_HIS | SEARCH_MSG, NULL))
+					  SEARCH_HIS | SEARCH_MSG, NULL, NULL))
 		    {
 			curwin->w_cursor = pos;
 			cmd = NULL;
@@ -4687,7 +4620,7 @@ get_address(
 		    if (searchit(curwin, curbuf, &pos,
 				*cmd == '?' ? BACKWARD : FORWARD,
 				(char_u *)"", 1L, SEARCH_MSG,
-					i, (linenr_T)0, NULL) != FAIL)
+					i, (linenr_T)0, NULL, NULL) != FAIL)
 			lnum = pos.lnum;
 		    else
 		    {
@@ -5116,6 +5049,7 @@ expand_filename(
 		&& eap->cmdidx != CMD_lgrep
 		&& eap->cmdidx != CMD_grepadd
 		&& eap->cmdidx != CMD_lgrepadd
+		&& eap->cmdidx != CMD_hardcopy
 #ifndef UNIX
 		&& !(eap->argt & NOSPC)
 #endif
@@ -7340,8 +7274,11 @@ ex_quit(exarg_T *eap)
     apply_autocmds(EVENT_QUITPRE, NULL, NULL, FALSE, curbuf);
     /* Refuse to quit when locked or when the buffer in the last window is
      * being closed (can only happen in autocommands). */
-    if (curbuf_locked() || (wp->w_buffer->b_nwindows == 1
-						&& wp->w_buffer->b_locked > 0))
+    if (curbuf_locked()
+# ifdef FEAT_WINDOWS
+	    || !win_valid(wp)
+# endif
+	    || (wp->w_buffer->b_nwindows == 1 && wp->w_buffer->b_locked > 0))
 	return;
 #endif
 
@@ -10986,6 +10923,9 @@ eval_vars(
 		result = strbuf;
 		break;
 #endif
+	default:
+		result = (char_u *)""; /* avoid gcc warning */
+		break;
 	}
 
 	resultlen = (int)STRLEN(result);	/* length of new string */
@@ -12265,13 +12205,22 @@ ex_filetype(exarg_T *eap)
 }
 
 /*
- * ":setfiletype {name}"
+ * ":setfiletype [FALLBACK] {name}"
  */
     static void
 ex_setfiletype(exarg_T *eap)
 {
     if (!did_filetype)
-	set_option_value((char_u *)"filetype", 0L, eap->arg, OPT_LOCAL);
+    {
+	char_u *arg = eap->arg;
+
+	if (STRNCMP(arg, "FALLBACK ", 9) == 0)
+	    arg += 9;
+
+	set_option_value((char_u *)"filetype", 0L, arg, OPT_LOCAL);
+	if (arg != eap->arg)
+	    did_filetype = FALSE;
+    }
 }
 #endif
 

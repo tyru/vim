@@ -3685,16 +3685,30 @@ vim_beep(
     {
 	if (!((bo_flags & val) || (bo_flags & BO_ALL)))
 	{
-	    if (p_vb
-#ifdef FEAT_GUI
-		    /* While the GUI is starting up the termcap is set for the
-		     * GUI but the output still goes to a terminal. */
-		    && !(gui.in_use && gui.starting)
+#ifdef ELAPSED_FUNC
+	    static int		did_init = FALSE;
+	    static ELAPSED_TYPE	start_tv;
+
+	    /* Only beep once per half a second, otherwise a sequence of beeps
+	     * would freeze Vim. */
+	    if (!did_init || ELAPSED_FUNC(start_tv) > 500)
+	    {
+		did_init = TRUE;
+		ELAPSED_INIT(start_tv);
 #endif
-		    )
-		out_str(T_VB);
-	    else
-		out_char(BELL);
+		if (p_vb
+#ifdef FEAT_GUI
+			/* While the GUI is starting up the termcap is set for
+			 * the GUI but the output still goes to a terminal. */
+			&& !(gui.in_use && gui.starting)
+#endif
+			)
+		    out_str_cf(T_VB);
+		else
+		    out_char(BELL);
+#ifdef ELAPSED_FUNC
+	    }
+#endif
 	}
 
 	/* When 'verbose' is set and we are sourcing a script or executing a
@@ -9251,7 +9265,8 @@ find_match(int lookfor, linenr_T ourscope)
     int
 get_expr_indent(void)
 {
-    int		indent;
+    int		indent = -1;
+    char_u	*inde_copy;
     pos_T	save_pos;
     colnr_T	save_curswant;
     int		save_set_curswant;
@@ -9268,7 +9283,16 @@ get_expr_indent(void)
     if (use_sandbox)
 	++sandbox;
     ++textlock;
-    indent = (int)eval_to_number(curbuf->b_p_inde);
+
+    /* Need to make a copy, the 'indentexpr' option could be changed while
+     * evaluating it. */
+    inde_copy = vim_strsave(curbuf->b_p_inde);
+    if (inde_copy != NULL)
+    {
+	indent = (int)eval_to_number(inde_copy);
+	vim_free(inde_copy);
+    }
+
     if (use_sandbox)
 	--sandbox;
     --textlock;
