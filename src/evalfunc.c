@@ -6789,7 +6789,7 @@ f_job_start(typval_T *argvars, typval_T *rettv)
     rettv->v_type = VAR_JOB;
     if (check_restricted() || check_secure())
 	return;
-    rettv->vval.v_job = job_start(argvars);
+    rettv->vval.v_job = job_start(argvars, NULL);
 }
 
 /*
@@ -6816,7 +6816,7 @@ f_job_stop(typval_T *argvars, typval_T *rettv)
     job_T	*job = get_job_arg(&argvars[0]);
 
     if (job != NULL)
-	rettv->vval.v_number = job_stop(job, argvars);
+	rettv->vval.v_number = job_stop(job, argvars, NULL);
 }
 #endif
 
