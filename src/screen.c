@@ -127,14 +127,14 @@ static void copy_text_attr(int off, char_u *buf, int len, int attr);
 static int win_line(win_T *, linenr_T, int, int, int nochange, proftime_T *syntax_tm);
 static int char_needs_redraw(int off_from, int off_to, int cols);
 #ifdef FEAT_RIGHTLEFT
-static void screen_line(int row, int coloff, int endcol, int clear_width, int rlflag);
+void screen_line(int row, int coloff, int endcol, int clear_width, int rlflag);
 # ifdef FEAT_TABSIDEBAR
 #  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c), (rl))
 # else
 #  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o), (e), (c), (rl))
 # endif
 #else
-static void screen_line(int row, int coloff, int endcol, int clear_width);
+void screen_line(int row, int coloff, int endcol, int clear_width);
 # ifdef FEAT_TABSIDEBAR
 #  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c))
 # else
