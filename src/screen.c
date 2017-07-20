@@ -130,21 +130,6 @@ static void copy_text_attr(int off, char_u *buf, int len, int attr);
 #endif
 static int win_line(win_T *, linenr_T, int, int, int nochange, proftime_T *syntax_tm);
 static int char_needs_redraw(int off_from, int off_to, int cols);
-#ifdef FEAT_RIGHTLEFT
-void screen_line(int row, int coloff, int endcol, int clear_width, int rlflag);
-# ifdef FEAT_TABSIDEBAR
-#  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c), (rl))
-# else
-#  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o), (e), (c), (rl))
-# endif
-#else
-void screen_line(int row, int coloff, int endcol, int clear_width);
-# ifdef FEAT_TABSIDEBAR
-#  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o) + tabsidebar_width(), (e), (c))
-# else
-#  define SCREEN_LINE(r, o, e, c, rl)    screen_line((r), (o), (e), (c))
-# endif
-#endif
 #ifdef FEAT_WINDOWS
 static void draw_vsep_win(win_T *wp, int row);
 #endif
@@ -6123,7 +6108,8 @@ screen_line(
 # define CHAR_CELLS 1
 #endif
 
-#ifdef FEAT_TABSIDEBAR
+# ifdef FEAT_TABSIDEBAR
+    coloff += tabsidebar_width();
     draw_tabsidebar(row);
 #endif
 

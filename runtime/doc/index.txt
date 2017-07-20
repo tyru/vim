@@ -1455,7 +1455,6 @@ tag	      command	      action ~
 |:redir|	:redi[r]	redirect messages to a file or register
 |:redraw|	:redr[aw]	force a redraw of the display
 |:redrawstatus|	:redraws[tatus]	force a redraw of the status line(s)
-|:redrawtabline|	:redrawt[abline]	force a redraw of the tab line
 |:registers|	:reg[isters]	display the contents of registers
 |:resize|	:res[ize]	change current window height
 |:retab|	:ret[ab]	change tab size

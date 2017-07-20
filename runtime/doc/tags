@@ -2773,7 +2773,7 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 :redraw	various.txt	/*:redraw*
 :redraws	various.txt	/*:redraws*
 :redrawstatus	various.txt	/*:redrawstatus*
-:redrawt	various.txt	/*:redrawt*
+:redrawtabs	various.txt	/*:redrawtabs*
 :redrawtabsidebar	various.txt	/*:redrawtabsidebar*
 :reg	change.txt	/*:reg*
 :registers	change.txt	/*:registers*
