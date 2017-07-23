@@ -12,10 +12,11 @@
  *
  * There are three parts:
  * 1. Generic code for all systems.
+ *    Uses libvterm for the terminal emulator.
  * 2. The MS-Windows implementation.
- *    Uses a hidden console for the terminal emulator.
+ *    Uses winpty.
  * 3. The Unix-like implementation.
- *    Uses libvterm for the terminal emulator directly.
+ *    Uses pseudo-tty's (pty's).
  *
  * For each terminal one VTerm is constructed.  This uses libvterm.  A copy of
  * that library is in the libvterm directory.
@@ -32,11 +33,8 @@
  * while, if the terminal window is visible, the screen contents is drawn.
  *
  * TODO:
- * - When 'termsize' is set and dragging the separator the terminal gets messed
- *   up.
  * - set buffer options to be scratch, hidden, nomodifiable, etc.
  * - set buffer name to command, add (1) to avoid duplicates.
- * - If [command] is not given the 'shell' option is used.
  * - Add a scrollback buffer (contains lines to scroll off the top).
  *   Can use the buf_T lines, store attributes somewhere else?
  * - When the job ends:
@@ -163,6 +161,7 @@ ex_terminal(exarg_T *eap)
     exarg_T	split_ea;
     win_T	*old_curwin = curwin;
     term_T	*term;
+    char_u	*cmd = eap->arg;
 
     if (check_restricted() || check_secure())
 	return;
@@ -195,8 +194,11 @@ ex_terminal(exarg_T *eap)
 
     set_term_and_win_size(term);
 
+    if (cmd == NULL || *cmd == NUL)
+	cmd = p_sh;
+
     /* System dependent: setup the vterm and start the job in it. */
-    if (term_and_job_init(term, term->tl_rows, term->tl_cols, eap->arg) == OK)
+    if (term_and_job_init(term, term->tl_rows, term->tl_cols, cmd) == OK)
     {
 	/* store the size we ended up with */
 	vterm_get_size(term->tl_vterm, &term->tl_rows, &term->tl_cols);
@@ -602,9 +604,32 @@ term_update_window(win_T *wp)
      */
     if ((!term->tl_rows_fixed && term->tl_rows != wp->w_height)
 	    || (!term->tl_cols_fixed && term->tl_cols != wp->w_width))
-	vterm_set_size(vterm,
-		term->tl_rows_fixed ? term->tl_rows : wp->w_height,
-		term->tl_cols_fixed ? term->tl_cols : wp->w_width);
+    {
+	int rows = term->tl_rows_fixed ? term->tl_rows : wp->w_height;
+	int cols = term->tl_cols_fixed ? term->tl_cols : wp->w_width;
+
+	vterm_set_size(vterm, rows, cols);
+	ch_logn(term->tl_job->jv_channel, "Resizing terminal to %d lines",
+									 rows);
+
+#if defined(UNIX)
+	/* Use an ioctl() to report the new window size to the job. */
+	if (term->tl_job != NULL && term->tl_job->jv_channel != NULL)
+	{
+	    int fd = -1;
+	    int part;
+
+	    for (part = PART_OUT; part < PART_COUNT; ++part)
+	    {
+		fd = term->tl_job->jv_channel->ch_part[part].ch_fd;
+		if (isatty(fd))
+		    break;
+	    }
+	    if (part < PART_COUNT && mch_report_winsize(fd, rows, cols) == OK)
+		mch_stop_job(term->tl_job, (char_u *)"winch");
+	}
+#endif
+    }
 
     /* The cursor may have been moved when resizing. */
     vterm_state_get_cursorpos(state, &pos);
