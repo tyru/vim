@@ -36,24 +36,23 @@
  * that buffer, attributes come from the scrollback buffer tl_scrollback.
  *
  * TODO:
- * - Problem with statusline (Zyx, Christian)
- * - Make CTRL-W "" paste register content to the job?
  * - in bash mouse clicks are inserting characters.
  * - mouse scroll: when over other window, scroll that window.
  * - For the scrollback buffer store lines in the buffer, only attributes in
  *   tl_scrollback.
- * - Add term_status(): "" if not a terminal, "running" if job running,
- *   "finished" if finished, "running,vim" when job is running and in
- *   Terminal mode, "running,vim,pending" when job output is pending.
  * - When the job ends:
  *   - Need an option or argument to drop the window+buffer right away, to be
  *     used for a shell or Vim. 'termfinish'; "close", "open" (open window when
  *     job finishes).
  * - add option values to the command:
  *      :term <24x80> <close> vim notes.txt
+ * - support different cursor shapes, colors and attributes
+ * - make term_getcursor() return type (none/block/bar/underline) and
+ *   attributes (color, blink, etc.)
  * - To set BS correctly, check get_stty(); Pass the fd of the pty.
  * - do not store terminal window in viminfo.  Or prefix term:// ?
  * - add a character in :ls output
+ * - add 't' to mode()
  * - when closing window and job has not ended, make terminal hidden?
  * - when closing window and job has ended, make buffer hidden?
  * - don't allow exiting Vim when a terminal is still running a job
@@ -67,6 +66,7 @@
  *   mouse in the Terminal window for copy/paste.
  * - when 'encoding' is not utf-8, or the job is using another encoding, setup
  *   conversions.
+ * - update ":help function-list" for terminal functions.
  * - In the GUI use a terminal emulator for :!cmd.
  */
 
@@ -119,7 +119,7 @@ struct terminal_S {
     garray_T	tl_scrollback;
     int		tl_scrollback_scrolled;
 
-    pos_T	tl_cursor;
+    VTermPos	tl_cursor_pos;
     int		tl_cursor_visible;
 };
 
@@ -358,7 +358,7 @@ update_cursor(term_T *term, int redraw)
 	    cursor_on();
 	out_flush();
 #ifdef FEAT_GUI
-	if (gui.in_use && term->tl_cursor_visible)
+	if (gui.in_use)
 	    gui_update_cursor(FALSE, FALSE);
 #endif
     }
@@ -556,7 +556,7 @@ term_convert_key(term_T *term, int c, char *buf)
 }
 
 /*
- * Return TRUE if the job for "buf" is still running.
+ * Return TRUE if the job for "term" is still running.
  */
     static int
 term_job_running(term_T *term)
@@ -780,6 +780,7 @@ term_vgetc()
     ++allow_keys;
     got_int = FALSE;
     c = vgetc();
+    got_int = FALSE;
     --no_mapping;
     --allow_keys;
     return c;
@@ -855,6 +856,58 @@ send_keys_to_term(term_T *term, int c, int typed)
     return OK;
 }
 
+    static void
+position_cursor(win_T *wp, VTermPos *pos)
+{
+    wp->w_wrow = MIN(pos->row, MAX(0, wp->w_height - 1));
+    wp->w_wcol = MIN(pos->col, MAX(0, wp->w_width - 1));
+    wp->w_valid |= (VALID_WCOL|VALID_WROW);
+}
+
+/*
+ * Handle CTRL-W "": send register contents to the job.
+ */
+    static void
+term_paste_register(int prev_c UNUSED)
+{
+    int		c;
+    list_T	*l;
+    listitem_T	*item;
+    long	reglen = 0;
+    int		type;
+
+#ifdef FEAT_CMDL_INFO
+    if (add_to_showcmd(prev_c))
+    if (add_to_showcmd('"'))
+	out_flush();
+#endif
+    c = term_vgetc();
+#ifdef FEAT_CMDL_INFO
+    clear_showcmd();
+#endif
+
+    /* CTRL-W "= prompt for expression to evaluate. */
+    if (c == '=' && get_expr_register() != '=')
+	return;
+
+    l = (list_T *)get_reg_contents(c, GREG_LIST);
+    if (l != NULL)
+    {
+	type = get_reg_type(c, &reglen);
+	for (item = l->lv_first; item != NULL; item = item->li_next)
+	{
+	    char_u *s = get_tv_string(&item->li_tv);
+
+	    channel_send(curbuf->b_term->tl_job->jv_channel, PART_IN,
+							   s, STRLEN(s), NULL);
+	    if (item->li_next != NULL || type == MLINE)
+		channel_send(curbuf->b_term->tl_job->jv_channel, PART_IN,
+						      (char_u *)"\r", 1, NULL);
+	}
+	list_free(l);
+    }
+}
+
 /*
  * Returns TRUE if the current window contains a terminal and we are sending
  * keys to the job.
@@ -885,11 +938,14 @@ terminal_loop(void)
 
     if (*curwin->w_p_tk != NUL)
 	termkey = string_to_key(curwin->w_p_tk, TRUE);
+    position_cursor(curwin, &curbuf->b_term->tl_cursor_pos);
 
     for (;;)
     {
 	/* TODO: skip screen update when handling a sequence of keys. */
-	update_screen(0);
+	/* Repeat redrawing in case a message is received while redrawing. */
+	while (curwin->w_redr_type != 0)
+	    update_screen(0);
 	update_cursor(curbuf->b_term, FALSE);
 
 	c = term_vgetc();
@@ -900,6 +956,8 @@ terminal_loop(void)
 
 	if (c == (termkey == 0 ? Ctrl_W : termkey))
 	{
+	    int	    prev_c = c;
+
 #ifdef FEAT_CMDL_INFO
 	    if (add_to_showcmd(c))
 		out_flush();
@@ -918,10 +976,15 @@ terminal_loop(void)
 		/* "CTRL-W .": send CTRL-W to the job */
 		c = Ctrl_W;
 	    }
-	    else if (termkey == 0 && c == 'N')
+	    else if (c == 'N')
 	    {
 		term_enter_terminal_mode();
 		return FAIL;
+	    }
+	    else if (c == '"')
+	    {
+		term_paste_register(prev_c);
+		continue;
 	    }
 	    else if (termkey == 0 || c != termkey)
 	    {
@@ -968,13 +1031,6 @@ term_job_ended(job_T *job)
 }
 
     static void
-position_cursor(win_T *wp, VTermPos *pos)
-{
-    wp->w_wrow = MIN(pos->row, MAX(0, wp->w_height - 1));
-    wp->w_wcol = MIN(pos->col, MAX(0, wp->w_width - 1));
-}
-
-    static void
 may_toggle_cursor(term_T *term)
 {
     if (curbuf == term->tl_buffer)
@@ -1016,23 +1072,19 @@ handle_movecursor(
 {
     term_T	*term = (term_T *)user;
     win_T	*wp;
-    int		is_current = FALSE;
+
+    term->tl_cursor_pos = pos;
+    term->tl_cursor_visible = visible;
 
     FOR_ALL_WINDOWS(wp)
     {
 	if (wp->w_buffer == term->tl_buffer)
-	{
 	    position_cursor(wp, &pos);
-	    if (wp == curwin)
-		is_current = TRUE;
-	}
     }
-
-    term->tl_cursor_visible = visible;
-    if (is_current)
+    if (term->tl_buffer == curbuf)
     {
 	may_toggle_cursor(term);
-	update_cursor(term, TRUE);
+	update_cursor(term, term->tl_cursor_visible);
     }
 
     return 1;
@@ -1178,11 +1230,12 @@ term_channel_closed(channel_T *ch)
 	/* Need to break out of vgetc(). */
 	ins_char_typebuf(K_IGNORE);
 
-	if (curbuf->b_term != NULL)
+	term = curbuf->b_term;
+	if (term != NULL)
 	{
-	    if (curbuf->b_term->tl_job == ch->ch_job)
+	    if (term->tl_job == ch->ch_job)
 		maketitle();
-	    update_cursor(curbuf->b_term, TRUE);
+	    update_cursor(term, term->tl_cursor_visible);
 	}
     }
 }
@@ -1636,6 +1689,24 @@ set_ref_in_term(int copyID)
 }
 
 /*
+ * Get the buffer from the first argument in "argvars".
+ * Returns NULL when the buffer is not for a terminal window.
+ */
+    static buf_T *
+term_get_buf(typval_T *argvars)
+{
+    buf_T *buf;
+
+    (void)get_tv_number(&argvars[0]);	    /* issue errmsg if type error */
+    ++emsg_off;
+    buf = get_buf_tv(&argvars[0], FALSE);
+    --emsg_off;
+    if (buf == NULL || buf->b_term == NULL)
+	return NULL;
+    return buf;
+}
+
+/*
  * "term_getattr(attr, name)" function
  */
     void
@@ -1670,21 +1741,23 @@ f_term_getattr(typval_T *argvars, typval_T *rettv)
 }
 
 /*
- * Get the buffer from the first argument in "argvars".
- * Returns NULL when the buffer is not for a terminal window.
+ * "term_getcursor(buf)" function
  */
-    static buf_T *
-term_get_buf(typval_T *argvars)
+    void
+f_term_getcursor(typval_T *argvars, typval_T *rettv)
 {
-    buf_T *buf;
+    buf_T	*buf = term_get_buf(argvars);
+    list_T	*l;
 
-    (void)get_tv_number(&argvars[0]);	    /* issue errmsg if type error */
-    ++emsg_off;
-    buf = get_buf_tv(&argvars[0], FALSE);
-    --emsg_off;
-    if (buf->b_term == NULL)
-	return NULL;
-    return buf;
+    if (rettv_list_alloc(rettv) == FAIL)
+	return;
+    if (buf == NULL)
+	return;
+
+    l = rettv->vval.v_list;
+    list_append_number(l, buf->b_term->tl_cursor_pos.row);
+    list_append_number(l, buf->b_term->tl_cursor_pos.col);
+    list_append_number(l, buf->b_term->tl_cursor_visible);
 }
 
 /*
@@ -1719,7 +1792,10 @@ f_term_getline(typval_T *argvars, typval_T *rettv)
     if (buf == NULL)
 	return;
     term = buf->b_term;
-    row = (int)get_tv_number(&argvars[1]);
+    if (argvars[1].v_type == VAR_UNKNOWN)
+	row = term->tl_cursor_pos.row;
+    else
+	row = (int)get_tv_number(&argvars[1]);
 
     if (term->tl_vterm == NULL)
     {
@@ -1770,6 +1846,46 @@ f_term_getsize(typval_T *argvars, typval_T *rettv)
 }
 
 /*
+ * "term_getstatus(buf)" function
+ */
+    void
+f_term_getstatus(typval_T *argvars, typval_T *rettv)
+{
+    buf_T	*buf = term_get_buf(argvars);
+    term_T	*term;
+    char_u	val[100];
+
+    rettv->v_type = VAR_STRING;
+    if (buf == NULL)
+	return;
+    term = buf->b_term;
+
+    if (term_job_running(term))
+	STRCPY(val, "running");
+    else
+	STRCPY(val, "finished");
+    if (term->tl_terminal_mode)
+	STRCAT(val, ",terminal");
+    rettv->vval.v_string = vim_strsave(val);
+}
+
+/*
+ * "term_gettitle(buf)" function
+ */
+    void
+f_term_gettitle(typval_T *argvars, typval_T *rettv)
+{
+    buf_T	*buf = term_get_buf(argvars);
+
+    rettv->v_type = VAR_STRING;
+    if (buf == NULL)
+	return;
+
+    if (buf->b_term->tl_title != NULL)
+	rettv->vval.v_string = vim_strsave(buf->b_term->tl_title);
+}
+
+/*
  * "term_list()" function
  */
     void
@@ -1810,7 +1926,10 @@ f_term_scrape(typval_T *argvars, typval_T *rettv)
 	screen = vterm_obtain_screen(term->tl_vterm);
 
     l = rettv->vval.v_list;
-    pos.row = (int)get_tv_number(&argvars[1]);
+    if (argvars[1].v_type == VAR_UNKNOWN)
+	pos.row = term->tl_cursor_pos.row;
+    else
+	pos.row = (int)get_tv_number(&argvars[1]);
     for (pos.col = 0; pos.col < term->tl_cols; )
     {
 	dict_T		*dcell;
