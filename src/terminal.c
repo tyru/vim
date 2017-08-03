@@ -37,6 +37,7 @@
  *
  * TODO:
  * - don't allow exiting Vim when a terminal is still running a job
+ * - MS-Windows: no redraw for 'updatetime'  #1915
  * - in bash mouse clicks are inserting characters.
  * - mouse scroll: when over other window, scroll that window.
  * - For the scrollback buffer store lines in the buffer, only attributes in
@@ -54,6 +55,7 @@
  * - do not store terminal window in viminfo.  Or prefix term:// ?
  * - add a character in :ls output
  * - add 't' to mode()
+ * - set 'filetype' to "terminal"?
  * - use win_del_lines() to make scroll-up efficient.
  * - implement term_setsize()
  * - add test for giving error for invalid 'termsize' value.
