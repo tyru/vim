@@ -3386,7 +3386,8 @@ close_others(
 #endif
 		    continue;
 	    }
-	    win_close(wp, !P_HID(wp->w_buffer) && !bufIsChanged(wp->w_buffer));
+	    win_close(wp, !buf_hide(wp->w_buffer)
+					       && !bufIsChanged(wp->w_buffer));
 	}
     }
 
