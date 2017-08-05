@@ -36,10 +36,7 @@
  * that buffer, attributes come from the scrollback buffer tl_scrollback.
  *
  * TODO:
- * - job_start('ls') sometimes does not work.
  * - MS-Windows: no redraw for 'updatetime'  #1915
- * - in bash mouse clicks are inserting characters.
- * - mouse scroll: when over other window, scroll that window.
  * - add argument to term_wait() for waiting time.
  * - For the scrollback buffer store lines in the buffer, only attributes in
  *   tl_scrollback.
@@ -118,7 +115,7 @@ struct terminal_S {
     int		tl_tty_fd;
     char_u	*tl_tty_name;
 
-    int		tl_terminal_mode;
+    int		tl_terminal_mode; /* 0, TMODE_ONCE or TMODE_LOOP */
     int		tl_channel_closed;
 
 #ifdef WIN3264
@@ -146,6 +143,9 @@ struct terminal_S {
     VTermPos	tl_cursor_pos;
     int		tl_cursor_visible;
 };
+
+#define TMODE_ONCE 1	    /* CTRL-\ CTRL-N used */
+#define TMODE_LOOP 2	    /* CTRL-W N used */
 
 /*
  * List of all active terminals.
@@ -257,6 +257,17 @@ term_start(char_u *cmd, jobopt_T *opt)
     split_ea.cmdidx = CMD_new;
     split_ea.cmd = (char_u *)"new";
     split_ea.arg = (char_u *)"";
+    if (opt->jo_term_rows > 0 && !(cmdmod.split & WSP_VERT))
+    {
+	split_ea.line2 = opt->jo_term_rows;
+	split_ea.addr_count = 1;
+    }
+    if (opt->jo_term_cols > 0 && (cmdmod.split & WSP_VERT))
+    {
+	split_ea.line2 = opt->jo_term_cols;
+	split_ea.addr_count = 1;
+    }
+
     ex_splitview(&split_ea);
     if (curwin == old_curwin)
     {
@@ -266,6 +277,12 @@ term_start(char_u *cmd, jobopt_T *opt)
     }
     term->tl_buffer = curbuf;
     curbuf->b_term = term;
+
+    /* only one size was taken care of with :new, do the other one */
+    if (opt->jo_term_rows > 0 && (cmdmod.split & WSP_VERT))
+	win_setheight(opt->jo_term_rows);
+    if (opt->jo_term_cols > 0 && !(cmdmod.split & WSP_VERT))
+	win_setwidth(opt->jo_term_cols);
 
     /* Link the new terminal in the list of active terminals. */
     term->tl_next = first_term;
@@ -338,7 +355,20 @@ ex_terminal(exarg_T *eap)
     jobopt_T opt;
 
     init_job_options(&opt);
-    /* TODO: get options from before the command */
+
+    if (eap->addr_count == 2)
+    {
+	opt.jo_term_rows = eap->line1;
+	opt.jo_term_cols = eap->line2;
+    }
+    else if (eap->addr_count == 1)
+    {
+	if (cmdmod.split & WSP_VERT)
+	    opt.jo_term_cols = eap->line2;
+	else
+	    opt.jo_term_rows = eap->line2;
+    }
+    /* TODO: get more options from before the command */
 
     term_start(eap->arg, &opt);
 }
@@ -432,7 +462,7 @@ term_write_job_output(term_T *term, char_u *msg, size_t len)
     static void
 update_cursor(term_T *term, int redraw)
 {
-    if (term->tl_terminal_mode)
+    if (term->tl_terminal_mode != 0)
 	return;
     setcursor();
     if (redraw && term->tl_buffer == curbuf)
@@ -465,7 +495,7 @@ write_to_term(buf_T *buffer, char_u *msg, channel_T *channel)
     ch_log(channel, "writing %d bytes to terminal", (int)len);
     term_write_job_output(term, msg, len);
 
-    if (!term->tl_terminal_mode)
+    if (term->tl_terminal_mode == 0)
     {
 	/* TODO: only update once in a while. */
 	update_screen(0);
@@ -778,9 +808,9 @@ move_terminal_to_buffer(term_T *term)
 }
 
     static void
-set_terminal_mode(term_T *term, int on)
+set_terminal_mode(term_T *term, int mode)
 {
-    term->tl_terminal_mode = on;
+    term->tl_terminal_mode = mode;
     vim_free(term->tl_status_text);
     term->tl_status_text = NULL;
     if (term->tl_buffer == curbuf)
@@ -796,22 +826,35 @@ cleanup_vterm(term_T *term)
 {
     move_terminal_to_buffer(term);
     term_free_vterm(term);
-    set_terminal_mode(term, FALSE);
+    set_terminal_mode(term, 0);
 }
 
 /*
- * Switch from sending keys to the job to Terminal-Normal mode.
+ * Switch from Terminal-Job mode to Terminal-Normal mode.
  * Suspends updating the terminal window.
  */
     static void
-term_enter_terminal_mode()
+term_enter_terminal_mode(int mode)
 {
     term_T *term = curbuf->b_term;
 
     /* Append the current terminal contents to the buffer. */
     move_terminal_to_buffer(term);
 
-    set_terminal_mode(term, TRUE);
+    set_terminal_mode(term, mode);
+
+    if (mode == TMODE_ONCE)
+    {
+	/* Move the window cursor to the position of the cursor in the
+	 * terminal. */
+	curwin->w_cursor.lnum = term->tl_scrollback_scrolled
+						 + term->tl_cursor_pos.row + 1;
+	check_cursor();
+	coladvance(term->tl_cursor_pos.col);
+
+	/* Display the same lines as in the terminal. */
+	curwin->w_topline = term->tl_scrollback_scrolled + 1;
+    }
 }
 
 /*
@@ -823,11 +866,11 @@ term_in_terminal_mode()
 {
     term_T *term = curbuf->b_term;
 
-    return term != NULL && term->tl_terminal_mode;
+    return term != NULL && term->tl_terminal_mode != 0;
 }
 
 /*
- * Switch from Terminal-Normal mode to sending keys to the job.
+ * Switch from Terminal-Normal mode to Terminal-Job mode.
  * Restores updating the terminal window.
  */
     void
@@ -850,7 +893,7 @@ term_leave_terminal_mode()
     }
     check_cursor();
 
-    set_terminal_mode(term, FALSE);
+    set_terminal_mode(term, 0);
 
     if (term->tl_channel_closed)
 	cleanup_vterm(term);
@@ -881,7 +924,7 @@ term_vgetc()
  * Return FAIL when the key needs to be handled in Normal mode.
  * Return OK when the key was dropped or sent to the terminal.
  */
-    static int
+    int
 send_keys_to_term(term_T *term, int c, int typed)
 {
     char	msg[KEY_BUF_LEN];
@@ -920,13 +963,18 @@ send_keys_to_term(term_T *term, int c, int typed)
 	case K_X1RELEASE:
 	case K_X2MOUSE:
 	case K_X2RELEASE:
+
+	case K_MOUSEUP:
+	case K_MOUSEDOWN:
+	case K_MOUSELEFT:
+	case K_MOUSERIGHT:
 	    if (mouse_row < W_WINROW(curwin)
 		    || mouse_row >= (W_WINROW(curwin) + curwin->w_height)
 		    || mouse_col < W_WINCOL(curwin)
 		    || mouse_col >= W_ENDCOL(curwin)
 		    || dragging_outside)
 	    {
-		/* click outside the current window */
+		/* click or scroll outside the current window */
 		if (typed)
 		{
 		    stuffcharReadbuff(c);
@@ -1005,12 +1053,13 @@ term_paste_register(int prev_c UNUSED)
  * keys to the job.
  */
     int
-term_use_loop()
+term_use_loop(int once)
 {
     term_T *term = curbuf->b_term;
 
     return term != NULL
-	&& !term->tl_terminal_mode
+	&& (once ? term->tl_terminal_mode != TMODE_LOOP
+		 : term->tl_terminal_mode == 0)
 	&& term->tl_vterm != NULL
 	&& term_job_running(term);
 }
@@ -1028,6 +1077,13 @@ terminal_loop(void)
     int		c;
     int		termkey = 0;
 
+    if (curbuf->b_term->tl_terminal_mode != 0)
+    {
+	/* Got back from TMODE_ONCE, enter Terminal-Job mode. */
+	term_leave_terminal_mode();
+	update_cursor(curbuf->b_term, TRUE);
+    }
+
     if (*curwin->w_p_tk != NUL)
 	termkey = string_to_key(curwin->w_p_tk, TRUE);
     position_cursor(curwin, &curbuf->b_term->tl_cursor_pos);
@@ -1041,7 +1097,7 @@ terminal_loop(void)
 	update_cursor(curbuf->b_term, FALSE);
 
 	c = term_vgetc();
-	if (!term_use_loop())
+	if (!term_use_loop(FALSE))
 	    /* job finished while waiting for a character */
 	    break;
 
@@ -1068,15 +1124,18 @@ terminal_loop(void)
 #ifdef FEAT_CMDL_INFO
 	    clear_showcmd();
 #endif
-	    if (!term_use_loop())
+	    if (!term_use_loop(FALSE))
 		/* job finished while waiting for a character */
 		break;
 
 	    if (prev_c == Ctrl_BSL)
 	    {
 		if (c == Ctrl_N)
+		{
 		    /* CTRL-\ CTRL-N : execute one Normal mode command. */
+		    term_enter_terminal_mode(TMODE_ONCE);
 		    return OK;
+		}
 		/* Send both keys to the terminal. */
 		send_keys_to_term(curbuf->b_term, prev_c, TRUE);
 	    }
@@ -1087,7 +1146,7 @@ terminal_loop(void)
 	    }
 	    else if (c == 'N')
 	    {
-		term_enter_terminal_mode();
+		term_enter_terminal_mode(TMODE_LOOP);
 		return FAIL;
 	    }
 	    else if (c == '"')
@@ -1190,7 +1249,7 @@ handle_movecursor(
 	if (wp->w_buffer == term->tl_buffer)
 	    position_cursor(wp, &pos);
     }
-    if (term->tl_buffer == curbuf && !term->tl_terminal_mode)
+    if (term->tl_buffer == curbuf && term->tl_terminal_mode == 0)
     {
 	may_toggle_cursor(term);
 	update_cursor(term, term->tl_cursor_visible);
@@ -1326,7 +1385,7 @@ term_channel_closed(channel_T *ch)
 	    term->tl_status_text = NULL;
 
 	    /* Unless in Terminal-Normal mode: clear the vterm. */
-	    if (!term->tl_terminal_mode)
+	    if (term->tl_terminal_mode == 0)
 		cleanup_vterm(term);
 
 	    redraw_buf_and_status_later(term->tl_buffer, NOT_VALID);
@@ -1526,7 +1585,7 @@ term_update_window(win_T *wp)
     VTermState	*state;
     VTermPos	pos;
 
-    if (term == NULL || term->tl_vterm == NULL || term->tl_terminal_mode)
+    if (term == NULL || term->tl_vterm == NULL || term->tl_terminal_mode != 0)
 	return FAIL;
 
     vterm = term->tl_vterm;
@@ -1655,7 +1714,8 @@ term_show_buffer(buf_T *buf)
 {
     term_T *term = buf->b_term;
 
-    return term != NULL && (term->tl_vterm == NULL || term->tl_terminal_mode);
+    return term != NULL
+		    && (term->tl_vterm == NULL || term->tl_terminal_mode != 0);
 }
 
 /*
@@ -1738,7 +1798,7 @@ term_get_status_text(term_T *term)
 	char_u *txt;
 	size_t len;
 
-	if (term->tl_terminal_mode)
+	if (term->tl_terminal_mode != 0)
 	{
 	    if (term_job_running(term))
 		txt = (char_u *)_("Terminal");
@@ -1965,7 +2025,7 @@ f_term_getstatus(typval_T *argvars, typval_T *rettv)
 	STRCPY(val, "running");
     else
 	STRCPY(val, "finished");
-    if (term->tl_terminal_mode)
+    if (term->tl_terminal_mode != 0)
 	STRCAT(val, ",terminal");
     rettv->vval.v_string = vim_strsave(val);
 }
@@ -2127,7 +2187,7 @@ f_term_sendkeys(typval_T *argvars, typval_T *rettv)
 	msg += MB_PTR2LEN(msg);
     }
 
-    if (!term->tl_terminal_mode)
+    if (term->tl_terminal_mode == 0)
     {
 	/* TODO: only update once in a while. */
 	update_screen(0);
