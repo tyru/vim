@@ -826,6 +826,42 @@ term_convert_key(term_T *term, int c, char *buf)
 	case K_PE:		vterm_keyboard_end_paste(vterm); return 0;
     }
 
+#ifdef WIN3264
+    const int MOD_CTRL = 64;
+
+    switch (c + MOD_CTRL)
+    {
+       case 'N':
+           c = K_DOWN;
+           key = VTERM_KEY_DOWN;
+           break;
+       case 'P':
+           c = K_UP;
+           key = VTERM_KEY_UP;
+           break;
+       case 'F':
+           c = K_RIGHT;
+           key = VTERM_KEY_RIGHT;
+           break;
+       case 'B':
+           c = K_LEFT;
+           key = VTERM_KEY_LEFT;
+           break;
+       case 'E':
+           c = K_END;
+           key = VTERM_KEY_END;
+           break;
+       case 'A':
+           c = K_HOME;
+           key = VTERM_KEY_HOME;
+           break;
+       case 'U':
+           c = ESC;
+           key = VTERM_KEY_ESCAPE;
+           break;
+    }
+#endif
+
     /*
      * Convert special keys to vterm keys:
      * - Write keys to vterm: vterm_keyboard_key()
