@@ -3214,6 +3214,7 @@ win_line(
 #endif
 #ifdef FEAT_TERMINAL
     int		get_term_attr = FALSE;
+    int		term_attr = 0;		/* background for terminal window */
 #endif
 
     /* draw_state: items that are drawn in sequence: */
@@ -3331,6 +3332,7 @@ win_line(
     {
 	extra_check = TRUE;
 	get_term_attr = TRUE;
+	term_attr = term_get_attr(wp->w_buffer, lnum, -1);
     }
 #endif
 
@@ -5132,6 +5134,9 @@ win_line(
 # ifdef FEAT_DIFF
 			    diff_hlf != (hlf_T)0 ||
 # endif
+# ifdef FEAT_TERMINAL
+			    term_attr != 0 ||
+# endif
 			    line_attr != 0
 			) && (
 # ifdef FEAT_RIGHTLEFT
@@ -5164,6 +5169,15 @@ win_line(
 				char_attr = hl_combine_attr(char_attr,
 							    HL_ATTR(HLF_CUL));
 			}
+		    }
+# endif
+# ifdef FEAT_TERMINAL
+		    if (term_attr != 0)
+		    {
+			char_attr = term_attr;
+			if (wp->w_p_cul && lnum == wp->w_cursor.lnum)
+			    char_attr = hl_combine_attr(char_attr,
+							    HL_ATTR(HLF_CUL));
 		    }
 # endif
 		}
