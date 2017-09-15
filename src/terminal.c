@@ -38,10 +38,9 @@
  * in tl_scrollback are no longer used.
  *
  * TODO:
- * - patch to add tmap, jakalope (Jacob Askeland) #2073
+ * - test_terminal_no_cmd hangs (Christian)
  * - Redirecting output does not work on MS-Windows, Test_terminal_redir_file()
  *   is disabled.
- * - test_terminal_no_cmd hangs (Christian)
  * - implement term_setsize()
  * - add test for giving error for invalid 'termsize' value.
  * - support minimal size when 'termsize' is "rows*cols".
@@ -56,7 +55,9 @@
  *   mouse in the Terminal window for copy/paste.
  * - when 'encoding' is not utf-8, or the job is using another encoding, setup
  *   conversions.
- * - In the GUI use a terminal emulator for :!cmd.
+ * - In the GUI use a terminal emulator for :!cmd.  Make the height the same as
+ *   the window and position it higher up when it gets filled, so it looks like
+ *   the text scrolls up.
  * - Copy text in the vterm to the Vim buffer once in a while, so that
  *   completion works.
  * - add an optional limit for the scrollback size.  When reaching it remove
@@ -1237,23 +1238,22 @@ term_enter_job_mode()
  * Get a key from the user without mapping.
  * Note: while waiting a terminal may be closed and freed if the channel is
  * closed and ++close was used.
- * TODO: use terminal mode mappings.
+ * Uses terminal mode mappings.
  */
     static int
 term_vgetc()
 {
     int c;
+    int save_State = State;
 
-    ++no_mapping;
-    ++allow_keys;
+    State = TERMINAL;
     got_int = FALSE;
 #ifdef WIN3264
     ctrl_break_was_pressed = FALSE;
 #endif
     c = vgetc();
     got_int = FALSE;
-    --no_mapping;
-    --allow_keys;
+    State = save_State;
     return c;
 }
 
@@ -1442,7 +1442,7 @@ term_paste_register(int prev_c UNUSED)
  * Return TRUE when the cursor of the terminal should be displayed.
  */
     int
-use_terminal_cursor()
+terminal_is_active()
 {
     return in_terminal_loop != NULL;
 }
@@ -1532,13 +1532,15 @@ term_use_loop(void)
 
 /*
  * Wait for input and send it to the job.
+ * When "blocking" is TRUE wait for a character to be typed.  Otherwise return
+ * when there is no more typahead.
  * Return when the start of a CTRL-W command is typed or anything else that
  * should be handled as a Normal mode command.
  * Returns OK if a typed character is to be handled in Normal mode, FAIL if
  * the terminal was closed.
  */
     int
-terminal_loop(void)
+terminal_loop(int blocking)
 {
     int		c;
     int		termkey = 0;
@@ -1575,7 +1577,7 @@ terminal_loop(void)
     }
 #endif
 
-    for (;;)
+    while (blocking || vpeekc() != NUL)
     {
 	/* TODO: skip screen update when handling a sequence of keys. */
 	/* Repeat redrawing in case a message is received while redrawing. */
@@ -1597,7 +1599,7 @@ terminal_loop(void)
 	if (ctrl_break_was_pressed)
 	    mch_signal_job(curbuf->b_term->tl_job, (char_u *)"kill");
 #endif
-
+	/* Was either CTRL-W (termkey) or CTRL-\ pressed? */
 	if (c == (termkey == 0 ? Ctrl_W : termkey) || c == Ctrl_BSL)
 	{
 	    int	    prev_c = c;
@@ -2473,9 +2475,9 @@ cterm_color2rgb(int nr, VTermColor *rgb)
     {
 	/* 24 grey scale ramp */
 	idx = nr - 232;
-	rgb->blue  = grey_ramp[nr];
-	rgb->green = grey_ramp[nr];
-	rgb->red   = grey_ramp[nr];
+	rgb->blue  = grey_ramp[idx];
+	rgb->green = grey_ramp[idx];
+	rgb->red   = grey_ramp[idx];
     }
 }
 
@@ -2533,7 +2535,8 @@ create_vterm(term_T *term, int rows, int cols)
 # endif
        )
     {
-	guicolor_T	    fg_rgb, bg_rgb;
+	guicolor_T	fg_rgb = INVALCOLOR;
+	guicolor_T	bg_rgb = INVALCOLOR;
 
 	if (id != 0)
 	    syn_id2colors(id, &fg_rgb, &bg_rgb);
@@ -2587,6 +2590,28 @@ create_vterm(term_T *term, int rows, int cols)
 	if (cterm_bg >= 0)
 	    cterm_color2rgb(cterm_bg, bg);
     }
+#if defined(WIN3264) && !defined(FEAT_GUI_W32)
+    else
+    {
+	int tmp;
+
+	/* In an MS-Windows console we know the normal colors. */
+	if (cterm_normal_fg_color > 0)
+	{
+	    cterm_color2rgb(cterm_normal_fg_color - 1, fg);
+	    tmp = fg->red;
+	    fg->red = fg->blue;
+	    fg->blue = tmp;
+	}
+	if (cterm_normal_bg_color > 0)
+	{
+	    cterm_color2rgb(cterm_normal_bg_color - 1, bg);
+	    tmp = bg->red;
+	    bg->red = bg->blue;
+	    bg->blue = tmp;
+	}
+    }
+#endif
 
     vterm_state_set_default_colors(vterm_obtain_state(vterm), fg, bg);
 
