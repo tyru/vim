@@ -4941,6 +4941,29 @@ gui_mch_set_shellsize(int width, int height,
     gui_mch_update();
 }
 
+    void
+gui_gtk_get_screen_size_of_win(GtkWidget *wid, int *width, int *height)
+{
+#if GTK_CHECK_VERSION(3,22,0)
+    GdkDisplay *dpy = gtk_widget_get_display(wid);
+    GdkWindow *win = gtk_widget_get_window(wid);
+    GdkMonitor *monitor = gdk_display_get_monitor_at_window(dpy, win);
+    GdkRectangle geometry;
+
+    gdk_monitor_get_geometry(monitor, &geometry);
+    *width = geometry.width;
+    *height = geometry.height;
+#else
+    GdkScreen* screen;
+
+    if (wid != NULL && gtk_widget_has_screen(wid))
+	screen = gtk_widget_get_screen(wid);
+    else
+	screen = gdk_screen_get_default();
+    *width = gdk_screen_get_width(screen);
+    *height = gdk_screen_get_height(screen);
+#endif
+}
 
 /*
  * The screen size is used to make sure the initial window doesn't get bigger
@@ -4950,30 +4973,11 @@ gui_mch_set_shellsize(int width, int height,
     void
 gui_mch_get_screen_dimensions(int *screen_w, int *screen_h)
 {
-#if GTK_CHECK_VERSION(3,22,2)
-    GdkRectangle rect;
-    GdkMonitor * const mon = gdk_display_get_monitor_at_window(
-	    gtk_widget_get_display(gui.mainwin),
-	    gtk_widget_get_window(gui.mainwin));
-    gdk_monitor_get_geometry(mon, &rect);
+    gui_gtk_get_screen_size_of_win(gui.mainwin, screen_w, screen_h);
 
-    *screen_w = rect.width;
     /* Subtract 'guiheadroom' from the height to allow some room for the
      * window manager (task list and window title bar). */
-    *screen_h = rect.height - p_ghr;
-#else
-    GdkScreen* screen;
-
-    if (gui.mainwin != NULL && gtk_widget_has_screen(gui.mainwin))
-	screen = gtk_widget_get_screen(gui.mainwin);
-    else
-	screen = gdk_screen_get_default();
-
-    *screen_w = gdk_screen_get_width(screen);
-    /* Subtract 'guiheadroom' from the height to allow some room for the
-     * window manager (task list and window title bar). */
-    *screen_h = gdk_screen_get_height(screen) - p_ghr;
-#endif
+    *screen_h -= p_ghr;
 
     /*
      * FIXME: dirty trick: Because the gui_get_base_height() doesn't include
@@ -5908,6 +5912,27 @@ draw_under(int flags, int row, int col, int cells)
 #endif
     }
 
+    /* Draw a strikethrough line */
+    if (flags & DRAW_STRIKE)
+    {
+#if GTK_CHECK_VERSION(3,0,0)
+	cairo_set_line_width(cr, 1.0);
+	cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
+	cairo_set_source_rgba(cr,
+		gui.spcolor->red, gui.spcolor->green, gui.spcolor->blue,
+		gui.spcolor->alpha);
+	cairo_move_to(cr, FILL_X(col), y + 1 - gui.char_height/2 + 0.5);
+	cairo_line_to(cr, FILL_X(col + cells), y + 1 - gui.char_height/2 + 0.5);
+	cairo_stroke(cr);
+#else
+	gdk_gc_set_foreground(gui.text_gc, gui.spcolor);
+	gdk_draw_line(gui.drawarea->window, gui.text_gc,
+		      FILL_X(col), y + 1 - gui.char_height/2,
+		      FILL_X(col + cells), y + 1 - gui.char_height/2);
+	gdk_gc_set_foreground(gui.text_gc, gui.fgcolor);
+#endif
+    }
+
     /* Underline: draw a line at the bottom of the character cell. */
     if (flags & DRAW_UNDERL)
     {
@@ -5916,16 +5941,14 @@ draw_under(int flags, int row, int col, int cells)
 	if (p_linespace > 1)
 	    y -= p_linespace - 1;
 #if GTK_CHECK_VERSION(3,0,0)
-	{
-	    cairo_set_line_width(cr, 1.0);
-	    cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
-	    cairo_set_source_rgba(cr,
-		    gui.fgcolor->red, gui.fgcolor->green, gui.fgcolor->blue,
-		    gui.fgcolor->alpha);
-	    cairo_move_to(cr, FILL_X(col), y + 0.5);
-	    cairo_line_to(cr, FILL_X(col + cells), y + 0.5);
-	    cairo_stroke(cr);
-	}
+	cairo_set_line_width(cr, 1.0);
+	cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
+	cairo_set_source_rgba(cr,
+		gui.fgcolor->red, gui.fgcolor->green, gui.fgcolor->blue,
+		gui.fgcolor->alpha);
+	cairo_move_to(cr, FILL_X(col), y + 0.5);
+	cairo_line_to(cr, FILL_X(col + cells), y + 0.5);
+	cairo_stroke(cr);
 #else
 	gdk_draw_line(gui.drawarea->window, gui.text_gc,
 		      FILL_X(col), y,

@@ -238,7 +238,7 @@ redraw_later_clear(void)
     else
 #endif
 	/* Use attributes that is very unlikely to appear in text. */
-	screen_attr = HL_BOLD | HL_UNDERLINE | HL_INVERSE;
+	screen_attr = HL_BOLD | HL_UNDERLINE | HL_INVERSE | HL_STRIKETHROUGH;
 }
 
 /*
@@ -541,8 +541,9 @@ update_curbuf(int type)
 /*
  * Based on the current value of curwin->w_topline, transfer a screenfull
  * of stuff from Filemem to ScreenLines[], and update curwin->w_botline.
+ * Return OK when the screen was updated, FAIL if it was not done.
  */
-    void
+    int
 update_screen(int type_arg)
 {
     int		type = type_arg;
@@ -560,7 +561,7 @@ update_screen(int type_arg)
 
     /* Don't do anything if the screen structures are (not yet) valid. */
     if (!screen_valid(TRUE))
-	return;
+	return FAIL;
 
     if (type == VALID_NO_UPDATE)
     {
@@ -592,7 +593,7 @@ update_screen(int type_arg)
 	must_redraw = type;
 	if (type > INVERTED_ALL)
 	    curwin->w_lines_valid = 0;	/* don't use w_lines[].wl_size now */
-	return;
+	return FAIL;
     }
 
     updating_screen = TRUE;
@@ -848,6 +849,7 @@ update_screen(int type_arg)
 	gui_update_scrollbars(FALSE);
     }
 #endif
+    return OK;
 }
 
 #if defined(FEAT_SIGNS) || defined(FEAT_GUI) || defined(FEAT_CONCEAL)
@@ -3214,6 +3216,7 @@ win_line(
 #endif
 #ifdef FEAT_TERMINAL
     int		get_term_attr = FALSE;
+    int		term_attr = 0;		/* background for terminal window */
 #endif
 
     /* draw_state: items that are drawn in sequence: */
@@ -3331,6 +3334,7 @@ win_line(
     {
 	extra_check = TRUE;
 	get_term_attr = TRUE;
+	term_attr = term_get_attr(wp->w_buffer, lnum, -1);
     }
 #endif
 
@@ -3538,7 +3542,7 @@ win_line(
     {
 	/* For checking first word with a capital skip white space. */
 	if (cap_col == 0)
-	    cap_col = (int)(skipwhite(line) - line);
+	    cap_col = getwhitecols(line);
 
 	/* To be able to spell-check over line boundaries copy the end of the
 	 * current line into nextline[].  Above the start of the next line was
@@ -5132,6 +5136,9 @@ win_line(
 # ifdef FEAT_DIFF
 			    diff_hlf != (hlf_T)0 ||
 # endif
+# ifdef FEAT_TERMINAL
+			    term_attr != 0 ||
+# endif
 			    line_attr != 0
 			) && (
 # ifdef FEAT_RIGHTLEFT
@@ -5164,6 +5171,15 @@ win_line(
 				char_attr = hl_combine_attr(char_attr,
 							    HL_ATTR(HLF_CUL));
 			}
+		    }
+# endif
+# ifdef FEAT_TERMINAL
+		    if (term_attr != 0)
+		    {
+			char_attr = term_attr;
+			if (wp->w_p_cul && lnum == wp->w_cursor.lnum)
+			    char_attr = hl_combine_attr(char_attr,
+							    HL_ATTR(HLF_CUL));
 		    }
 # endif
 		}
@@ -8213,6 +8229,8 @@ screen_start_highlight(int attr)
 		out_str(T_CZH);
 	    if ((attr & HL_INVERSE) && T_MR != NULL)	/* inverse (reverse) */
 		out_str(T_MR);
+	    if ((attr & HL_STRIKETHROUGH) && T_STS != NULL)	/* strike */
+		out_str(T_STS);
 
 	    /*
 	     * Output the color or start string after bold etc., in case the
@@ -8336,6 +8354,13 @@ screen_stop_highlight(void)
 		    do_ME = TRUE;
 		else
 		    out_str(T_CZR);
+	    }
+	    if (screen_attr & HL_STRIKETHROUGH)
+	    {
+		if (STRCMP(T_STE, T_ME) == 0)
+		    do_ME = TRUE;
+		else
+		    out_str(T_STE);
 	    }
 	    if (do_ME || (screen_attr & (HL_BOLD | HL_INVERSE)))
 		out_str(T_ME);
