@@ -82,6 +82,23 @@ func Test_terminal_wipe_buffer()
   unlet g:job
 endfunc
 
+func Test_terminal_split_quit()
+  let buf = Run_shell_in_terminal({})
+  call term_wait(buf)
+  split
+  quit!
+  call term_wait(buf)
+  sleep 50m
+  call assert_equal('run', job_status(g:job))
+
+  quit!
+  call WaitFor('job_status(g:job) == "dead"')
+  call assert_equal('dead', job_status(g:job))
+
+  exe buf . 'bwipe'
+  unlet g:job
+endfunc
+
 func Test_terminal_hide_buffer()
   let buf = Run_shell_in_terminal({})
   setlocal bufhidden=hide
@@ -547,17 +564,14 @@ func Test_terminal_no_cmd()
   let pty = job_info(term_getjob(buf))['tty_out']
   call assert_notequal('', pty)
   if has('win32')
-    silent exe '!cmd /c "echo look here > ' . pty . '"'
+    silent exe '!start cmd /c "echo look here > ' . pty . '"'
   else
     call system('echo "look here" > ' . pty)
   endif
-  call term_wait(buf)
+  let g:buf = buf
+  call WaitFor('term_getline(g:buf, 1) =~ "look here"')
 
-  let result = term_getline(buf, 1)
-  if has('win32')
-    let result = substitute(result, '\s\+$', '', '')
-  endif
-  call assert_equal('look here', result)
+  call assert_match('look here', term_getline(buf, 1))
   bwipe!
 endfunc
 
@@ -634,7 +648,8 @@ func TerminalTmap(remap)
   call assert_equal('456', maparg('123', 't'))
   call assert_equal('abcde', maparg('456', 't'))
   call feedkeys("123", 'tx')
-  call term_wait(buf)
+  let g:buf = buf
+  call WaitFor("term_getline(g:buf,term_getcursor(g:buf)[0]) =~ 'abcde\\|456'")
   let lnum = term_getcursor(buf)[0]
   if a:remap
     call assert_match('abcde', term_getline(buf, lnum))
