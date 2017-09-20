@@ -865,12 +865,16 @@ extern int (*dyn_libintl_putenv)(const char *envstring);
 # define COLUMNS_WITHOUT_TABSB()	Columns
 #endif
 
-# define W_WINCOL(wp)	(wp->w_wincol)
-# define W_WIDTH(wp)	(wp->w_width)
-# define W_ENDCOL(wp)	(wp->w_wincol + wp->w_width)
-# define W_VSEP_WIDTH(wp) (wp->w_vsep_width)
-# define W_STATUS_HEIGHT(wp) (wp->w_status_height)
+#define W_WINCOL(wp)	(wp->w_wincol)
+#define W_WIDTH(wp)	(wp->w_width)
+#define W_ENDCOL(wp)	(wp->w_wincol + wp->w_width)
+#define W_VSEP_WIDTH(wp) (wp->w_vsep_width)
+#define W_STATUS_HEIGHT(wp) (wp->w_status_height)
+#ifdef FEAT_MENU
+# define W_WINROW(wp)	(wp->w_winrow + wp->w_winbar_height)
+#else
 # define W_WINROW(wp)	(wp->w_winrow)
+#endif
 
 #ifdef NO_EXPANDPATH
 # define gen_expand_wildcards mch_expand_wildcards
