@@ -131,7 +131,7 @@ static void fold_line(win_T *wp, long fold_count, foldinfo_T *foldinfo, linenr_T
 static void fill_foldcolumn(char_u *p, win_T *wp, int closed, linenr_T lnum);
 static void copy_text_attr(int off, char_u *buf, int len, int attr);
 #endif
-static int win_line(win_T *, linenr_T, int, int, int nochange, proftime_T *syntax_tm);
+static int win_line(win_T *, linenr_T, int, int, int nochange);
 static int char_needs_redraw(int off_from, int off_to, int cols);
 static void draw_vsep_win(win_T *wp, int row);
 #ifdef FEAT_STL_OPT
@@ -625,8 +625,8 @@ update_screen(int type_arg)
 		    else
 		    {
 			wp->w_redr_type = NOT_VALID;
-			if (W_WINROW(wp) + wp->w_height + W_STATUS_HEIGHT(wp)
-				<= msg_scrolled)
+			if (W_WINROW(wp) + wp->w_height + wp->w_status_height
+							       <= msg_scrolled)
 			    wp->w_redr_status = TRUE;
 		    }
 		}
@@ -936,6 +936,7 @@ update_single_line(win_T *wp, linenr_T lnum)
 #ifdef SYN_TIME_LIMIT
 	/* Set the time limit to 'redrawtime'. */
 	profile_setlimit(p_rdt, &syntax_tm);
+	syn_set_timeout(&syntax_tm);
 #endif
 	update_prepare();
 
@@ -950,13 +951,7 @@ update_single_line(win_T *wp, linenr_T lnum)
 		start_search_hl();
 		prepare_search_hl(wp, lnum);
 # endif
-		win_line(wp, lnum, row, row + wp->w_lines[j].wl_size, FALSE,
-#ifdef SYN_TIME_LIMIT
-			&syntax_tm
-#else
-			NULL
-#endif
-			);
+		win_line(wp, lnum, row, row + wp->w_lines[j].wl_size, FALSE);
 # if defined(FEAT_SEARCH_EXTRA)
 		end_search_hl();
 # endif
@@ -966,6 +961,10 @@ update_single_line(win_T *wp, linenr_T lnum)
 	}
 
 	update_finish();
+
+#ifdef SYN_TIME_LIMIT
+	syn_set_timeout(NULL);
+#endif
     }
     need_cursor_line_redraw = FALSE;
 }
@@ -1817,6 +1816,7 @@ win_update(win_T *wp)
 #ifdef SYN_TIME_LIMIT
     /* Set the time limit to 'redrawtime'. */
     profile_setlimit(p_rdt, &syntax_tm);
+    syn_set_timeout(&syntax_tm);
 #endif
 #ifdef FEAT_FOLDING
     win_foldinfo.fi_level = 0;
@@ -2121,13 +2121,7 @@ win_update(win_T *wp)
 		/*
 		 * Display one line.
 		 */
-		row = win_line(wp, lnum, srow, wp->w_height, mod_top == 0,
-#ifdef SYN_TIME_LIMIT
-			&syntax_tm
-#else
-			NULL
-#endif
-			);
+		row = win_line(wp, lnum, srow, wp->w_height, mod_top == 0);
 
 #ifdef FEAT_FOLDING
 		wp->w_lines[idx].wl_folded = FALSE;
@@ -2229,10 +2223,10 @@ win_update(win_T *wp)
 	    /*
 	     * Last line isn't finished: Display "@@@" in the last screen line.
 	     */
-	    screen_puts_len((char_u *)"@@", 2, scr_row, W_WINCOL(wp),
+	    screen_puts_len((char_u *)"@@", 2, scr_row, wp->w_wincol,
 							      HL_ATTR(HLF_AT));
 	    screen_fill(scr_row, scr_row + 1,
-		    (int)W_WINCOL(wp) + 2, (int)W_ENDCOL(wp),
+		    (int)wp->w_wincol + 2, (int)W_ENDCOL(wp),
 		    '@', ' ', HL_ATTR(HLF_AT));
 	    set_empty_rows(wp, srow);
 	    wp->w_botline = lnum;
@@ -2293,6 +2287,10 @@ win_update(win_T *wp)
 	/* put '~'s on rows that aren't part of the file. */
 	win_draw_end(wp, '~', ' ', row, wp->w_height, HLF_EOB);
     }
+
+#ifdef SYN_TIME_LIMIT
+    syn_set_timeout(NULL);
+#endif
 
     /* Reset the type of redrawing required, the window has been updated. */
     wp->w_redr_type = 0;
@@ -2374,8 +2372,8 @@ win_draw_end(
 	if (n > 0)
 	{
 	    /* draw the fold column at the right */
-	    if (n > W_WIDTH(wp))
-		n = W_WIDTH(wp);
+	    if (n > wp->w_width)
+		n = wp->w_width;
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
 		    W_ENDCOL(wp) - n
 #ifdef FEAT_TABSIDEBAR
@@ -2394,8 +2392,8 @@ win_draw_end(
 	    int nn = n + 2;
 
 	    /* draw the sign column left of the fold column */
-	    if (nn > W_WIDTH(wp))
-		nn = W_WIDTH(wp);
+	    if (nn > wp->w_width)
+		nn = wp->w_width;
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
 		    W_ENDCOL(wp) - nn
 #ifdef FEAT_TABSIDEBAR
@@ -2410,7 +2408,7 @@ win_draw_end(
 	}
 # endif
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		W_WINCOL(wp)
+		wp->w_wincol
 #ifdef FEAT_TABSIDEBAR
 		+ tabsidebar_width()
 #endif
@@ -2441,11 +2439,11 @@ win_draw_end(
 	    if (n > wp->w_width)
 		n = wp->w_width;
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		    W_WINCOL(wp)
+		    wp->w_wincol
 #ifdef FEAT_TABSIDEBAR
 		    + tabsidebar_width()
 #endif
-		    , (int)W_WINCOL(wp) + n
+		    , (int)wp->w_wincol + n
 #ifdef FEAT_TABSIDEBAR
 		    + tabsidebar_width()
 #endif
@@ -2458,14 +2456,14 @@ win_draw_end(
 	    int	    nn = n + fdc;
 
 	    /* draw the fold column at the left */
-	    if (nn > W_WIDTH(wp))
-		nn = W_WIDTH(wp);
+	    if (nn > wp->w_width)
+		nn = wp->w_width;
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		    W_WINCOL(wp) + n
+		    wp->w_wincol + n
 #ifdef FEAT_TABSIDEBAR
 		    + tabsidebar_width()
 #endif
-		    , (int)W_WINCOL(wp) + nn
+		    , (int)wp->w_wincol + nn
 #ifdef FEAT_TABSIDEBAR
 		    + tabsidebar_width()
 #endif
@@ -2479,14 +2477,14 @@ win_draw_end(
 	    int	    nn = n + 2;
 
 	    /* draw the sign column after the fold column */
-	    if (nn > W_WIDTH(wp))
-		nn = W_WIDTH(wp);
+	    if (nn > wp->w_width)
+		nn = wp->w_width;
 	    screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		    W_WINCOL(wp) + n
+		    wp->w_wincol + n
 #ifdef FEAT_TABSIDEBAR
 		    + tabsidebar_width()
 #endif
-		    , (int)W_WINCOL(wp) + nn
+		    , (int)wp->w_wincol + nn
 #ifdef FEAT_TABSIDEBAR
 		    + tabsidebar_width()
 #endif
@@ -2495,7 +2493,7 @@ win_draw_end(
 	}
 #endif
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + endrow,
-		W_WINCOL(wp) + FDC_OFF
+		wp->w_wincol + FDC_OFF
 #ifdef FEAT_TABSIDEBAR
 		+ tabsidebar_width()
 #endif
@@ -2559,7 +2557,7 @@ text_to_screenline(win_T *wp, char_u *text, int col)
 	{
 	    cells = (*mb_ptr2cells)(p);
 	    c_len = (*mb_ptr2len)(p);
-	    if (col + cells > W_WIDTH(wp)
+	    if (col + cells > wp->w_width
 # ifdef FEAT_RIGHTLEFT
 		    - (wp->w_p_rl ? col : 0)
 # endif
@@ -2643,8 +2641,8 @@ text_to_screenline(win_T *wp, char_u *text, int col)
     {
 	int len = (int)STRLEN(text);
 
-	if (len > W_WIDTH(wp) - col)
-	    len = W_WIDTH(wp) - col;
+	if (len > wp->w_width - col)
+	    len = wp->w_width - col;
 	if (len > 0)
 	{
 #ifdef FEAT_RIGHTLEFT
@@ -2670,7 +2668,7 @@ compute_foldcolumn(win_T *wp, int col)
 {
     int fdc = wp->w_p_fdc;
     int wmw = wp == curwin && p_wmw == 0 ? 1 : p_wmw;
-    int wwidth = W_WIDTH(wp);
+    int wwidth = wp->w_width;
 
     if (fdc > wwidth - (col + wmw))
 	fdc = wwidth - (col + wmw);
@@ -2739,11 +2737,11 @@ fold_line(
 	{
 	    int		i;
 
-	    copy_text_attr(off + W_WIDTH(wp) - fdc - col, buf, fdc,
+	    copy_text_attr(off + wp->w_width - fdc - col, buf, fdc,
 							     HL_ATTR(HLF_FC));
 	    /* reverse the fold column */
 	    for (i = 0; i < fdc; ++i)
-		ScreenLines[off + W_WIDTH(wp) - i - 1 - col] = buf[i];
+		ScreenLines[off + wp->w_width - i - 1 - col] = buf[i];
 	}
 	else
 #endif
@@ -2754,7 +2752,7 @@ fold_line(
 #ifdef FEAT_RIGHTLEFT
 # define RL_MEMSET(p, v, l)  if (wp->w_p_rl) \
 				for (ri = 0; ri < l; ++ri) \
-				   ScreenAttrs[off + (W_WIDTH(wp) - (p) - (l)) + ri] = v; \
+				   ScreenAttrs[off + (wp->w_width - (p) - (l)) + ri] = v; \
 			     else \
 				for (ri = 0; ri < l; ++ri) \
 				   ScreenAttrs[off + (p) + ri] = v
@@ -2765,13 +2763,13 @@ fold_line(
 
     /* Set all attributes of the 'number' or 'relativenumber' column and the
      * text */
-    RL_MEMSET(col, HL_ATTR(HLF_FL), W_WIDTH(wp) - col);
+    RL_MEMSET(col, HL_ATTR(HLF_FL), wp->w_width - col);
 
 #ifdef FEAT_SIGNS
     /* If signs are being displayed, add two spaces. */
     if (signcolumn_on(wp))
     {
-	len = W_WIDTH(wp) - col;
+	len = wp->w_width - col;
 	if (len > 0)
 	{
 	    if (len > 2)
@@ -2779,7 +2777,7 @@ fold_line(
 # ifdef FEAT_RIGHTLEFT
 	    if (wp->w_p_rl)
 		/* the line number isn't reversed */
-		copy_text_attr(off + W_WIDTH(wp) - len - col,
+		copy_text_attr(off + wp->w_width - len - col,
 					(char_u *)"  ", len, HL_ATTR(HLF_FL));
 	    else
 # endif
@@ -2794,7 +2792,7 @@ fold_line(
      */
     if (wp->w_p_nu || wp->w_p_rnu)
     {
-	len = W_WIDTH(wp) - col;
+	len = wp->w_width - col;
 	if (len > 0)
 	{
 	    int	    w = number_width(wp);
@@ -2824,7 +2822,7 @@ fold_line(
 #ifdef FEAT_RIGHTLEFT
 	    if (wp->w_p_rl)
 		/* the line number isn't reversed */
-		copy_text_attr(off + W_WIDTH(wp) - len - col, buf, len,
+		copy_text_attr(off + wp->w_width - len - col, buf, len,
 							     HL_ATTR(HLF_FL));
 	    else
 #endif
@@ -2852,7 +2850,7 @@ fold_line(
     if (wp->w_p_rl)
 	col -= txtcol;
 #endif
-    while (col < W_WIDTH(wp)
+    while (col < wp->w_width
 #ifdef FEAT_RIGHTLEFT
 		    - (wp->w_p_rl ? txtcol : 0)
 #endif
@@ -2914,14 +2912,14 @@ fold_line(
 	    if (VIsual_mode == Ctrl_V)
 	    {
 		/* Visual block mode: highlight the chars part of the block */
-		if (wp->w_old_cursor_fcol + txtcol < (colnr_T)W_WIDTH(wp))
+		if (wp->w_old_cursor_fcol + txtcol < (colnr_T)wp->w_width)
 		{
 		    if (wp->w_old_cursor_lcol != MAXCOL
 			     && wp->w_old_cursor_lcol + txtcol
-						       < (colnr_T)W_WIDTH(wp))
+						       < (colnr_T)wp->w_width)
 			len = wp->w_old_cursor_lcol;
 		    else
-			len = W_WIDTH(wp) - txtcol;
+			len = wp->w_width - txtcol;
 		    RL_MEMSET(wp->w_old_cursor_fcol + txtcol, HL_ATTR(HLF_V),
 					    len - (int)wp->w_old_cursor_fcol);
 		}
@@ -2929,7 +2927,7 @@ fold_line(
 	    else
 	    {
 		/* Set all attributes of the text */
-		RL_MEMSET(txtcol, HL_ATTR(HLF_V), W_WIDTH(wp) - txtcol);
+		RL_MEMSET(txtcol, HL_ATTR(HLF_V), wp->w_width - txtcol);
 	    }
 	}
     }
@@ -2949,7 +2947,7 @@ fold_line(
 		txtcol -= wp->w_skipcol;
 	    else
 		txtcol -= wp->w_leftcol;
-	    if (txtcol >= 0 && txtcol < W_WIDTH(wp))
+	    if (txtcol >= 0 && txtcol < wp->w_width)
 		ScreenAttrs[off + txtcol] = hl_combine_attr(
 				    ScreenAttrs[off + txtcol], HL_ATTR(HLF_MC));
 	    txtcol = old_txtcol;
@@ -2965,14 +2963,14 @@ fold_line(
 	    txtcol -= wp->w_skipcol;
 	else
 	    txtcol -= wp->w_leftcol;
-	if (txtcol >= 0 && txtcol < W_WIDTH(wp))
+	if (txtcol >= 0 && txtcol < wp->w_width)
 	    ScreenAttrs[off + txtcol] = hl_combine_attr(
 				 ScreenAttrs[off + txtcol], HL_ATTR(HLF_CUC));
     }
 #endif
 
-    screen_line(row + W_WINROW(wp), W_WINCOL(wp), (int)W_WIDTH(wp),
-						     (int)W_WIDTH(wp), FALSE);
+    screen_line(row + W_WINROW(wp), wp->w_wincol, (int)wp->w_width,
+						     (int)wp->w_width, FALSE);
 
     /*
      * Update w_cline_height and w_cline_folded if the cursor line was
@@ -3075,8 +3073,7 @@ win_line(
     linenr_T	lnum,
     int		startrow,
     int		endrow,
-    int		nochange UNUSED,	/* not updating for changed text */
-    proftime_T	*syntax_tm UNUSED)
+    int		nochange UNUSED)	/* not updating for changed text */
 {
     int		col = 0;		/* visual column on screen */
     unsigned	off;			/* offset in ScreenLines/ScreenAttrs */
@@ -3291,7 +3288,7 @@ win_line(
 	 * error, stop syntax highlighting. */
 	save_did_emsg = did_emsg;
 	did_emsg = FALSE;
-	syntax_start(wp, lnum, syntax_tm);
+	syntax_start(wp, lnum);
 	if (did_emsg)
 	    wp->w_s->b_syn_error = TRUE;
 	else
@@ -3689,7 +3686,7 @@ win_line(
 # ifdef FEAT_SYN_HL
 	    /* Need to restart syntax highlighting for this line. */
 	    if (has_syntax)
-		syntax_start(wp, lnum, syntax_tm);
+		syntax_start(wp, lnum);
 # endif
 	}
 #endif
@@ -3802,7 +3799,7 @@ win_line(
 	/* Rightleft window: process the text in the normal direction, but put
 	 * it in current_ScreenLine[] from right to left.  Start at the
 	 * rightmost column of the window. */
-	col = W_WIDTH(wp) - 1;
+	col = wp->w_width - 1;
 	off += col;
     }
 #endif
@@ -4041,7 +4038,7 @@ win_line(
 			n_extra = col + 1;
 		    else
 #  endif
-			n_extra = W_WIDTH(wp) - col;
+			n_extra = wp->w_width - col;
 		    char_attr = HL_ATTR(HLF_DED);
 		}
 # endif
@@ -4094,7 +4091,7 @@ win_line(
 #endif
 		)
 	{
-	    screen_line(screen_row, W_WINCOL(wp), col, -(int)W_WIDTH(wp),
+	    screen_line(screen_row, wp->w_wincol, col, -(int)wp->w_width,
 						    HAS_RIGHTLEFT(wp->w_p_rl));
 	    /* Pretend we have finished updating the window.  Except when
 	     * 'cursorcolumn' is set. */
@@ -4363,7 +4360,7 @@ win_line(
 # ifdef FEAT_RIGHTLEFT
 			    wp->w_p_rl ? (col <= 0) :
 # endif
-				    (col >= W_WIDTH(wp) - 1))
+				    (col >= wp->w_width - 1))
 			    && (*mb_char2cells)(mb_c) == 2)
 		    {
 			c = '>';
@@ -4564,7 +4561,7 @@ win_line(
 # ifdef FEAT_RIGHTLEFT
 			    wp->w_p_rl ? (col <= 0) :
 # endif
-				(col >= W_WIDTH(wp) - 1))
+				(col >= wp->w_width - 1))
 			&& (*mb_char2cells)(mb_c) == 2)
 		{
 		    c = '>';
@@ -4781,7 +4778,7 @@ win_line(
 		    /* TODO: is passing p for start of the line OK? */
 		    n_extra = win_lbr_chartabsize(wp, line, p, (colnr_T)vcol,
 								    NULL) - 1;
-		    if (c == TAB && n_extra + col > W_WIDTH(wp))
+		    if (c == TAB && n_extra + col > wp->w_width)
 			n_extra = (int)wp->w_buffer->b_p_ts
 				       - vcol % (int)wp->w_buffer->b_p_ts - 1;
 
@@ -4998,7 +4995,7 @@ win_line(
 # ifdef FEAT_RIGHTLEFT
 				    wp->w_p_rl ? (col >= 0) :
 # endif
-				    (col < W_WIDTH(wp)))
+				    (col < wp->w_width))
 				&& !(noinvcur
 				    && lnum == wp->w_cursor.lnum
 				    && (colnr_T)vcol == wp->w_virtcol)))
@@ -5109,7 +5106,7 @@ win_line(
 # ifdef FEAT_RIGHTLEFT
 			    wp->w_p_rl ? (col >= 0) :
 # endif
-			    (col < W_WIDTH(wp))))
+			    (col < wp->w_width)))
 		{
 		    c = ' ';
 		    --ptr;	    /* put it back at the NUL */
@@ -5132,7 +5129,7 @@ win_line(
 # ifdef FEAT_CONCEAL
 				- boguscols
 # endif
-					    < W_WIDTH(wp))))
+					    < wp->w_width)))
 		{
 		    /* Highlight until the right side of the window */
 		    c = ' ';
@@ -5253,7 +5250,7 @@ win_line(
 	{
 #  ifdef FEAT_RIGHTLEFT
 	    if (wp->w_p_rl)
-		wp->w_wcol = W_WIDTH(wp) - col + boguscols - 1;
+		wp->w_wcol = wp->w_width - col + boguscols - 1;
 	    else
 #  endif
 		wp->w_wcol = col - boguscols;
@@ -5416,7 +5413,7 @@ win_line(
 		else
 #endif
 		{
-		    if (col >= W_WIDTH(wp))
+		    if (col >= wp->w_width)
 			n = -1;
 		}
 		if (n != 0)
@@ -5520,7 +5517,7 @@ win_line(
 	    if (((wp->w_p_cuc
 		      && (int)wp->w_virtcol >= VCOL_HLC - eol_hl_off
 		      && (int)wp->w_virtcol <
-					W_WIDTH(wp) * (row - startrow + 1) + v
+					wp->w_width * (row - startrow + 1) + v
 		      && lnum != wp->w_cursor.lnum)
 		    || draw_color_col)
 # ifdef FEAT_RIGHTLEFT
@@ -5539,7 +5536,7 @@ win_line(
 			if (rightmost_vcol < color_cols[i])
 			    rightmost_vcol = color_cols[i];
 
-		while (col < W_WIDTH(wp))
+		while (col < wp->w_width)
 		{
 		    ScreenLines[off] = ' ';
 #ifdef FEAT_MBYTE
@@ -5566,8 +5563,8 @@ win_line(
 	    }
 #endif
 
-	    screen_line(screen_row, W_WINCOL(wp), col,
-				  (int)W_WIDTH(wp), HAS_RIGHTLEFT(wp->w_p_rl));
+	    screen_line(screen_row, wp->w_wincol, col,
+				  (int)wp->w_width, HAS_RIGHTLEFT(wp->w_p_rl));
 	    row++;
 
 	    /*
@@ -5597,7 +5594,7 @@ win_line(
 #ifdef FEAT_RIGHTLEFT
 		    wp->w_p_rl ? col == 0 :
 #endif
-		    col == W_WIDTH(wp) - 1)
+		    col == wp->w_width - 1)
 		&& (*ptr != NUL
 		    || (wp->w_p_list && lcs_eol_one > 0)
 		    || (n_extra && (c_extra != NUL || *p_extra != NUL))))
@@ -5862,7 +5859,7 @@ win_line(
 #ifdef FEAT_RIGHTLEFT
 	    wp->w_p_rl ? (col < 0) :
 #endif
-				    (col >= W_WIDTH(wp)))
+				    (col >= wp->w_width))
 		&& (*ptr != NUL
 #ifdef FEAT_DIFF
 		    || filler_todo > 0
@@ -5872,12 +5869,12 @@ win_line(
 		)
 	{
 #ifdef FEAT_CONCEAL
-	    screen_line(screen_row, W_WINCOL(wp), col - boguscols,
-				  (int)W_WIDTH(wp), HAS_RIGHTLEFT(wp->w_p_rl));
+	    screen_line(screen_row, wp->w_wincol, col - boguscols,
+				  (int)wp->w_width, HAS_RIGHTLEFT(wp->w_p_rl));
 	    boguscols = 0;
 #else
-	    screen_line(screen_row, W_WINCOL(wp), col,
-				  (int)W_WIDTH(wp), HAS_RIGHTLEFT(wp->w_p_rl));
+	    screen_line(screen_row, wp->w_wincol, col,
+				  (int)wp->w_width, HAS_RIGHTLEFT(wp->w_p_rl));
 #endif
 	    ++row;
 	    ++screen_row;
@@ -5914,7 +5911,7 @@ win_line(
 #ifdef FEAT_DIFF
 		     && filler_todo <= 0
 #endif
-		     && W_WIDTH(wp) == COLUMNS_WITHOUT_TABSB())
+		     && wp->w_width == COLUMNS_WITHOUT_TABSB())
 	    {
 		/* Remember that the line wraps, used for modeless copy. */
 		LineWraps[screen_row - 1] = TRUE;
@@ -5951,7 +5948,7 @@ win_line(
 		     * then output the same character again to let the
 		     * terminal know about the wrap.  If the terminal doesn't
 		     * auto-wrap, we overwrite the character. */
-		    if (screen_cur_col != W_WIDTH(wp))
+		    if (screen_cur_col != wp->w_width)
 			screen_char(LineOffset[screen_row - 1]
 						      + (unsigned)Columns - 1,
 					  screen_row - 1, (int)(Columns - 1));
@@ -5977,7 +5974,7 @@ win_line(
 #ifdef FEAT_RIGHTLEFT
 	    if (wp->w_p_rl)
 	    {
-		col = W_WIDTH(wp) - 1;	/* col is not used if breaking! */
+		col = wp->w_width - 1;	/* col is not used if breaking! */
 		off += col;
 	    }
 #endif
@@ -6995,9 +6992,9 @@ win_redr_status(win_T *wp)
 	    len += (int)STRLEN(p + len);
 	}
 
-	this_ru_col = ru_col - (Columns - W_WIDTH(wp));
-	if (this_ru_col < (W_WIDTH(wp) + 1) / 2)
-	    this_ru_col = (W_WIDTH(wp) + 1) / 2;
+	this_ru_col = ru_col - (Columns - wp->w_width);
+	if (this_ru_col < (wp->w_width + 1) / 2)
+	    this_ru_col = (wp->w_width + 1) / 2;
 	if (this_ru_col <= 1)
 	{
 	    p = (char_u *)"<";		/* No room for file name! */
@@ -7036,16 +7033,16 @@ win_redr_status(win_T *wp)
 	    }
 
 	row = W_WINROW(wp) + wp->w_height;
-	screen_puts(p, row, W_WINCOL(wp)
+	screen_puts(p, row, wp->w_wincol
 #ifdef FEAT_TABSIDEBAR
 		+ tabsidebar_width()
 #endif
 		, attr);
-	screen_fill(row, row + 1, len + W_WINCOL(wp)
+	screen_fill(row, row + 1, len + wp->w_wincol
 #ifdef FEAT_TABSIDEBAR
 		+ tabsidebar_width()
 #endif
-		, this_ru_col + W_WINCOL(wp)
+		, this_ru_col + wp->w_wincol
 #ifdef FEAT_TABSIDEBAR
 		+ tabsidebar_width()
 #endif
@@ -7053,7 +7050,7 @@ win_redr_status(win_T *wp)
 
 	if (get_keymap_str(wp, (char_u *)"<%s>", NameBuff, MAXPATHL)
 		&& (int)(this_ru_col - len) > (int)(STRLEN(NameBuff) + 1))
-	    screen_puts(NameBuff, row, (int)(this_ru_col - STRLEN(NameBuff) - 1 + W_WINCOL(wp)
+	    screen_puts(NameBuff, row, (int)(this_ru_col - STRLEN(NameBuff) - 1 + wp->w_wincol
 #ifdef FEAT_TABSIDEBAR
 			+ tabsidebar_width()
 #endif
@@ -7245,7 +7242,7 @@ win_redr_custom(
     {
 	row = W_WINROW(wp) + wp->w_height;
 	fillchar = fillchar_status(&attr, wp);
-	maxwidth = W_WIDTH(wp);
+	maxwidth = wp->w_width;
 
 	if (draw_ruler)
 	{
@@ -7261,10 +7258,10 @@ win_redr_custom(
 		if (*stl++ != '(')
 		    stl = p_ruf;
 	    }
-	    col = ru_col - (COLUMNS_WITHOUT_TABSB() - W_WIDTH(wp));
-	    if (col < (W_WIDTH(wp) + 1) / 2)
-		col = (W_WIDTH(wp) + 1) / 2;
-	    maxwidth = W_WIDTH(wp) - col;
+	    col = ru_col - (COLUMNS_WITHOUT_TABSB() - wp->w_width);
+	    if (col < (wp->w_width + 1) / 2)
+		col = (wp->w_width + 1) / 2;
+	    maxwidth = wp->w_width - col;
 	    if (!wp->w_status_height)
 	    {
 		row = Rows - 1;
@@ -7289,7 +7286,7 @@ win_redr_custom(
 # endif
 	}
 
-	col += W_WINCOL(wp);
+	col += wp->w_wincol;
     }
 
     if (maxwidth <= 0)
@@ -9560,11 +9557,11 @@ setcursor(void)
     {
 	validate_cursor();
 	windgoto(W_WINROW(curwin) + curwin->w_wrow,
-		W_WINCOL(curwin) + (
+		curwin->w_wincol + (
 #ifdef FEAT_RIGHTLEFT
 		/* With 'rightleft' set and the cursor on a double-wide
 		 * character, position it on the leftmost column. */
-		curwin->w_p_rl ? ((int)W_WIDTH(curwin) - curwin->w_wcol - (
+		curwin->w_p_rl ? ((int)curwin->w_width - curwin->w_wcol - (
 # ifdef FEAT_MBYTE
 			(has_mbyte
 			   && (*mb_ptr2cells)(ml_get_cursor()) == 2
@@ -9636,12 +9633,12 @@ win_ins_lines(
     {
 	wp->w_redr_status = TRUE;
 	redraw_cmdline = TRUE;
-	nextrow = W_WINROW(wp) + wp->w_height + W_STATUS_HEIGHT(wp);
+	nextrow = W_WINROW(wp) + wp->w_height + wp->w_status_height;
 	lastrow = nextrow + line_count;
 	if (lastrow > Rows)
 	    lastrow = Rows;
 	screen_fill(nextrow - line_count, lastrow - line_count,
-		  W_WINCOL(wp)
+		  wp->w_wincol
 #ifdef FEAT_TABSIDEBAR
 		  + tabsidebar_width()
 #endif
@@ -9761,7 +9758,7 @@ win_do_lines(
     if (row + line_count >= wp->w_height)
     {
 	screen_fill(W_WINROW(wp) + row, W_WINROW(wp) + wp->w_height,
-		W_WINCOL(wp)
+		wp->w_wincol
 #ifdef FEAT_TABSIDEBAR
 		+ tabsidebar_width()
 #endif
@@ -9790,7 +9787,7 @@ win_do_lines(
      * a character in the lower right corner of the scroll region may cause a
      * scroll-up .
      */
-    if (scroll_region || W_WIDTH(wp) != COLUMNS_WITHOUT_TABSB())
+    if (scroll_region || wp->w_width != COLUMNS_WITHOUT_TABSB())
     {
 	if (scroll_region && (wp->w_width == COLUMNS_WITHOUT_TABSB() || *T_CSV != NUL))
 	    scroll_region_set(wp, row);
@@ -11135,21 +11132,21 @@ redraw_win_toolbar(win_T *wp)
 
     /* TODO: use fewer spaces if there is not enough room */
     for (menu = wp->w_winbar->children;
-			  menu != NULL && col < W_WIDTH(wp); menu = menu->next)
+			  menu != NULL && col < wp->w_width; menu = menu->next)
     {
 	space_to_screenline(off + col, fill_attr);
-	if (++col >= W_WIDTH(wp))
+	if (++col >= wp->w_width)
 	    break;
 	if (col > 1)
 	{
 	    space_to_screenline(off + col, fill_attr);
-	    if (++col >= W_WIDTH(wp))
+	    if (++col >= wp->w_width)
 		break;
 	}
 
 	wp->w_winbar_items[item_idx].wb_startcol = col;
 	space_to_screenline(off + col, button_attr);
-	if (++col >= W_WIDTH(wp))
+	if (++col >= wp->w_width)
 	    break;
 
 	next_col = text_to_screenline(wp, menu->name, col);
@@ -11162,20 +11159,20 @@ redraw_win_toolbar(win_T *wp)
 	wp->w_winbar_items[item_idx].wb_menu = menu;
 	++item_idx;
 
-	if (col >= W_WIDTH(wp))
+	if (col >= wp->w_width)
 	    break;
 	space_to_screenline(off + col, button_attr);
 	++col;
     }
-    while (col < W_WIDTH(wp))
+    while (col < wp->w_width)
     {
 	space_to_screenline(off + col, fill_attr);
 	++col;
     }
     wp->w_winbar_items[item_idx].wb_menu = NULL; /* end marker */
 
-    screen_line(wp->w_winrow, W_WINCOL(wp), (int)W_WIDTH(wp),
-						     (int)W_WIDTH(wp), FALSE);
+    screen_line(wp->w_winrow, wp->w_wincol, (int)wp->w_width,
+						     (int)wp->w_width, FALSE);
 }
 #endif
 /*
@@ -11307,8 +11304,8 @@ win_redr_ruler(win_T *wp, int always)
 	{
 	    row = W_WINROW(wp) + wp->w_height;
 	    fillchar = fillchar_status(&attr, wp);
-	    off = W_WINCOL(wp);
-	    width = W_WIDTH(wp);
+	    off = wp->w_wincol;
+	    width = wp->w_width;
 	}
 	else
 	{
