@@ -4118,7 +4118,7 @@ set_one_cmd_context(
 	case CMD_bunload:
 	    while ((xp->xp_pattern = vim_strchr(arg, ' ')) != NULL)
 		arg = xp->xp_pattern + 1;
-	    /*FALLTHROUGH*/
+	    /* FALLTHROUGH */
 	case CMD_buffer:
 	case CMD_sbuffer:
 	case CMD_checktime:
