@@ -7275,7 +7275,7 @@ win_redr_custom(
 		if (*stl++ != '(')
 		    stl = p_ruf;
 	    }
-	    col = ru_col - (COLUMNS_WITHOUT_TABSB() - wp->w_width);
+	    col = ru_col - (Columns - wp->w_width);
 	    if (col < (wp->w_width + 1) / 2)
 		col = (wp->w_width + 1) / 2;
 	    maxwidth = wp->w_width - col;
