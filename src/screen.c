@@ -190,6 +190,30 @@ static int screen_char_attr = 0;
 # define HAS_RIGHTLEFT(x) FALSE
 #endif
 
+void
+mydebug_s_len(char* p, int len)
+{
+ //    FILE* fp = fopen("C:\\Users\\naru1\\Desktop\\vim.log", "a");
+ //    if (NULL != fp)
+ //    {
+	// for (int i = 0; i < len; i++)
+	//     fprintf(fp, "%c", p[i]);
+	// fprintf(fp, "\n");
+	// fclose(fp);
+ //    }
+}
+
+void
+mydebug_s(char* s)
+{
+ //    FILE* fp = fopen("C:\\Users\\naru1\\Desktop\\vim.log", "a");
+ //    if (NULL != fp)
+ //    {
+	// fprintf(fp, "%s\n", s);
+	// fclose(fp);
+ //    }
+}
+
 /*
  * Redraw the current window later, with update_screen(type).
  * Set must_redraw only if not already set to a higher value.
@@ -198,6 +222,7 @@ static int screen_char_attr = 0;
     void
 redraw_later(int type)
 {
+    // mydebug_s("redraw_later");
     redraw_win_later(curwin, type);
 }
 
@@ -206,6 +231,7 @@ redraw_win_later(
     win_T	*wp,
     int		type)
 {
+    // mydebug_s("redraw_win_later");
     if (!exiting && wp->w_redr_type < type)
     {
 	wp->w_redr_type = type;
@@ -223,6 +249,7 @@ redraw_win_later(
     void
 redraw_later_clear(void)
 {
+    mydebug_s("redraw_later_clear");
     redraw_all_later(CLEAR);
 #ifdef FEAT_GUI
     if (gui.in_use)
@@ -242,6 +269,7 @@ redraw_later_clear(void)
 redraw_all_later(int type)
 {
     win_T	*wp;
+    // mydebug_s("redraw_all_later");
 
     FOR_ALL_WINDOWS(wp)
     {
@@ -255,6 +283,7 @@ redraw_all_later(int type)
     void
 redraw_curbuf_later(int type)
 {
+    // mydebug_s("redraw_curbuf_later");
     redraw_buf_later(curbuf, type);
 }
 
@@ -262,6 +291,7 @@ redraw_curbuf_later(int type)
 redraw_buf_later(buf_T *buf, int type)
 {
     win_T	*wp;
+    // mydebug_s("redraw_buf_later");
 
     FOR_ALL_WINDOWS(wp)
     {
@@ -274,6 +304,7 @@ redraw_buf_later(buf_T *buf, int type)
 redraw_buf_and_status_later(buf_T *buf, int type)
 {
     win_T	*wp;
+    mydebug_s("redraw_buf_and_status_later");
 
 #ifdef FEAT_WILDMENU
     if (wild_menu_showing != 0)
@@ -311,6 +342,7 @@ redraw_asap(int type)
     u8char_T	*screenlineC[MAX_MCO];	/* copy from ScreenLinesC[][] */
     schar_T	*screenline2 = NULL;	/* copy from ScreenLines2[] */
 #endif
+    mydebug_s("redraw_asap");
 
     redraw_later(type);
     if (msg_scrolled || (State != NORMAL && State != NORMAL_BUSY) || exiting)
@@ -446,6 +478,7 @@ redraw_asap(int type)
     void
 redraw_after_callback(int call_update_screen)
 {
+    mydebug_s("redraw_after_callback");
     ++redrawing_for_callback;
 
     if (State == HITRETURN || State == ASKMORE)
@@ -502,6 +535,7 @@ redrawWinline(
 #ifdef FEAT_FOLDING
     int		i;
 #endif
+    mydebug_s("redrawWinline");
 
     if (curwin->w_redraw_top == 0 || curwin->w_redraw_top > lnum)
 	curwin->w_redraw_top = lnum;
@@ -526,6 +560,7 @@ redrawWinline(
     void
 update_curbuf(int type)
 {
+    mydebug_s("update_curbuf");
     redraw_curbuf_later(type);
     update_screen(type);
 }
@@ -550,6 +585,7 @@ update_screen(int type_arg)
     int		gui_cursor_row;
 #endif
     int		no_update = FALSE;
+    mydebug_s("update_screen");
 
     /* Don't do anything if the screen structures are (not yet) valid. */
     if (!screen_valid(TRUE))
@@ -834,6 +870,7 @@ update_screen(int type_arg)
     static void
 update_prepare(void)
 {
+    mydebug_s("update_prepare");
     cursor_off();
     updating_screen = TRUE;
 #ifdef FEAT_GUI
@@ -853,6 +890,7 @@ update_prepare(void)
     static void
 update_finish(void)
 {
+    mydebug_s("update_finish");
     if (redraw_cmdline)
 	showmode();
 
@@ -886,6 +924,7 @@ update_finish(void)
 conceal_cursor_line(win_T *wp)
 {
     int		c;
+    // mydebug_s("conceal_cursor_line");
 
     if (*wp->w_p_cocu == NUL)
 	return FALSE;
@@ -908,6 +947,7 @@ conceal_cursor_line(win_T *wp)
     void
 conceal_check_cursur_line(void)
 {
+    // mydebug_s("conceal_check_cursur_line");
     if (curwin->w_p_cole > 0 && conceal_cursor_line(curwin))
     {
 	need_cursor_line_redraw = TRUE;
@@ -925,6 +965,7 @@ update_single_line(win_T *wp, linenr_T lnum)
 #ifdef SYN_TIME_LIMIT
     proftime_T	syntax_tm;
 #endif
+    mydebug_s("update_single_line");
 
     /* Don't do anything if the screen structures are (not yet) valid. */
     if (!screen_valid(TRUE) || updating_screen)
@@ -976,6 +1017,7 @@ update_debug_sign(buf_T *buf, linenr_T lnum)
 {
     win_T	*wp;
     int		doit = FALSE;
+    mydebug_s("update_debug_sign");
 
 # ifdef FEAT_FOLDING
     win_foldinfo.fi_level = 0;
@@ -1038,6 +1080,7 @@ update_debug_sign(buf_T *buf, linenr_T lnum)
     void
 updateWindow(win_T *wp)
 {
+    mydebug_s("updateWindow");
     /* return if already busy updating */
     if (updating_screen)
 	return;
@@ -1153,6 +1196,7 @@ win_update(win_T *wp)
 #ifdef SYN_TIME_LIMIT
     proftime_T	syntax_tm;
 #endif
+    mydebug_s("win_update");
 
     type = wp->w_redr_type;
 
@@ -2365,6 +2409,7 @@ win_draw_end(
 #ifdef FEAT_FOLDING
     int		fdc = compute_foldcolumn(wp, 0);
 #endif
+    mydebug_s("win_draw_end");
 
 #ifdef FEAT_RIGHTLEFT
     if (wp->w_p_rl)
@@ -2519,6 +2564,7 @@ static int advance_color_col(int vcol, int **color_cols);
     static int
 advance_color_col(int vcol, int **color_cols)
 {
+    mydebug_s("advance_color_col");
     while (**color_cols >= 0 && vcol > **color_cols)
 	++*color_cols;
     return (**color_cols >= 0);
@@ -2534,6 +2580,7 @@ advance_color_col(int vcol, int **color_cols)
 text_to_screenline(win_T *wp, char_u *text, int col)
 {
     int		off = (int)(current_ScreenLine - ScreenLines);
+    mydebug_s("text_to_screenline");
 
 #ifdef FEAT_MBYTE
     if (has_mbyte)
@@ -2673,6 +2720,7 @@ compute_foldcolumn(win_T *wp, int col)
     int fdc = wp->w_p_fdc;
     int wmw = wp == curwin && p_wmw == 0 ? 1 : p_wmw;
     int wwidth = wp->w_width;
+    // mydebug_s("compute_foldcolumn");
 
     if (fdc > wwidth - (col + wmw))
 	fdc = wwidth - (col + wmw);
@@ -2690,6 +2738,7 @@ fold_line(
     linenr_T	lnum,
     int		row)
 {
+    mydebug_s("fold_line");
     char_u	buf[FOLD_TEXT_LEN];
     pos_T	*top, *bot;
     linenr_T	lnume = lnum + fold_count - 1;
@@ -3002,6 +3051,7 @@ copy_text_attr(
     int		attr)
 {
     int		i;
+    mydebug_s("copy_text_attr");
 
     mch_memmove(ScreenLines + off, buf, (size_t)len);
 # ifdef FEAT_MBYTE
@@ -3023,6 +3073,7 @@ fill_foldcolumn(
     int		closed,		/* TRUE of FALSE */
     linenr_T	lnum)		/* current line number */
 {
+    mydebug_s("fill_foldcolumn");
     int		i = 0;
     int		level;
     int		first_level;
@@ -3265,6 +3316,7 @@ win_line(
 #else
 # define VCOL_HLC (vcol)
 #endif
+    mydebug_s("win_line");
 
     if (startrow > endrow)		/* past the end already! */
 	return startrow;
@@ -6045,6 +6097,7 @@ static int comp_char_differs(int, int);
 comp_char_differs(int off_from, int off_to)
 {
     int	    i;
+    // mydebug_s("comp_char_differs");
 
     for (i = 0; i < Screen_mco; ++i)
     {
@@ -6067,6 +6120,7 @@ comp_char_differs(int off_from, int off_to)
     static int
 char_needs_redraw(int off_from, int off_to, int cols)
 {
+    // mydebug_s("char_needs_redraw");
     if (cols > 0
 	    && ((ScreenLines[off_from] != ScreenLines[off_to]
 		    || ScreenAttrs[off_from] != ScreenAttrs[off_to])
@@ -6098,6 +6152,7 @@ char_needs_redraw(int off_from, int off_to, int cols)
     int
 screen_get_current_line_off()
 {
+    mydebug_s("screen_get_current_line_off");
     return (int)(current_ScreenLine - ScreenLines);
 }
 #endif
@@ -6121,6 +6176,7 @@ screen_line(
     int	    clear_width,
     int	    rlflag UNUSED)
 {
+    mydebug_s("screen_line");
     unsigned	    off_from;
     unsigned	    off_to;
 #ifdef FEAT_MBYTE
@@ -6146,8 +6202,8 @@ screen_line(
 #endif
 
 # ifdef FEAT_TABSIDEBAR
-    coloff += tabsidebar_width();
     draw_tabsidebar(row);
+    coloff += tabsidebar_width();
 #endif
 
     /* Check for illegal row and col, just in case. */
@@ -6520,6 +6576,7 @@ screen_line(
     void
 rl_mirror(char_u *str)
 {
+    mydebug_s("rl_mirror");
     char_u	*p1, *p2;
     int		t;
 
@@ -6538,6 +6595,7 @@ rl_mirror(char_u *str)
     void
 status_redraw_all(void)
 {
+    // mydebug_s("status_redraw_all");
     win_T	*wp;
 
     FOR_ALL_WINDOWS(wp)
@@ -6554,6 +6612,7 @@ status_redraw_all(void)
     void
 status_redraw_curbuf(void)
 {
+    mydebug_s("status_redraw_curbuf");
     win_T	*wp;
 
     FOR_ALL_WINDOWS(wp)
@@ -6570,6 +6629,7 @@ status_redraw_curbuf(void)
     void
 redraw_statuslines(void)
 {
+    mydebug_s("redraw_statuslines");
     win_T	*wp;
 
     FOR_ALL_WINDOWS(wp)
@@ -6589,6 +6649,7 @@ redraw_statuslines(void)
     void
 win_redraw_last_status(frame_T *frp)
 {
+    mydebug_s("win_redraw_last_status");
     if (frp->fr_layout == FR_LEAF)
 	frp->fr_win->w_redr_status = TRUE;
     else if (frp->fr_layout == FR_ROW)
@@ -6612,6 +6673,7 @@ win_redraw_last_status(frame_T *frp)
     static void
 draw_vsep_win(win_T *wp, int row)
 {
+    mydebug_s("draw_vsep_win");
     int		hl;
     int		c;
 
@@ -6642,6 +6704,7 @@ static int skip_status_match_char(expand_T *xp, char_u *s);
     static int
 status_match_len(expand_T *xp, char_u *s)
 {
+    mydebug_s("status_match_len");
     int	len = 0;
 
 #ifdef FEAT_MENU
@@ -6670,6 +6733,7 @@ status_match_len(expand_T *xp, char_u *s)
     static int
 skip_status_match_char(expand_T *xp, char_u *s)
 {
+    mydebug_s("skip_status_match_char");
     if ((rem_backslash(s) && xp->xp_context != EXPAND_HELP)
 #ifdef FEAT_MENU
 	    || ((xp->xp_context == EXPAND_MENUS
@@ -6702,6 +6766,7 @@ win_redr_status_matches(
     int		match,
     int		showtail)
 {
+    mydebug_s("win_redr_status_matches");
 #define L_MATCH(m) (showtail ? sm_gettail(matches[m]) : matches[m])
     int		row;
     char_u	*buf;
@@ -6929,6 +6994,7 @@ win_redr_status_matches(
     void
 win_redr_status(win_T *wp)
 {
+    mydebug_s("win_redr_status");
     int		row;
     char_u	*p;
     int		len;
@@ -7104,6 +7170,7 @@ win_redr_status(win_T *wp)
     static void
 redraw_custom_statusline(win_T *wp)
 {
+    mydebug_s("redraw_custom_statusline");
     static int	    entered = FALSE;
     int		    saved_did_emsg = did_emsg;
 
@@ -7137,6 +7204,7 @@ redraw_custom_statusline(win_T *wp)
     int
 stl_connected(win_T *wp)
 {
+    mydebug_s("stl_connected");
     frame_T	*fr;
 
     fr = wp->w_frame;
@@ -7168,6 +7236,7 @@ get_keymap_str(
     char_u	*buf,	    /* buffer for the result */
     int		len)	    /* length of buffer */
 {
+    // mydebug_s("get_keymap_str");
     char_u	*p;
 
     if (wp->w_buffer->b_p_iminsert != B_IMODE_LMAP)
@@ -7216,6 +7285,7 @@ win_redr_custom(
     win_T	*wp,
     int		draw_ruler)	/* TRUE or FALSE */
 {
+    mydebug_s("win_redr_custom");
     static int	entered = FALSE;
     int		attr;
     int		curattr;
@@ -7415,6 +7485,7 @@ theend:
     void
 screen_putchar(int c, int row, int col, int attr)
 {
+    // mydebug_s("screen_putchar");
     char_u	buf[MB_MAXBYTES + 1];
 
 #ifdef FEAT_MBYTE
@@ -7436,6 +7507,7 @@ screen_putchar(int c, int row, int col, int attr)
     void
 screen_getbytes(int row, int col, char_u *bytes, int *attrp)
 {
+    mydebug_s("screen_getbytes");
     unsigned off;
 
     /* safety check */
@@ -7475,6 +7547,7 @@ static int screen_comp_differs(int, int*);
     static int
 screen_comp_differs(int off, int *u8cc)
 {
+    mydebug_s("screen_comp_differs");
     int	    i;
 
     for (i = 0; i < Screen_mco; ++i)
@@ -7501,6 +7574,7 @@ screen_puts(
     int		col,
     int		attr)
 {
+    // mydebug_s("screen_puts");
     screen_puts_len(text, -1, row, col, attr);
 }
 
@@ -7516,6 +7590,7 @@ screen_puts_len(
     int		col,
     int		attr)
 {
+    // mydebug_s("screen_puts_len");
     unsigned	off;
     char_u	*ptr = text;
     int		len = textlen;
@@ -7800,6 +7875,7 @@ screen_puts_len(
     static void
 start_search_hl(void)
 {
+    mydebug_s("start_search_hl");
     if (p_hls && !no_hlsearch)
     {
 	last_pat_prog(&search_hl.rm);
@@ -7817,6 +7893,7 @@ start_search_hl(void)
     static void
 end_search_hl(void)
 {
+    mydebug_s("end_search_hl");
     if (search_hl.rm.regprog != NULL)
     {
 	vim_regfree(search_hl.rm.regprog);
@@ -7830,6 +7907,7 @@ end_search_hl(void)
     static void
 init_search_hl(win_T *wp)
 {
+    // mydebug_s("init_search_hl");
     matchitem_T *cur;
 
     /* Setup for match and 'hlsearch' highlighting.  Disable any previous
@@ -7863,6 +7941,7 @@ init_search_hl(win_T *wp)
     static void
 prepare_search_hl(win_T *wp, linenr_T lnum)
 {
+    // mydebug_s("prepare_search_hl");
     matchitem_T *cur;		/* points to the match list */
     match_T	*shl;		/* points to search_hl or a match */
     int		shl_flag;	/* flag to indicate whether search_hl
@@ -7949,6 +8028,7 @@ next_search_hl(
     colnr_T	    mincol,	/* minimal column for a match */
     matchitem_T	    *cur)	/* to retrieve match positions if any */
 {
+    // mydebug_s("next_search_hl");
     linenr_T	l;
     colnr_T	matchcol;
     long	nmatched;
@@ -8083,6 +8163,7 @@ next_search_hl_pos(
     posmatch_T	    *posmatch,	/* match positions */
     colnr_T	    mincol)	/* minimal column for a match */
 {
+    mydebug_s("next_search_hl_pos");
     int	    i;
     int	    found = -1;
 
@@ -8136,6 +8217,7 @@ next_search_hl_pos(
       static void
 screen_start_highlight(int attr)
 {
+    // mydebug_s("screen_start_highlight");
     attrentry_T *aep = NULL;
 
     screen_attr = attr;
@@ -8233,6 +8315,7 @@ screen_start_highlight(int attr)
       void
 screen_stop_highlight(void)
 {
+    // mydebug_s("screen_stop_highlight");
     int	    do_ME = FALSE;	    /* output T_ME code */
 
     if (screen_attr != 0
@@ -8362,6 +8445,7 @@ screen_stop_highlight(void)
     void
 reset_cterm_colors(void)
 {
+    mydebug_s("reset_cterm_colors");
     if (IS_CTERM)
     {
 	/* set Normal cterm colors */
@@ -8391,6 +8475,7 @@ reset_cterm_colors(void)
     static void
 screen_char(unsigned off, int row, int col)
 {
+    // mydebug_s("screen_char");
     int		attr;
 
     /* Check for illegal values, just in case (could happen just after
@@ -8471,6 +8556,7 @@ screen_char(unsigned off, int row, int col)
     static void
 screen_char_2(unsigned off, int row, int col)
 {
+    // mydebug_s("screen_char_2");
     /* Check for illegal values (could be wrong when screen was resized). */
     if (off + 1 >= (unsigned)(screen_Rows * screen_Columns))
 	return;
@@ -8503,6 +8589,7 @@ screen_draw_rectangle(
     int		width,
     int		invert)
 {
+    mydebug_s("screen_draw_rectangle");
     int		r, c;
     int		off;
 #ifdef FEAT_MBYTE
@@ -8552,6 +8639,8 @@ redraw_block(int row, int end, win_T *wp)
     int		col;
     int		width;
 
+    mydebug_s("redraw_block");
+
 # ifdef FEAT_CLIPBOARD
     clip_may_clear_selection(row, end - 1);
 # endif
@@ -8576,6 +8665,7 @@ redraw_block(int row, int end, win_T *wp)
     static void
 space_to_screenline(int off, int attr)
 {
+    // mydebug_s("space_to_screenline");
     ScreenLines[off] = ' ';
     ScreenAttrs[off] = attr;
 # ifdef FEAT_MBYTE
@@ -8599,6 +8689,7 @@ screen_fill(
     int	    c2,
     int	    attr)
 {
+    // mydebug_s("screen_fill");
     int		    row;
     int		    col;
     int		    off;
@@ -8781,6 +8872,7 @@ screen_fill(
     void
 check_for_delay(int check_msg_scroll)
 {
+    // mydebug_s("check_for_delay");
     if ((emsg_on_display || (check_msg_scroll && msg_scroll))
 	    && !did_wait_return
 	    && emsg_silent == 0)
@@ -8802,6 +8894,7 @@ check_for_delay(int check_msg_scroll)
     int
 screen_valid(int doclear)
 {
+    // mydebug_s("screen_valid");
     screenalloc(doclear);	   /* allocate screen buffers if size changed */
     return (ScreenLines != NULL);
 }
@@ -8872,6 +8965,8 @@ retry:
     if (entered)
 	return;
     entered = TRUE;
+
+    mydebug_s("screenalloc");
 
     /*
      * Note that the window sizes are updated before reallocating the arrays,
@@ -9133,6 +9228,7 @@ give_up:
     void
 free_screenlines(void)
 {
+    mydebug_s("free_screenlines");
 #ifdef FEAT_MBYTE
     int		i;
 
@@ -9151,6 +9247,7 @@ free_screenlines(void)
     void
 screenclear(void)
 {
+    mydebug_s("screenclear");
     check_for_delay(FALSE);
     screenalloc(FALSE);	    /* allocate screen buffers if size changed */
     screenclear2();	    /* clear the screen */
@@ -9159,6 +9256,7 @@ screenclear(void)
     static void
 screenclear2(void)
 {
+    mydebug_s("screenclear2");
     int	    i;
 
     if (starting == NO_SCREEN || ScreenLines == NULL
@@ -9222,6 +9320,7 @@ screenclear2(void)
     static void
 lineclear(unsigned off, int width, int attr)
 {
+    mydebug_s("lineclear");
     (void)vim_memset(ScreenLines + off, ' ', (size_t)width * sizeof(schar_T));
 #ifdef FEAT_MBYTE
     if (enc_utf8)
@@ -9238,6 +9337,7 @@ lineclear(unsigned off, int width, int attr)
     static void
 lineinvalid(unsigned off, int width)
 {
+    mydebug_s("lineinvalid");
     (void)vim_memset(ScreenAttrs + off, -1, (size_t)width * sizeof(sattr_T));
 }
 
@@ -9247,19 +9347,24 @@ lineinvalid(unsigned off, int width)
     static void
 linecopy(int to, int from, win_T *wp)
 {
-    unsigned	off_to = LineOffset[to] + wp->w_wincol
+    mydebug_s("linecopy");
+    unsigned	off_to = LineOffset[to] + wp->w_wincol;
+    unsigned	off_from = LineOffset[from] + wp->w_wincol;
+
 #ifdef FEAT_TABSIDEBAR
-        + tabsidebar_width()
+    off_to += tabsidebar_width();
+    off_from += tabsidebar_width();
 #endif
-        ;
-    unsigned	off_from = LineOffset[from] + wp->w_wincol
-#ifdef FEAT_TABSIDEBAR
-        + tabsidebar_width()
-#endif
-        ;
 
     mch_memmove(ScreenLines + off_to, ScreenLines + off_from,
 	    wp->w_width * sizeof(schar_T));
+
+    // mydebug_s("off_from");
+    // mydebug_s_len(ScreenLines + off_from, wp->w_width);
+    // mydebug_s("off_to");
+    // mydebug_s_len(ScreenLines + off_to, wp->w_width);
+    // mydebug_s("");
+
 #ifdef FEAT_MBYTE
     if (enc_utf8)
     {
@@ -9286,6 +9391,7 @@ linecopy(int to, int from, win_T *wp)
     int
 can_clear(char_u *p)
 {
+    // mydebug_s("can_clear");
     return (*p != NUL && (t_colors <= 1
 #ifdef FEAT_GUI
 		|| gui.in_use
@@ -9307,6 +9413,7 @@ can_clear(char_u *p)
     void
 screen_start(void)
 {
+    mydebug_s("screen_start");
     screen_cur_row = screen_cur_col = 9999;
 }
 
@@ -9318,6 +9425,7 @@ screen_start(void)
     void
 windgoto(int row, int col)
 {
+    // mydebug_s("windgoto");
     sattr_T	    *p;
     int		    i;
     int		    plan;
@@ -9570,6 +9678,7 @@ windgoto(int row, int col)
     void
 setcursor(void)
 {
+    // mydebug_s("setcursor");
     if (redrawing())
     {
 	validate_cursor();
@@ -9610,6 +9719,7 @@ win_ins_lines(
     int		invalid,
     int		mayclear)
 {
+    mydebug_s("win_ins_lines");
     int		did_delete;
     int		nextrow;
     int		lastrow;
@@ -9697,6 +9807,7 @@ win_del_lines(
     int		mayclear,
     int		clear_attr)	    /* for clearing lines */
 {
+    mydebug_s("win_del_lines");
     int		retval;
 
     if (invalid)
@@ -9749,6 +9860,7 @@ win_do_lines(
     int		del,
     int		clear_attr)
 {
+    mydebug_s("win_do_lines");
     int		retval;
 
     if (!redrawing() || line_count <= 0)
@@ -9831,6 +9943,7 @@ win_do_lines(
     static void
 win_rest_invalid(win_T *wp)
 {
+    // mydebug_s("win_rest_invalid");
     while (wp != NULL)
     {
 	redraw_win_later(wp, NOT_VALID);
@@ -9880,6 +9993,7 @@ screen_ins_lines(
     int		clear_attr,
     win_T	*wp)	    /* NULL or window to use width from */
 {
+    mydebug_s("screen_ins_lines");
     int		i;
     int		j;
     unsigned	temp;
@@ -10094,6 +10208,7 @@ screen_del_lines(
     int		clear_attr,	/* used for clearing lines */
     win_T	*wp UNUSED)	/* NULL or window to use width from */
 {
+    mydebug_s("screen_del_lines");
     int		j;
     int		i;
     unsigned	temp;
@@ -10332,6 +10447,7 @@ screen_del_lines(
     int
 showmode(void)
 {
+    mydebug_s("showmode");
     int		need_clear;
     int		length = 0;
     int		do_mode;
@@ -10549,6 +10665,7 @@ showmode(void)
     static void
 msg_pos_mode(void)
 {
+    mydebug_s("msg_pos_mode");
     msg_col = 0;
     msg_row = Rows - 1;
 }
@@ -10561,6 +10678,7 @@ msg_pos_mode(void)
     void
 unshowmode(int force)
 {
+    mydebug_s("unshowmode");
     /*
      * Don't delete it right now, when not redrawing or inside a mapping.
      */
@@ -10576,6 +10694,7 @@ unshowmode(int force)
     void
 clearmode(void)
 {
+    mydebug_s("clearmode");
     msg_pos_mode();
     if (Recording)
 	recording_mode(HL_ATTR(HLF_CM));
@@ -10585,6 +10704,7 @@ clearmode(void)
     static void
 recording_mode(int attr)
 {
+    mydebug_s("recording_mode");
     MSG_PUTS_ATTR(_("recording"), attr);
     if (!shortmess(SHM_RECORDING))
     {
@@ -10595,18 +10715,6 @@ recording_mode(int attr)
 }
 
 #ifdef FEAT_TABSIDEBAR
-    void
-mydebug(char* file, int lnum, char* s, int i)
-{
-    FILE* fp;
-    fp = fopen("vim.log", "a");
-    if(fp != NULL)
-    {
-	fprintf(fp, "[%s,%d] %s,%d\n", file, lnum, s, i);
-	fclose(fp);
-    }
-}
-
 /*
  * draw the tabsidebar
  *
@@ -10616,6 +10724,7 @@ mydebug(char* file, int lnum, char* s, int i)
     void
 draw_tabsidebar(int redrawing_row)
 {
+    mydebug_s("draw_tabsidebar");
     char_u	*p;
     char_u	buf[MAXPATHL];
     int		attr;
@@ -10838,6 +10947,7 @@ draw_tabsidebar(int redrawing_row)
     static void
 draw_tabline(void)
 {
+    mydebug_s("draw_tabline");
     int		tabcount = 0;
     tabpage_T	*tp;
     int		tabwidth;
@@ -11034,6 +11144,7 @@ draw_tabline(void)
     void
 get_trans_bufname(buf_T *buf)
 {
+    // mydebug_s("get_trans_bufname");
     if (buf_spname(buf) != NULL)
 	vim_strncpy(NameBuff, buf_spname(buf), MAXPATHL - 1);
     else
@@ -11047,6 +11158,7 @@ get_trans_bufname(buf_T *buf)
     static int
 fillchar_status(int *attr, win_T *wp)
 {
+    // mydebug_s("fillchar_status");
     int fill;
 
 #ifdef FEAT_TERMINAL
@@ -11094,6 +11206,7 @@ fillchar_status(int *attr, win_T *wp)
     static int
 fillchar_vsep(int *attr)
 {
+    mydebug_s("fillchar_vsep");
     *attr = HL_ATTR(HLF_C);
     if (*attr == 0 && fill_vert == ' ')
 	return '|';
@@ -11107,6 +11220,7 @@ fillchar_vsep(int *attr)
     int
 redrawing(void)
 {
+    // mydebug_s("redrawing");
 #ifdef FEAT_EVAL
     if (disable_redraw_for_testing)
 	return 0;
@@ -11122,6 +11236,7 @@ redrawing(void)
     int
 messaging(void)
 {
+    mydebug_s("messaging");
     return (!(p_lz && char_avail() && !KeyTyped));
 }
 
@@ -11132,6 +11247,7 @@ messaging(void)
     static void
 redraw_win_toolbar(win_T *wp)
 {
+    mydebug_s("redraw_win_toolbar");
     vimmenu_T	*menu;
     int		item_idx = 0;
     int		item_count = 0;
@@ -11199,6 +11315,7 @@ redraw_win_toolbar(win_T *wp)
     void
 showruler(int always)
 {
+    mydebug_s("showruler");
     if (!always && !redrawing())
 	return;
 #ifdef FEAT_INS_EXPAND
@@ -11239,6 +11356,7 @@ showruler(int always)
     static void
 win_redr_ruler(win_T *wp, int always)
 {
+    mydebug_s("win_redr_ruler");
 #define RULER_BUF_LEN 70
     char_u	buffer[RULER_BUF_LEN];
     int		row;
@@ -11446,6 +11564,7 @@ win_redr_ruler(win_T *wp, int always)
     int
 number_width(win_T *wp)
 {
+    mydebug_s("number_width");
     int		n;
     linenr_T	lnum;
 
@@ -11484,6 +11603,7 @@ number_width(win_T *wp)
     int
 screen_screencol(void)
 {
+    // mydebug_s("screen_screencol");
     return screen_cur_col;
 }
 
@@ -11494,5 +11614,6 @@ screen_screencol(void)
     int
 screen_screenrow(void)
 {
+    // mydebug_s("screen_screenrow");
     return screen_cur_row;
 }
