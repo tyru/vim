@@ -6100,14 +6100,21 @@ last_status_rec(frame_T *fr, int statusline)
     int
 tabsidebar_width(void)
 {
-    switch (p_stsb)
+#ifdef FEAT_WILDMENU
+    if (wild_menu_showing)
+	return 0;
+    else
+#endif
     {
-	case 0:
-	    return 0;
-	case 1:
-	    return (first_tabpage->tp_next == NULL) ? 0 : p_tsbc;
+	switch (p_stsb)
+	{
+	    case 0:
+		return 0;
+	    case 1:
+		return (first_tabpage->tp_next == NULL) ? 0 : p_tsbc;
+	}
+	return p_tsbc;
     }
-    return p_tsbc;
 }
 #endif
 
