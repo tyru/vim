@@ -1546,7 +1546,7 @@ static struct vimoption options[] =
 			    (char_u *)&p_ic, PV_NONE,
 			    {(char_u *)FALSE, (char_u *)0L} SCRIPTID_INIT},
     {"imactivatefunc","imaf",P_STRING|P_VI_DEF|P_SECURE,
-#if defined(FEAT_EVAL) && defined(USE_IM_CONTROL)
+#if defined(FEAT_EVAL) && defined(FEAT_MBYTE)
 			    (char_u *)&p_imaf, PV_NONE,
 			    {(char_u *)"", (char_u *)NULL}
 # else
@@ -1562,14 +1562,14 @@ static struct vimoption options[] =
 #endif
 			    {(char_u *)"", (char_u *)0L} SCRIPTID_INIT},
     {"imcmdline",   "imc",  P_BOOL|P_VI_DEF,
-#ifdef USE_IM_CONTROL
+#ifdef FEAT_MBYTE
 			    (char_u *)&p_imcmdline, PV_NONE,
 #else
 			    (char_u *)NULL, PV_NONE,
 #endif
 			    {(char_u *)FALSE, (char_u *)0L} SCRIPTID_INIT},
     {"imdisable",   "imd",  P_BOOL|P_VI_DEF,
-#ifdef USE_IM_CONTROL
+#ifdef FEAT_MBYTE
 			    (char_u *)&p_imdisable, PV_NONE,
 #else
 			    (char_u *)NULL, PV_NONE,
@@ -1589,7 +1589,7 @@ static struct vimoption options[] =
 			    {(char_u *)B_IMODE_USE_INSERT, (char_u *)0L}
 			    SCRIPTID_INIT},
     {"imstatusfunc","imsf",P_STRING|P_VI_DEF|P_SECURE,
-#if defined(FEAT_EVAL) && defined(USE_IM_CONTROL)
+#if defined(FEAT_EVAL) && defined(FEAT_MBYTE)
 			    (char_u *)&p_imsf, PV_NONE,
 			    {(char_u *)"", (char_u *)NULL}
 #else
@@ -8489,7 +8489,7 @@ set_bool_option(
     }
 #endif
 
-#ifdef USE_IM_CONTROL
+#ifdef FEAT_MBYTE
     /* 'imdisable' */
     else if ((int *)varp == &p_imdisable)
     {

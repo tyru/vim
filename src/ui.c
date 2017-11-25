@@ -3311,7 +3311,7 @@ ui_focus_change(
 }
 #endif
 
-#if defined(USE_IM_CONTROL) || defined(PROTO)
+#if defined(FEAT_MBYTE) || defined(PROTO)
 /*
  * Save current Input Method status to specified place.
  */
