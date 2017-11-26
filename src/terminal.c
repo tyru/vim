@@ -51,7 +51,9 @@
  * - implement term_setsize()
  * - Termdebug does not work when Vim build with mzscheme.  gdb hangs.
  * - MS-Windows GUI: WinBar has  tearoff item
+ * - Adding WinBar to terminal window doesn't display, text isn't shifted down.
  * - MS-Windows GUI: still need to type a key after shell exits?  #1924
+ * - After executing a shell command the status line isn't redraw.
  * - What to store in a session file?  Shell at the prompt would be OK to
  *   restore, but others may not.  Open the window and let the user start the
  *   command?
@@ -717,7 +719,8 @@ term_send_mouse(VTerm *vterm, int button, int pressed)
 
     vterm_mouse_move(vterm, mouse_row - W_WINROW(curwin),
 					    mouse_col - curwin->w_wincol, mod);
-    vterm_mouse_button(vterm, button, pressed, mod);
+    if (button != 0)
+	vterm_mouse_button(vterm, button, pressed, mod);
     return TRUE;
 }
 
@@ -818,6 +821,7 @@ term_convert_key(term_T *term, int c, char *buf)
 	case K_LEFTDRAG:	other = term_send_mouse(vterm, 1, 1); break;
 	case K_LEFTRELEASE:
 	case K_LEFTRELEASE_NM:	other = term_send_mouse(vterm, 1, 0); break;
+	case K_MOUSEMOVE:	other = term_send_mouse(vterm, 0, 0); break;
 	case K_MIDDLEMOUSE:	other = term_send_mouse(vterm, 2, 1); break;
 	case K_MIDDLEDRAG:	other = term_send_mouse(vterm, 2, 1); break;
 	case K_MIDDLERELEASE:	other = term_send_mouse(vterm, 2, 0); break;
@@ -1284,6 +1288,7 @@ send_keys_to_term(term_T *term, int c, int typed)
 	case K_LEFTMOUSE_NM:
 	case K_LEFTRELEASE:
 	case K_LEFTRELEASE_NM:
+	case K_MOUSEMOVE:
 	case K_MIDDLEMOUSE:
 	case K_MIDDLERELEASE:
 	case K_RIGHTMOUSE:
@@ -1298,9 +1303,9 @@ send_keys_to_term(term_T *term, int c, int typed)
 	case K_MOUSELEFT:
 	case K_MOUSERIGHT:
 	    if (mouse_row < W_WINROW(curwin)
-		    || mouse_row >= (W_WINROW(curwin) + curwin->w_height)
+		    || mouse_row > (W_WINROW(curwin) + curwin->w_height)
 		    || mouse_col < curwin->w_wincol
-		    || mouse_col >= W_ENDCOL(curwin)
+		    || mouse_col > W_ENDCOL(curwin)
 		    || dragging_outside)
 	    {
 		/* click or scroll outside the current window */
@@ -2168,10 +2173,13 @@ term_channel_closed(channel_T *ch)
 
 		if (term->tl_finish == 'c')
 		{
+		    aco_save_T	aco;
+
 		    /* ++close or term_finish == "close" */
 		    ch_log(NULL, "terminal job finished, closing window");
-		    curbuf = term->tl_buffer;
+		    aucmd_prepbuf(&aco, term->tl_buffer);
 		    do_bufdel(DOBUF_WIPE, (char_u *)"", 1, fnum, fnum, FALSE);
+		    aucmd_restbuf(&aco);
 		    break;
 		}
 		if (term->tl_finish == 'o' && term->tl_buffer->b_nwindows == 0)
@@ -3223,6 +3231,10 @@ f_term_wait(typval_T *argvars, typval_T *rettv UNUSED)
 	{
 	    mch_check_messages();
 	    parse_queued_messages();
+	    if (!buf_valid(buf))
+		/* If the terminal is closed when the channel is closed the
+		 * buffer disappears. */
+		break;
 	    ui_delay(10L, FALSE);
 	}
 	mch_check_messages();
@@ -3412,12 +3424,10 @@ term_and_job_init(
 	return FAIL;
     if (opt->jo_cwd != NULL)
 	cwd_wchar = enc_to_utf16(opt->jo_cwd, NULL);
-    if (opt->jo_env != NULL)
-    {
-	ga_init2(&ga_env, (int)sizeof(char*), 20);
-	win32_build_env(opt->jo_env, &ga_env);
-	env_wchar = ga_env.ga_data;
-    }
+
+    ga_init2(&ga_env, (int)sizeof(char*), 20);
+    win32_build_env(opt->jo_env, &ga_env, TRUE);
+    env_wchar = ga_env.ga_data;
 
     job = job_alloc();
     if (job == NULL)
@@ -3519,8 +3529,7 @@ term_and_job_init(
 failed:
     if (argvar->v_type == VAR_LIST)
 	vim_free(ga_cmd.ga_data);
-    if (opt->jo_env != NULL)
-	vim_free(ga_env.ga_data);
+    vim_free(ga_env.ga_data);
     vim_free(cmd_wchar);
     vim_free(cwd_wchar);
     if (spawn_config != NULL)

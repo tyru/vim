@@ -161,7 +161,7 @@ static void win_rest_invalid(win_T *wp);
 static void msg_pos_mode(void);
 static void recording_mode(int attr);
 #ifdef FEAT_TABSIDEBAR
-void draw_tabsidebar(int redrawing_row);
+void draw_tabsidebar();
 #endif
 static void draw_tabline(void);
 static int fillchar_status(int *attr, win_T *wp);
@@ -692,7 +692,7 @@ update_screen(int type_arg)
     if (redraw_tabline || type >= NOT_VALID)
 	draw_tabline();
 #ifdef FEAT_TABSIDEBAR
-    draw_tabsidebar(-1);
+    draw_tabsidebar();
 #endif
 
 #ifdef FEAT_SYN_HL
@@ -1058,7 +1058,7 @@ updateWindow(win_T *wp)
     if (redraw_tabline)
 	draw_tabline();
 #ifdef FEAT_TABSIDEBAR
-    draw_tabsidebar(-1);
+    draw_tabsidebar();
 #endif
 
     if (wp->w_redr_status
@@ -1578,7 +1578,7 @@ win_update(win_T *wp)
 		if (redraw_tabline)
 		    draw_tabline();
 #ifdef FEAT_TABSIDEBAR
-		draw_tabsidebar(-1);
+		draw_tabsidebar();
 #endif
 	    }
 	}
@@ -6147,7 +6147,6 @@ screen_line(
 
 # ifdef FEAT_TABSIDEBAR
     coloff += tabsidebar_width();
-    draw_tabsidebar(row);
 #endif
 
     /* Check for illegal row and col, just in case. */
@@ -6578,7 +6577,7 @@ redraw_statuslines(void)
     if (redraw_tabline)
 	draw_tabline();
 #ifdef FEAT_TABSIDEBAR
-    draw_tabsidebar(-1);
+    draw_tabsidebar();
 #endif
 }
 
@@ -8552,6 +8551,7 @@ redraw_block(int row, int end, win_T *wp)
     int		col;
     int		width;
 
+
 # ifdef FEAT_CLIPBOARD
     clip_may_clear_selection(row, end - 1);
 # endif
@@ -9247,19 +9247,17 @@ lineinvalid(unsigned off, int width)
     static void
 linecopy(int to, int from, win_T *wp)
 {
-    unsigned	off_to = LineOffset[to] + wp->w_wincol
+    unsigned	off_to = LineOffset[to] + wp->w_wincol;
+    unsigned	off_from = LineOffset[from] + wp->w_wincol;
+
 #ifdef FEAT_TABSIDEBAR
-        + tabsidebar_width()
+    off_to += tabsidebar_width();
+    off_from += tabsidebar_width();
 #endif
-        ;
-    unsigned	off_from = LineOffset[from] + wp->w_wincol
-#ifdef FEAT_TABSIDEBAR
-        + tabsidebar_width()
-#endif
-        ;
 
     mch_memmove(ScreenLines + off_to, ScreenLines + off_from,
 	    wp->w_width * sizeof(schar_T));
+
 #ifdef FEAT_MBYTE
     if (enc_utf8)
     {
@@ -10595,26 +10593,11 @@ recording_mode(int attr)
 }
 
 #ifdef FEAT_TABSIDEBAR
-    void
-mydebug(char* file, int lnum, char* s, int i)
-{
-    FILE* fp;
-    fp = fopen("vim.log", "a");
-    if(fp != NULL)
-    {
-	fprintf(fp, "[%s,%d] %s,%d\n", file, lnum, s, i);
-	fclose(fp);
-    }
-}
-
 /*
  * draw the tabsidebar
- *
- * If redrawing_row is -1, redraw lines on screen.
- * If redrawing_row isnot -1, redraw the specified line.
  */
     void
-draw_tabsidebar(int redrawing_row)
+draw_tabsidebar()
 {
     char_u	*p;
     char_u	buf[MAXPATHL];
@@ -10664,163 +10647,161 @@ draw_tabsidebar(int redrawing_row)
 
 	if (tp != NULL)
 	{
-	    if (row == redrawing_row || redrawing_row == -1)
+	    v.v_type = VAR_NUMBER;
+	    v.vval.v_number = tabpage_index(tp);
+	    set_var((char_u *)"g:actual_curtabpage", &v, TRUE);
+
+	    if (tp->tp_topframe == topframe)
+		attr = attr_sel;
+	    else
+		attr = attr_nosel;
+
+	    if (tp == curtab)
 	    {
-		v.v_type = VAR_NUMBER;
-		v.vval.v_number = tabpage_index(tp);
-		set_var((char_u *)"g:actual_curtabpage", &v, TRUE);
+		cwp = curwin;
+		wp = firstwin;
+	    }
+	    else
+	    {
+		cwp = tp->tp_curwin;
+		wp = tp->tp_firstwin;
+	    }
 
-		if (tp->tp_topframe == topframe)
-		    attr = attr_sel;
-		else
-		    attr = attr_nosel;
+	    len = 0;
+	    p = tp->tp_tabsidebar;
+	    if (p != NULL)
+		len = (int)STRLEN(p);
 
-		if (tp == curtab)
-		{
-		    cwp = curwin;
-		    wp = firstwin;
-		}
-		else
-		{
-		    cwp = tp->tp_curwin;
-		    wp = tp->tp_firstwin;
-		}
-
-		len = 0;
-		p = tp->tp_tabsidebar;
+	    /* if local is empty, use global. */
+	    if (len == 0)
+	    {
+		p = p_tsb;
 		if (p != NULL)
 		    len = (int)STRLEN(p);
+	    }
 
-		/* if local is empty, use global. */
-		if (len == 0)
+	    if (0 < len)
+	    {
+		/* Temporarily reset 'cursorbind', we don't want a side effect from moving
+		 * the cursor away and back. */
+		p_crb_save = cwp->w_p_crb;
+		cwp->w_p_crb = FALSE;
+
+		/* Make a copy, because the statusline may include a function call that
+		 * might change the option value and free the memory. */
+		p = vim_strsave(p);
+		width = build_stl_str_hl(cwp, buf, sizeof(buf),
+					    p, use_sandbox,
+					    fillchar, maxwidth, hltab, tabtab);
+		vim_free(p);
+		cwp->w_p_crb = p_crb_save;
+
+		/* Make all characters printable. */
+		p = transstr(buf);
+		if (p != NULL)
 		{
-		    p = p_tsb;
-		    if (p != NULL)
-			len = (int)STRLEN(p);
-		}
-
-		if (0 < len)
-		{
-		    /* Temporarily reset 'cursorbind', we don't want a side effect from moving
-		     * the cursor away and back. */
-		    p_crb_save = cwp->w_p_crb;
-		    cwp->w_p_crb = FALSE;
-
-		    /* Make a copy, because the statusline may include a function call that
-		     * might change the option value and free the memory. */
-		    p = vim_strsave(p);
-		    width = build_stl_str_hl(cwp, buf, sizeof(buf),
-						p, use_sandbox,
-						fillchar, maxwidth, hltab, tabtab);
+		    vim_strncpy(buf, p, sizeof(buf) - 1);
 		    vim_free(p);
-		    cwp->w_p_crb = p_crb_save;
-
-		    /* Make all characters printable. */
-		    p = transstr(buf);
-		    if (p != NULL)
-		    {
-			vim_strncpy(buf, p, sizeof(buf) - 1);
-			vim_free(p);
-		    }
-
-		    /* fill up with "fillchar" */
-		    len = (int)STRLEN(buf);
-		    while (width < maxwidth && len < (int)sizeof(buf) - 1)
-		    {
-#ifdef FEAT_MBYTE
-			len += (*mb_char2bytes)(fillchar, buf + len);
-#else
-			buf[len++] = fillchar;
-#endif
-			++width;
-		    }
-		    buf[len] = NUL;
-
-		    curattr = attr;
-		    p = buf;
-		    for (n = 0; hltab[n].start != NULL; n++)
-		    {
-			len = (int)(hltab[n].start - p);
-			screen_puts_len(p, len, row, col, curattr);
-			col += vim_strnsize(p, len);
-			p = hltab[n].start;
-
-			if (hltab[n].userhl == 0)
-			    curattr = attr;
-			else if (hltab[n].userhl < 0)
-			    curattr = syn_id2attr(-hltab[n].userhl);
-			else if (wp != NULL && wp != curwin && wp->w_status_height != 0)
-			    curattr = highlight_stlnc[hltab[n].userhl - 1];
-			else
-			    curattr = highlight_user[hltab[n].userhl - 1];
-		    }
-		    screen_puts(p, row, col, curattr);
 		}
-		else
+
+		/* fill up with "fillchar" */
+		len = (int)STRLEN(buf);
+		while (width < maxwidth && len < (int)sizeof(buf) - 1)
 		{
-		    modified = FALSE;
-		    for (wincount = 0; wp != NULL; wp = wp->w_next, ++wincount)
-			if (bufIsChanged(wp->w_buffer))
-			    modified = TRUE;
-
-		    if (modified || wincount > 1)
-		    {
-			if (wincount > 1)
-			{
-			    vim_snprintf((char *)NameBuff, MAXPATHL, "%d", wincount);
-			    len = (int)STRLEN(NameBuff);
-			    if (tabsidebar_width() > col + len)
-			    {
-				screen_puts_len(NameBuff, len, row, col,
-#if defined(FEAT_SYN_HL)
-				    hl_combine_attr(attr, HL_ATTR(HLF_T))
-#else
-				    attr
-#endif
-				    );
-				col += len;
-			    }
-			}
-			if (modified)
-			    if (tabsidebar_width() > col + 1)
-				screen_puts_len((char_u *)"+", 1, row, col++, attr);
-
-			if (tabsidebar_width() > col + 1)
-			    screen_putchar(fillchar, row, col++, attr);
-		    }
-
-		    room = tabsidebar_width() - col - 1;
-		    if (room > 0)
-		    {
-			get_trans_bufname(cwp->w_buffer);
-			shorten_dir(NameBuff);
-			len = vim_strsize(NameBuff);
-			p = NameBuff;
 #ifdef FEAT_MBYTE
-			if (has_mbyte)
-			    while (len > room)
-			    {
-				len -= ptr2cells(p);
-				MB_PTR_ADV(p);
-			    }
-			else
+		    len += (*mb_char2bytes)(fillchar, buf + len);
+#else
+		    buf[len++] = fillchar;
 #endif
-			    if (len > room)
-			    {
-				p += len - room;
-				len = room;
-			    }
-			if (len > Columns - col - 1)
-			    len = Columns - col - 1;
+		    ++width;
+		}
+		buf[len] = NUL;
 
-			screen_puts_len(p, (int)STRLEN(p), row, col, attr);
-			col += len;
+		curattr = attr;
+		p = buf;
+		for (n = 0; hltab[n].start != NULL; n++)
+		{
+		    len = (int)(hltab[n].start - p);
+		    screen_puts_len(p, len, row, col, curattr);
+		    col += vim_strnsize(p, len);
+		    p = hltab[n].start;
+
+		    if (hltab[n].userhl == 0)
+			curattr = attr;
+		    else if (hltab[n].userhl < 0)
+			curattr = syn_id2attr(-hltab[n].userhl);
+		    else if (wp != NULL && wp != curwin && wp->w_status_height != 0)
+			curattr = highlight_stlnc[hltab[n].userhl - 1];
+		    else
+			curattr = highlight_user[hltab[n].userhl - 1];
+		}
+		screen_puts(p, row, col, curattr);
+	    }
+	    else
+	    {
+		modified = FALSE;
+		for (wincount = 0; wp != NULL; wp = wp->w_next, ++wincount)
+		    if (bufIsChanged(wp->w_buffer))
+			modified = TRUE;
+
+		if (modified || wincount > 1)
+		{
+		    if (wincount > 1)
+		    {
+			vim_snprintf((char *)NameBuff, MAXPATHL, "%d", wincount);
+			len = (int)STRLEN(NameBuff);
+			if (tabsidebar_width() > col + len)
+			{
+			    screen_puts_len(NameBuff, len, row, col,
+#if defined(FEAT_SYN_HL)
+				hl_combine_attr(attr, HL_ATTR(HLF_T))
+#else
+				attr
+#endif
+				);
+			    col += len;
+			}
 		    }
-		    while (col < tabsidebar_width())
+		    if (modified)
+			if (tabsidebar_width() > col + 1)
+			    screen_puts_len((char_u *)"+", 1, row, col++, attr);
+
+		    if (tabsidebar_width() > col + 1)
 			screen_putchar(fillchar, row, col++, attr);
 		}
-		do_unlet((char_u *)"g:actual_curtabpage", TRUE);
+
+		room = tabsidebar_width() - col - 1;
+		if (room > 0)
+		{
+		    get_trans_bufname(cwp->w_buffer);
+		    shorten_dir(NameBuff);
+		    len = vim_strsize(NameBuff);
+		    p = NameBuff;
+#ifdef FEAT_MBYTE
+		    if (has_mbyte)
+			while (len > room)
+			{
+			    len -= ptr2cells(p);
+			    MB_PTR_ADV(p);
+			}
+		    else
+#endif
+			if (len > room)
+			{
+			    p += len - room;
+			    len = room;
+			}
+		    if (len > Columns - col - 1)
+			len = Columns - col - 1;
+
+		    screen_puts_len(p, (int)STRLEN(p), row, col, attr);
+		    col += len;
+		}
+		while (col < tabsidebar_width())
+		    screen_putchar(fillchar, row, col++, attr);
 	    }
+	    do_unlet((char_u *)"g:actual_curtabpage", TRUE);
+
 	    tp = tp->tp_next;
 	}
 	else
@@ -11232,7 +11213,7 @@ showruler(int always)
     /* Redraw the tab pages line if needed. */
     if (redraw_tabline)
 	draw_tabline();
-    draw_tabsidebar(-1);
+    draw_tabsidebar();
 }
 
 #ifdef FEAT_CMDL_INFO

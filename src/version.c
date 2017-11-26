@@ -88,10 +88,15 @@ static char *(features[]) =
 #else
 	"-autoservername",
 #endif
-#ifdef FEAT_BEVAL
+#ifdef FEAT_BEVAL_GUI
 	"+balloon_eval",
 #else
 	"-balloon_eval",
+#endif
+#ifdef FEAT_BEVAL_TERM
+	"+balloon_eval_term",
+#else
+	"-balloon_eval_term",
 #endif
 #ifdef FEAT_BROWSE
 	"+browse",
@@ -771,6 +776,76 @@ static char *(features[]) =
 
 static int included_patches[] =
 {   /* Add new patch number below this line */
+/**/
+    1342,
+/**/
+    1341,
+/**/
+    1340,
+/**/
+    1339,
+/**/
+    1338,
+/**/
+    1337,
+/**/
+    1336,
+/**/
+    1335,
+/**/
+    1334,
+/**/
+    1333,
+/**/
+    1332,
+/**/
+    1331,
+/**/
+    1330,
+/**/
+    1329,
+/**/
+    1328,
+/**/
+    1327,
+/**/
+    1326,
+/**/
+    1325,
+/**/
+    1324,
+/**/
+    1323,
+/**/
+    1322,
+/**/
+    1321,
+/**/
+    1320,
+/**/
+    1319,
+/**/
+    1318,
+/**/
+    1317,
+/**/
+    1316,
+/**/
+    1315,
+/**/
+    1314,
+/**/
+    1313,
+/**/
+    1312,
+/**/
+    1311,
+/**/
+    1310,
+/**/
+    1309,
+/**/
+    1308,
 /**/
     1307,
 /**/

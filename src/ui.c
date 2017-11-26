@@ -1157,7 +1157,11 @@ clip_invert_rectangle(
 	gui_mch_invert_rectangle(row, col, height, width);
     else
 #endif
-	screen_draw_rectangle(row, col, height, width, invert);
+	screen_draw_rectangle(row, col
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, height, width, invert);
 }
 
 /*
@@ -3208,7 +3212,11 @@ get_fpos_of_mouse(pos_T *mpos)
 #endif
     return IN_BUFFER;
 }
+#endif
 
+#if defined(FEAT_GUI_MOTIF) || defined(FEAT_GUI_GTK) || defined(FEAT_GUI_MAC) \
+	|| defined(FEAT_GUI_ATHENA) || defined(FEAT_GUI_MSWIN) \
+	|| defined(FEAT_GUI_PHOTON) || defined(FEAT_BEVAL) || defined(PROTO)
 /*
  * Convert a virtual (screen) column to a character column.
  * The first column is one.
@@ -3303,7 +3311,7 @@ ui_focus_change(
 }
 #endif
 
-#if defined(USE_IM_CONTROL) || defined(PROTO)
+#if defined(FEAT_MBYTE) || defined(PROTO)
 /*
  * Save current Input Method status to specified place.
  */
