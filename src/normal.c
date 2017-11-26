@@ -2330,6 +2330,9 @@ do_mouse(
     int		moved;		/* Has cursor moved? */
     int		in_status_line;	/* mouse in status line */
     static int	in_tab_line = FALSE; /* mouse clicked in tab line */
+#ifdef FEAT_TABSIDEBAR
+    static int	in_tabsidebar = FALSE; /* mouse clicked in tabsidebar */
+#endif
     int		in_sep_line;	/* mouse in vertical separator line */
     int		c1, c2;
 #if defined(FEAT_FOLDING)
@@ -2443,6 +2446,13 @@ do_mouse(
 		in_tab_line = FALSE;
 		return FALSE;
 	    }
+#ifdef FEAT_TABSIDEBAR
+	    if (in_tabsidebar)
+	    {
+		in_tabsidebar = FALSE;
+		return FALSE;
+	    }
+#endif
 	}
     }
 
@@ -2582,6 +2592,48 @@ do_mouse(
 
     start_visual.lnum = 0;
 
+#ifdef FEAT_TABSIDEBAR
+    if (mouse_col < tabsidebar_width())
+    {
+	c1 = mouse_row + 1;
+	if (is_drag)
+	{
+	    if (in_tabsidebar)
+	    {
+		tabpage_move(c1 < tabpage_index(curtab) ? c1 - 1 : c1);
+	    }
+	    return FALSE;
+	}
+
+	if (is_click
+# ifdef FEAT_CMDWIN
+		&& cmdwin_type == 0
+# endif
+	    )
+	{
+	    in_tabsidebar = TRUE;
+
+	    if ((mod_mask & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK)
+	    {
+		/* double click opens new page */
+		end_visual_mode();
+		tabpage_new();
+		tabpage_move(c1 == 0 ? 9999 : c1 - 1);
+	    }
+	    else
+	    {
+		goto_tabpage(c1);
+
+		/* It's like clicking on the status line of a window. */
+		if (curwin != old_curwin)
+		    end_visual_mode();
+	    }
+	}
+
+	return TRUE;
+    }
+    else
+#endif
     /* Check for clicking in the tab page line. */
     if (mouse_row == 0 && firstwin->w_winrow > 0)
     {
