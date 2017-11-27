@@ -2592,8 +2592,16 @@ do_mouse(
 
     start_visual.lnum = 0;
 
+    int mouse_col_fixed
 #ifdef FEAT_TABSIDEBAR
-    if (mouse_col < tabsidebar_width())
+       	= mouse_col + tabsidebar_width();
+#else
+       	= mouse_col;
+#endif
+
+#ifdef FEAT_TABSIDEBAR
+    // can not get click position!
+    if (0)
     {
 	c1 = mouse_row + 1;
 	if (is_drag)
@@ -2641,7 +2649,7 @@ do_mouse(
 	{
 	    if (in_tab_line)
 	    {
-		c1 = TabPageIdxs[mouse_col];
+		c1 = TabPageIdxs[mouse_col_fixed];
 		tabpage_move(c1 <= 0 ? 9999 : c1 < tabpage_index(curtab)
 								? c1 - 1 : c1);
 	    }
@@ -2653,10 +2661,10 @@ do_mouse(
 # ifdef FEAT_CMDWIN
 		&& cmdwin_type == 0
 # endif
-		&& mouse_col < Columns)
+		&& mouse_col_fixed < Columns)
 	{
 	    in_tab_line = TRUE;
-	    c1 = TabPageIdxs[mouse_col];
+	    c1 = TabPageIdxs[mouse_col_fixed];
 	    if (c1 >= 0)
 	    {
 		if ((mod_mask & MOD_MASK_MULTI_CLICK) == MOD_MASK_2CLICK)
@@ -2699,7 +2707,7 @@ do_mouse(
     }
     else if (is_drag && in_tab_line)
     {
-	c1 = TabPageIdxs[mouse_col];
+	c1 = TabPageIdxs[mouse_col_fixed];
 	tabpage_move(c1 <= 0 ? 9999 : c1 - 1);
 	return FALSE;
     }
