@@ -3688,6 +3688,10 @@ beep_flush(void)
 vim_beep(
     unsigned val) /* one of the BO_ values, e.g., BO_OPER */
 {
+#ifdef FEAT_EVAL
+    called_vim_beep = TRUE;
+#endif
+
     if (emsg_silent == 0)
     {
 	if (!((bo_flags & val) || (bo_flags & BO_ALL)))
@@ -3718,8 +3722,9 @@ vim_beep(
 #endif
 	}
 
-	/* When 'verbose' is set and we are sourcing a script or executing a
-	 * function give the user a hint where the beep comes from. */
+	/* When 'debug' contains "beep" produce a message.  If we are sourcing
+	 * a script or executing a function give the user a hint where the beep
+	 * comes from. */
 	if (vim_strchr(p_debug, 'e') != NULL)
 	{
 	    msg_source(HL_ATTR(HLF_W));
@@ -3745,8 +3750,7 @@ init_homedir(void)
     char_u  *var;
 
     /* In case we are called a second time (when 'encoding' changes). */
-    vim_free(homedir);
-    homedir = NULL;
+    VIM_CLEAR(homedir);
 
 #ifdef VMS
     var = mch_getenv((char_u *)"SYS$LOGIN");
@@ -4358,10 +4362,7 @@ vim_getenv(char_u *name, int *mustfree)
 		p = vim_strnsave(p, (int)(pend - p));
 
 	    if (p != NULL && !mch_isdir(p))
-	    {
-		vim_free(p);
-		p = NULL;
-	    }
+		VIM_CLEAR(p);
 	    else
 	    {
 #ifdef USE_EXE_NAME
@@ -9775,8 +9776,7 @@ expand_wildcards(
 	/* If the number of matches is now zero, we fail. */
 	if (*num_files == 0)
 	{
-	    vim_free(*files);
-	    *files = NULL;
+	    VIM_CLEAR(*files);
 	    return FAIL;
 	}
     }
@@ -10031,10 +10031,7 @@ dos_expandpath(
 	    hFind = FindFirstFileW(wn, &wfb);
 	    if (hFind == INVALID_HANDLE_VALUE
 			      && GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
-	    {
-		vim_free(wn);
-		wn = NULL;
-	    }
+		VIM_CLEAR(wn);
 	}
     }
 
@@ -10122,8 +10119,7 @@ dos_expandpath(
 # endif
 		hFind = FindFirstFile((LPCSTR)buf, &fb);
 	    ok = (hFind != INVALID_HANDLE_VALUE);
-	    vim_free(matchname);
-	    matchname = NULL;
+	    VIM_CLEAR(matchname);
 	}
     }
 
@@ -11256,8 +11252,7 @@ get_cmd_output(
     if (i != len)
     {
 	EMSG2(_(e_notread), tempname);
-	vim_free(buffer);
-	buffer = NULL;
+	VIM_CLEAR(buffer);
     }
     else if (ret_len == NULL)
     {
