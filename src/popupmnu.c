@@ -1160,14 +1160,14 @@ pum_select_mouse_pos(void)
  * Execute the currently selected popup menu item.
  */
     static void
-pum_execute_menu(vimmenu_T *menu)
+pum_execute_menu(vimmenu_T *menu, int mode)
 {
     vimmenu_T   *mp;
     int		idx = 0;
     exarg_T	ea;
 
     for (mp = menu->children; mp != NULL; mp = mp->next)
-	if (idx++ == pum_selected)
+	if ((mp->modes & mp->enabled & mode) && idx++ == pum_selected)
 	{
 	    vim_memset(&ea, 0, sizeof(ea));
 	    execute_menu(&ea, mp);
@@ -1188,12 +1188,16 @@ pum_show_popupmenu(vimmenu_T *menu)
 #ifdef FEAT_BEVAL_TERM
     int		save_bevalterm = p_bevalterm;
 #endif
+    int		mode;
 
     pum_undisplay();
     pum_size = 0;
+    mode = get_menu_mode_flag();
 
     for (mp = menu->children; mp != NULL; mp = mp->next)
-	++pum_size;
+	if (menu_is_separator(mp->dname)
+		|| (mp->modes & mp->enabled & mode))
+	    ++pum_size;
 
     array = (pumitem_T *)alloc_clear((unsigned)sizeof(pumitem_T) * pum_size);
     if (array == NULL)
@@ -1202,7 +1206,7 @@ pum_show_popupmenu(vimmenu_T *menu)
     for (mp = menu->children; mp != NULL; mp = mp->next)
 	if (menu_is_separator(mp->dname))
 	    array[idx++].pum_text = (char_u *)"";
-	else
+	else if (mp->modes & mp->enabled & mode)
 	    array[idx++].pum_text = mp->dname;
 
     pum_array = array;
@@ -1223,7 +1227,7 @@ pum_show_popupmenu(vimmenu_T *menu)
 	int	c;
 
 	pum_redraw();
-	setcursor();
+	setcursor_mayforce(TRUE);
 	out_flush();
 
 	c = vgetc();
@@ -1232,7 +1236,7 @@ pum_show_popupmenu(vimmenu_T *menu)
 	else if (c == CAR || c == NL)
 	{
 	    /* enter: select current item, if any, and close */
-	    pum_execute_menu(menu);
+	    pum_execute_menu(menu, mode);
 	    break;
 	}
 	else if (c == 'k' || c == K_UP || c == K_MOUSEUP)
@@ -1273,7 +1277,7 @@ pum_show_popupmenu(vimmenu_T *menu)
 	    pum_select_mouse_pos();
 	    if (pum_selected >= 0)
 	    {
-		pum_execute_menu(menu);
+		pum_execute_menu(menu, mode);
 		break;
 	    }
 	    if (c == K_LEFTMOUSE || c == K_LEFTMOUSE_NM)
@@ -1287,6 +1291,24 @@ pum_show_popupmenu(vimmenu_T *menu)
     p_bevalterm = save_bevalterm;
     mch_setmouse(TRUE);
 #  endif
+}
+
+    void
+pum_make_popup(char_u *path_name, int use_mouse_pos)
+{
+    vimmenu_T *menu;
+
+    if (!use_mouse_pos)
+    {
+	/* Hack: set mouse position at the cursor so that the menu pops up
+	 * around there. */
+	mouse_row = curwin->w_winrow + curwin->w_wrow;
+	mouse_col = curwin->w_wincol + curwin->w_wcol;
+    }
+
+    menu = gui_find_menu(path_name);
+    if (menu != NULL)
+	pum_show_popupmenu(menu);
 }
 # endif
 
