@@ -6861,13 +6861,10 @@ hl-StatusLineTermNC	syntax.txt	/*hl-StatusLineTermNC*
 hl-TabLine	syntax.txt	/*hl-TabLine*
 hl-TabLineFill	syntax.txt	/*hl-TabLineFill*
 hl-TabLineSel	syntax.txt	/*hl-TabLineSel*
-<<<<<<< HEAD
 hl-TabSideBar	syntax.txt	/*hl-TabSideBar*
 hl-TabSideBarFill	syntax.txt	/*hl-TabSideBarFill*
 hl-TabSideBarSel	syntax.txt	/*hl-TabSideBarSel*
-=======
 hl-Terminal	syntax.txt	/*hl-Terminal*
->>>>>>> vim/master
 hl-Title	syntax.txt	/*hl-Title*
 hl-Tooltip	syntax.txt	/*hl-Tooltip*
 hl-User1	syntax.txt	/*hl-User1*
