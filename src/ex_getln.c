@@ -4993,6 +4993,7 @@ ExpandFromContext(
 #endif
 	    {EXPAND_ENV_VARS, get_env_name, TRUE, TRUE},
 	    {EXPAND_USER, get_users, TRUE, FALSE},
+	    {EXPAND_ARGLIST, get_arglist_name, TRUE, FALSE},
 	};
 	int	i;
 
