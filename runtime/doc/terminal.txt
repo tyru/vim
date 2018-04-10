@@ -1,4 +1,4 @@
-*terminal.txt*	For Vim version 8.0.  Last change: 2018 Mar 26
+*terminal.txt*	For Vim version 8.0.  Last change: 2018 Apr 05
 
 
 		  VIM REFERENCE MANUAL	  by Bram Moolenaar
@@ -136,6 +136,16 @@ terminal window will start with a white or black background.
 To use a different color the Terminal highlight group can be used, for
 example: >
     hi Terminal ctermbg=lightgrey ctermfg=blue guibg=lightgrey guifg=blue
+<
+							*g:terminal_ansi_colors*
+In GUI mode or with |termguicolors|, the 16 ANSI colors used by default in new
+terminal windows may be configured using the variable
+`g:terminal_ansi_colors`, which should be a list of 16 color names or
+hexadecimal color codes, similar to those accepted by |highlight-guifg|.  When
+not using GUI colors, the terminal window always uses the 16 ANSI colors of
+the underlying terminal.
+The |term_setansicolors()| function can be used to change the colors, and
+|term_getansicolors()| to get the currently used colors.
 
 
 Syntax ~
@@ -731,6 +741,11 @@ to have the 'mouse' option set to enable mouse clicks.
 You can add the window toolbar in other windows you open with: >
   :Winbar
 
+If gdb stops at a source line and there is no window currently showing the
+source code, a new window will be created for the source code.  This also
+happens if the buffer in the source code window has been modified and can't be
+abandoned.
+
 
 Inspecting variables ~
 							*termdebug-variables*
@@ -745,8 +760,10 @@ You can usually shorten `:Evaluate` to `:Ev`.
 
 Other commands ~
 							*termdebug-commands*
- :Gdb	       jump to the gdb window
- :Program      jump to the window with the running program
+ :Gdb	     jump to the gdb window
+ :Program    jump to the window with the running program
+ :Source     jump to the window with the source code, create it if there
+	     isn't one
 
 
 Communication ~
