@@ -2518,7 +2518,7 @@ handle_pushline(int cols, const VTermScreenCell *cells, void *user)
 
     /* If the number of lines that are stored goes over 'termscrollback' then
      * delete the first 10%. */
-    if (term->tl_scrollback.ga_len > p_tlsl)
+    if (term->tl_scrollback.ga_len >= p_tlsl)
     {
 	int	todo = p_tlsl / 10;
 	int	i;
@@ -4629,7 +4629,12 @@ f_term_setsize(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
     term_T	*term;
     varnumber_T rows, cols;
 
-    if (buf == NULL || buf->b_term->tl_vterm == NULL)
+    if (buf == NULL)
+    {
+	EMSG(_("E955: Not a terminal buffer"));
+	return;
+    }
+    if (buf->b_term->tl_vterm == NULL)
 	return;
     term = buf->b_term;
     rows = get_tv_number(&argvars[1]);
