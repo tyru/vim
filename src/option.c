@@ -8816,6 +8816,7 @@ set_num_option(
      */
     if (pp == &p_wh || pp == &p_hh)
     {
+	// 'winheight' and 'helpheight'
 	if (p_wh < 1)
 	{
 	    errmsg = e_positive;
@@ -8841,10 +8842,9 @@ set_num_option(
 		win_setheight((int)p_hh);
 	}
     }
-
-    /* 'winminheight' */
     else if (pp == &p_wmh)
     {
+	// 'winminheight'
 	if (p_wmh < 0)
 	{
 	    errmsg = e_positive;
@@ -8859,6 +8859,7 @@ set_num_option(
     }
     else if (pp == &p_wiw)
     {
+	// 'winwidth'
 	if (p_wiw < 1)
 	{
 	    errmsg = e_positive;
@@ -8874,10 +8875,9 @@ set_num_option(
 	if (!ONE_WINDOW && curwin->w_width < p_wiw)
 	    win_setwidth((int)p_wiw);
     }
-
-    /* 'winminwidth' */
     else if (pp == &p_wmw)
     {
+	// 'winminwidth'
 	if (p_wmw < 0)
 	{
 	    errmsg = e_positive;
@@ -8888,7 +8888,7 @@ set_num_option(
 	    errmsg = e_winwidth;
 	    p_wmw = p_wiw;
 	}
-	win_setminheight();
+	win_setminwidth();
     }
 
     /* (re)set last window status line */
