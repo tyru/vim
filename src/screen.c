@@ -4828,8 +4828,13 @@ win_line(
 		    n_extra = win_lbr_chartabsize(wp, line, p, (colnr_T)vcol,
 								    NULL) - 1;
 		    if (c == TAB && n_extra + col > wp->w_width)
+#ifdef FEAT_VARTABS
+			n_extra = tabstop_padding(vcol, wp->w_buffer->b_p_ts,
+					wp->w_buffer->b_p_vts_array) - 1;
+#else
 			n_extra = (int)wp->w_buffer->b_p_ts
 				       - vcol % (int)wp->w_buffer->b_p_ts - 1;
+ #endif
 
 # ifdef FEAT_MBYTE
 		    c_extra = mb_off > 0 ? MB_FILLER_CHAR : ' ';
@@ -6975,7 +6980,7 @@ win_redr_status_matches(
  * displayed.
  */
     static void
-win_redr_status(win_T *wp, int ignore_pum)
+win_redr_status(win_T *wp, int ignore_pum UNUSED)
 {
     int		row;
     char_u	*p;

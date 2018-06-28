@@ -8839,10 +8839,13 @@ set_bool_option(
 # endif
 	    highlight_gui_started();
 # ifdef FEAT_VTP
-	control_console_color_rgb();
 	/* reset t_Co */
 	if (is_term_win32())
+	{
+	    control_console_color_rgb();
 	    set_termname(T_NAME);
+	    init_highlight(TRUE, FALSE);
+	}
 # endif
     }
 #endif
@@ -9734,7 +9737,7 @@ get_option_value_strict(
 	     * consider it set when 'ff' or 'fenc' changed. */
 	    if (p->indir == PV_MOD)
 	    {
-		*numval = bufIsChanged((buf_T *) from);
+		*numval = bufIsChanged((buf_T *)from);
 		varp = NULL;
 	    }
 #ifdef FEAT_CRYPT
@@ -9747,17 +9750,21 @@ get_option_value_strict(
 #endif
 	    else
 	    {
-		aco_save_T	aco;
-		aucmd_prepbuf(&aco, (buf_T *) from);
+		buf_T *save_curbuf = curbuf;
+
+		// only getting a pointer, no need to use aucmd_prepbuf()
+		curbuf = (buf_T *)from;
+		curwin->w_buffer = curbuf;
 		varp = get_varp(p);
-		aucmd_restbuf(&aco);
+		curbuf = save_curbuf;
+		curwin->w_buffer = curbuf;
 	    }
 	}
 	else if (opt_type == SREQ_WIN)
 	{
-	    win_T	*save_curwin;
-	    save_curwin = curwin;
-	    curwin = (win_T *) from;
+	    win_T	*save_curwin = curwin;
+
+	    curwin = (win_T *)from;
 	    curbuf = curwin->w_buffer;
 	    varp = get_varp(p);
 	    curwin = save_curwin;
@@ -12905,7 +12912,7 @@ tabstop_start(colnr_T col, int ts, int *vts)
     int		t;
     int         excess;
 
-    if (vts == 0 || vts[0] == 0)
+    if (vts == NULL || vts[0] == 0)
 	return (col / ts) * ts;
 
     tabcount = vts[0];
@@ -12939,10 +12946,11 @@ tabstop_fromto(
     int		tabcount;
     int		t;
 
-    if (vts == 0 || vts[0] == 0)
+    if (vts == NULL || vts[0] == 0)
     {
 	int tabs = 0;
 	int initspc = ts - (start_col % ts);
+
 	if (spaces >= initspc)
 	{
 	    spaces -= initspc;
