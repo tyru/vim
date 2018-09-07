@@ -5571,15 +5571,6 @@ win_line(
 	if (c == NUL)
 	{
 #ifdef FEAT_SYN_HL
-	    if (eol_hl_off > 0 && vcol - eol_hl_off == (long)wp->w_virtcol
-		    && lnum == wp->w_cursor.lnum)
-	    {
-		/* highlight last char after line */
-		--col;
-		--off;
-		--vcol;
-	    }
-
 	    /* Highlight 'cursorcolumn' & 'colorcolumn' past end of the line. */
 	    if (wp->w_p_wrap)
 		v = wp->w_skipcol;
@@ -11212,8 +11203,11 @@ redrawing(void)
 	return 0;
     else
 #endif
-	return (!RedrawingDisabled
-		       && !(p_lz && char_avail() && !KeyTyped && !do_redraw));
+	return ((!RedrawingDisabled
+#ifdef FEAT_EVAL
+		    || ignore_redraw_flag_for_testing
+#endif
+		) && !(p_lz && char_avail() && !KeyTyped && !do_redraw));
 }
 
 /*

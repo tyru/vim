@@ -4729,6 +4729,10 @@ getloclist({nr} [, {what}])				*getloclist()*
 		If the optional {what} dictionary argument is supplied, then
 		returns the items listed in {what} as a dictionary. Refer to
 		|getqflist()| for the supported items in {what}.
+		If {what} contains 'filewinid', then returns the id of the
+		window used to display files from the location list. This
+		field is applicable only when called from a location list
+		window.
 
 getmatches()						*getmatches()*
 		Returns a |List| with all matches previously defined by
@@ -8033,7 +8037,7 @@ substitute({expr}, {pat}, {sub}, {flags})		*substitute()*
 		|submatch()| returns.  Example: >
 		   :echo substitute(s, '%\(\x\x\)', {m -> '0x' . m[1]}, 'g')
 
-swapinfo({fname})					swapinfo()
+swapinfo({fname})					*swapinfo()*
 		The result is a dictionary, which holds information about the
 		swapfile {fname}. The available fields are:
 			version VIM version
@@ -8757,6 +8761,7 @@ test_override({name}, {val})				*test_override()*
 
 		name	     effect when {val} is non-zero ~
 		redraw       disable the redrawing() function
+		redraw_flag  ignore the RedrawingDisabled flag
 		char_avail   disable the char_avail() function
 		starting     reset the "starting" variable, see below
 		nfa_fail     makes the NFA regexp engine fail to force a
