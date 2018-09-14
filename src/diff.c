@@ -31,7 +31,7 @@ static int	diff_busy = FALSE;	/* ex_diffgetput() is busy */
 #define DIFF_VERTICAL	16	// vertical splits
 #define DIFF_HIDDEN_OFF	32	// diffoff when hidden
 #define DIFF_INTERNAL	64	// use internal xdiff algorithm
-static int	diff_flags = DIFF_FILLER;
+static int	diff_flags = DIFF_INTERNAL | DIFF_FILLER;
 
 static long diff_algorithm = 0;
 
@@ -1203,10 +1203,10 @@ ex_diffpatch(exarg_T *eap)
     {
 # ifdef TEMPDIRNAMES
 	if (vim_tempdir != NULL)
-	    ignored = mch_chdir((char *)vim_tempdir);
+	    vim_ignored = mch_chdir((char *)vim_tempdir);
 	else
 # endif
-	    ignored = mch_chdir("/tmp");
+	    vim_ignored = mch_chdir("/tmp");
 	shorten_fnames(TRUE);
     }
 #endif
@@ -1600,6 +1600,10 @@ diff_read(
 		    && (tag_fgets(linebuf, LBUFLEN, fd) == 0)
 		    && (STRNCMP(line, "@@ ", 3) == 0))
 		diffstyle = DIFF_UNIFIED;
+	    else
+		// Format not recognized yet, skip over this line.  Cygwin diff
+		// may put a warning at the start of the file.
+		continue;
 	}
 
 	if (diffstyle == DIFF_ED)

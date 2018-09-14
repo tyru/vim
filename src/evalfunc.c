@@ -421,6 +421,7 @@ static void f_tempname(typval_T *argvars, typval_T *rettv);
 static void f_test_alloc_fail(typval_T *argvars, typval_T *rettv);
 static void f_test_autochdir(typval_T *argvars, typval_T *rettv);
 static void f_test_feedinput(typval_T *argvars, typval_T *rettv);
+static void f_test_option_not_set(typval_T *argvars, typval_T *rettv);
 static void f_test_override(typval_T *argvars, typval_T *rettv);
 static void f_test_garbagecollect_now(typval_T *argvars, typval_T *rettv);
 static void f_test_ignore_error(typval_T *argvars, typval_T *rettv);
@@ -934,6 +935,7 @@ static struct fst
     {"test_null_list",	0, 0, f_test_null_list},
     {"test_null_partial", 0, 0, f_test_null_partial},
     {"test_null_string", 0, 0, f_test_null_string},
+    {"test_option_not_set", 1, 1, f_test_option_not_set},
     {"test_override",    2, 2, f_test_override},
     {"test_settime",	1, 1, f_test_settime},
 #ifdef FEAT_TIMERS
@@ -4691,6 +4693,13 @@ f_getchar(typval_T *argvars, typval_T *rettv)
 {
     varnumber_T		n;
     int			error = FALSE;
+
+#ifdef MESSAGE_QUEUE
+    // vpeekc() used to check for messages, but that caused problems, invoking
+    // a callback where it was not expected.  Some plugins use getchar(1) in a
+    // loop to await a message, therefore make sure we check for messages here.
+    parse_queued_messages();
+#endif
 
     /* Position the cursor.  Needed after a message that ends in a space. */
     windgoto(msg_row, msg_col);
@@ -13134,7 +13143,25 @@ f_test_feedinput(typval_T *argvars, typval_T *rettv UNUSED)
 }
 
 /*
- * "test_disable({name}, {val})" function
+ * "test_option_not_set({name})" function
+ */
+    static void
+f_test_option_not_set(typval_T *argvars, typval_T *rettv UNUSED)
+{
+    char_u *name = (char_u *)"";
+
+    if (argvars[0].v_type != VAR_STRING)
+	EMSG(_(e_invarg));
+    else
+    {
+	name = get_tv_string(&argvars[0]);
+	if (reset_option_was_set(name) == FAIL)
+	    EMSG2(_(e_invarg2), name);
+    }
+}
+
+/*
+ * "test_override({name}, {val})" function
  */
     static void
 f_test_override(typval_T *argvars, typval_T *rettv UNUSED)
@@ -14088,7 +14115,7 @@ f_writefile(typval_T *argvars, typval_T *rettv)
 	else if (do_fsync)
 	    /* Ignore the error, the user wouldn't know what to do about it.
 	     * May happen for a device. */
-	    ignored = fsync(fileno(fd));
+	    vim_ignored = fsync(fileno(fd));
 #endif
 	fclose(fd);
     }
