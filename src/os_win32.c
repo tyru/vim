@@ -168,28 +168,12 @@ static int g_fCBrkPressed = FALSE;  /* set by ctrl-break interrupt */
 static int g_fCtrlCPressed = FALSE; /* set when ctrl-C or ctrl-break detected */
 static int g_fForceExit = FALSE;    /* set when forcefully exiting */
 
-static void termcap_mode_start(void);
-static void termcap_mode_end(void);
-static void clear_chars(COORD coord, DWORD n);
-static void clear_screen(void);
-static void clear_to_end_of_display(void);
-static void clear_to_end_of_line(void);
 static void scroll(unsigned cLines);
 static void set_scroll_region(unsigned left, unsigned top,
 			      unsigned right, unsigned bottom);
-static void insert_lines(unsigned cLines);
 static void delete_lines(unsigned cLines);
 static void gotoxy(unsigned x, unsigned y);
-static void normvideo(void);
-static void textattr(WORD wAttr);
-static void textcolor(WORD wAttr);
-static void textbackground(WORD wAttr);
 static void standout(void);
-static void standend(void);
-static void visual_bell(void);
-static void cursor_visible(BOOL fVisible);
-static DWORD write_chars(char_u *pchBuf, DWORD cbToWrite);
-static void create_conin(void);
 static int s_cursor_visible = TRUE;
 static int did_create_conin = FALSE;
 #else
@@ -589,7 +573,8 @@ get_dll_import_func(HINSTANCE hInst, const char *funcname)
 #if defined(DYNAMIC_GETTEXT) || defined(PROTO)
 # ifndef GETTEXT_DLL
 #  define GETTEXT_DLL "libintl.dll"
-#  define GETTEXT_DLL_ALT "libintl-8.dll"
+#  define GETTEXT_DLL_ALT1 "libintl-8.dll"
+#  define GETTEXT_DLL_ALT2 "intl.dll"
 # endif
 /* Dummy functions */
 static char *null_libintl_gettext(const char *);
@@ -630,14 +615,18 @@ dyn_libintl_init(void)
     };
     HINSTANCE hmsvcrt;
 
-    /* No need to initialize twice. */
-    if (hLibintlDLL)
+    // No need to initialize twice.
+    if (hLibintlDLL != NULL)
 	return 1;
-    /* Load gettext library (libintl.dll) */
+    // Load gettext library (libintl.dll and other names).
     hLibintlDLL = vimLoadLib(GETTEXT_DLL);
-#ifdef GETTEXT_DLL_ALT
+#ifdef GETTEXT_DLL_ALT1
     if (!hLibintlDLL)
-	hLibintlDLL = vimLoadLib(GETTEXT_DLL_ALT);
+	hLibintlDLL = vimLoadLib(GETTEXT_DLL_ALT1);
+#endif
+#ifdef GETTEXT_DLL_ALT2
+    if (!hLibintlDLL)
+	hLibintlDLL = vimLoadLib(GETTEXT_DLL_ALT2);
 #endif
     if (!hLibintlDLL)
     {
@@ -863,7 +852,6 @@ static const struct
     int	    chAlt;
 } VirtKeyMap[] =
 {
-
 /*    Key	ANSI	alone	shift	ctrl	    alt */
     { VK_ESCAPE,FALSE,	ESC,	ESC,	ESC,	    ESC,    },
 
@@ -877,50 +865,49 @@ static const struct
     { VK_F8,	TRUE,	'B',	'[',	'e',	    'o', },
     { VK_F9,	TRUE,	'C',	'\\',	'f',	    'p', },
     { VK_F10,	TRUE,	'D',	']',	'g',	    'q', },
-    { VK_F11,	TRUE,	'\205',	'\207',	'\211',	    '\213', },
-    { VK_F12,	TRUE,	'\206',	'\210',	'\212',	    '\214', },
+    { VK_F11,	TRUE,	0x85,	0x87,	0x89,	    0x8B, },
+    { VK_F12,	TRUE,	0x86,	0x88,	0x8a,	    0x8c, },
 
-    { VK_HOME,	TRUE,	'G',	'\302',	'w',	    '\303', },
-    { VK_UP,	TRUE,	'H',	'\304',	'\305',	    '\306', },
-    { VK_PRIOR,	TRUE,	'I',	'\307',	'\204',	    '\310', }, /*PgUp*/
-    { VK_LEFT,	TRUE,	'K',	'\311',	's',	    '\312', },
-    { VK_RIGHT,	TRUE,	'M',	'\313',	't',	    '\314', },
-    { VK_END,	TRUE,	'O',	'\315',	'u',	    '\316', },
-    { VK_DOWN,	TRUE,	'P',	'\317',	'\320',	    '\321', },
-    { VK_NEXT,	TRUE,	'Q',	'\322',	'v',	    '\323', }, /*PgDn*/
-    { VK_INSERT,TRUE,	'R',	'\324',	'\325',	    '\326', },
-    { VK_DELETE,TRUE,	'S',	'\327',	'\330',	    '\331', },
+    { VK_HOME,	TRUE,	'G',	0xc2,	'w',	    0xc3, },
+    { VK_UP,	TRUE,	'H',	0xc4,	0xc5,	    0xc6, },
+    { VK_PRIOR,	TRUE,	'I',	0xc7,	0x84,	    0xc8, }, /*PgUp*/
+    { VK_LEFT,	TRUE,	'K',	0xc9,	's',	    0xca, },
+    { VK_RIGHT,	TRUE,	'M',	0xcb,	't',	    0xcc, },
+    { VK_END,	TRUE,	'O',	0xcd,	'u',	    0xce, },
+    { VK_DOWN,	TRUE,	'P',	0xcf,	0xd0,	    0xd1, },
+    { VK_NEXT,	TRUE,	'Q',	0xd2,	'v',	    0xd3, }, /*PgDn*/
+    { VK_INSERT,TRUE,	'R',	0xd4,	0xd5,	    0xd6, },
+    { VK_DELETE,TRUE,	'S',	0xd7,	0xd8,	    0xd9, },
 
     { VK_SNAPSHOT,TRUE,	0,	0,	0,	    'r', }, /*PrtScrn*/
 
 #if 0
     /* Most people don't have F13-F20, but what the hell... */
-    { VK_F13,	TRUE,	'\332',	'\333',	'\334',	    '\335', },
-    { VK_F14,	TRUE,	'\336',	'\337',	'\340',	    '\341', },
-    { VK_F15,	TRUE,	'\342',	'\343',	'\344',	    '\345', },
-    { VK_F16,	TRUE,	'\346',	'\347',	'\350',	    '\351', },
-    { VK_F17,	TRUE,	'\352',	'\353',	'\354',	    '\355', },
-    { VK_F18,	TRUE,	'\356',	'\357',	'\360',	    '\361', },
-    { VK_F19,	TRUE,	'\362',	'\363',	'\364',	    '\365', },
-    { VK_F20,	TRUE,	'\366',	'\367',	'\370',	    '\371', },
+    { VK_F13,	TRUE,	0xda,	0xdb,	0xdc,	    0xdd, },
+    { VK_F14,	TRUE,	0xde,	0xdf,	0xe0,	    0xe1, },
+    { VK_F15,	TRUE,	0xe2,	0xe3,	0xe4,	    0xe5, },
+    { VK_F16,	TRUE,	0xe6,	0xe7,	0xe8,	    0xe9, },
+    { VK_F17,	TRUE,	0xea,	0xeb,	0xec,	    0xed, },
+    { VK_F18,	TRUE,	0xee,	0xef,	0xf0,	    0xf1, },
+    { VK_F19,	TRUE,	0xf2,	0xf3,	0xf4,	    0xf5, },
+    { VK_F20,	TRUE,	0xf6,	0xf7,	0xf8,	    0xf9, },
 #endif
     { VK_ADD,	TRUE,   'N',    'N',    'N',	'N',	}, /* keyp '+' */
     { VK_SUBTRACT, TRUE,'J',	'J',    'J',	'J',	}, /* keyp '-' */
  /* { VK_DIVIDE,   TRUE,'N',	'N',    'N',	'N',	},    keyp '/' */
     { VK_MULTIPLY, TRUE,'7',	'7',    '7',	'7',	}, /* keyp '*' */
 
-    { VK_NUMPAD0,TRUE,  '\332',	'\333',	'\334',	    '\335', },
-    { VK_NUMPAD1,TRUE,  '\336',	'\337',	'\340',	    '\341', },
-    { VK_NUMPAD2,TRUE,  '\342',	'\343',	'\344',	    '\345', },
-    { VK_NUMPAD3,TRUE,  '\346',	'\347',	'\350',	    '\351', },
-    { VK_NUMPAD4,TRUE,  '\352',	'\353',	'\354',	    '\355', },
-    { VK_NUMPAD5,TRUE,  '\356',	'\357',	'\360',	    '\361', },
-    { VK_NUMPAD6,TRUE,  '\362',	'\363',	'\364',	    '\365', },
-    { VK_NUMPAD7,TRUE,  '\366',	'\367',	'\370',	    '\371', },
-    { VK_NUMPAD8,TRUE,  '\372',	'\373',	'\374',	    '\375', },
+    { VK_NUMPAD0,TRUE,  0xda,	0xdb,	0xdc,	    0xdd, },
+    { VK_NUMPAD1,TRUE,  0xde,	0xdf,	0xe0,	    0xe1, },
+    { VK_NUMPAD2,TRUE,  0xe2,	0xe3,	0xe4,	    0xe5, },
+    { VK_NUMPAD3,TRUE,  0xe6,	0xe7,	0xe8,	    0xe9, },
+    { VK_NUMPAD4,TRUE,  0xea,	0xeb,	0xec,	    0xed, },
+    { VK_NUMPAD5,TRUE,  0xee,	0xef,	0xf0,	    0xf1, },
+    { VK_NUMPAD6,TRUE,  0xf2,	0xf3,	0xf4,	    0xf5, },
+    { VK_NUMPAD7,TRUE,  0xf6,	0xf7,	0xf8,	    0xf9, },
+    { VK_NUMPAD8,TRUE,  0xfa,	0xfb,	0xfc,	    0xfd, },
     /* Sorry, out of number space! <negri>*/
-    { VK_NUMPAD9,TRUE,  '\376',	'\377',	'\377',	    '\367', },
-
+    { VK_NUMPAD9,TRUE,  0xfe,	0xff,	0xff,	    0xf7, },
 };
 
 
@@ -3487,8 +3474,7 @@ win32_getattrs(char_u *name)
  *
  * return -1 for failure, 0 otherwise
  */
-    static
-    int
+    static int
 win32_setattrs(char_u *name, int attrs)
 {
     int res;
@@ -3513,8 +3499,7 @@ win32_setattrs(char_u *name, int attrs)
 /*
  * Set archive flag for "name".
  */
-    static
-    int
+    static int
 win32_set_archive(char_u *name)
 {
     int attrs = win32_getattrs(name);
@@ -3550,21 +3535,44 @@ mch_can_exe(char_u *name, char_u **path, int use_path)
 {
     char_u	buf[_MAX_PATH];
     int		len = (int)STRLEN(name);
-    char_u	*p;
+    char_u	*p, *saved;
 
     if (len >= _MAX_PATH)	/* safety check */
 	return FALSE;
 
-    /* If there already is an extension try using the name directly.  Also do
-     * this with a Unix-shell like 'shell'. */
-    if (vim_strchr(gettail(name), '.') != NULL
-			       || strstr((char *)gettail(p_sh), "sh") != NULL)
+    /* Ty using the name directly when a Unix-shell like 'shell'. */
+    if (strstr((char *)gettail(p_sh), "sh") != NULL)
 	if (executable_exists((char *)name, path, use_path))
 	    return TRUE;
 
     /*
      * Loop over all extensions in $PATHEXT.
      */
+    p = mch_getenv("PATHEXT");
+    if (p == NULL)
+	p = (char_u *)".com;.exe;.bat;.cmd";
+    saved = vim_strsave(p);
+    if (saved == NULL)
+	return FALSE;
+    p = saved;
+    while (*p)
+    {
+	char_u	*tmp = vim_strchr(p, ';');
+
+	if (tmp != NULL)
+	    *tmp = NUL;
+	if (_stricoll((char *)name + len - STRLEN(p), (char *)p) == 0
+			    && executable_exists((char *)name, path, use_path))
+	{
+	    vim_free(saved);
+	    return TRUE;
+	}
+	if (tmp == NULL)
+	    break;
+	p = tmp + 1;
+    }
+    vim_free(saved);
+
     vim_strncpy(buf, name, _MAX_PATH - 1);
     p = mch_getenv("PATHEXT");
     if (p == NULL)

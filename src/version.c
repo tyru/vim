@@ -79,8 +79,6 @@ init_longVersion(void)
 }
 #endif
 
-static void list_features(void);
-
 static char *(features[]) =
 {
 #ifdef HAVE_ACL
@@ -799,6 +797,42 @@ static char *(features[]) =
 
 static int included_patches[] =
 {   /* Add new patch number below this line */
+/**/
+    456,
+/**/
+    455,
+/**/
+    454,
+/**/
+    453,
+/**/
+    452,
+/**/
+    451,
+/**/
+    450,
+/**/
+    449,
+/**/
+    448,
+/**/
+    447,
+/**/
+    446,
+/**/
+    445,
+/**/
+    444,
+/**/
+    443,
+/**/
+    442,
+/**/
+    441,
+/**/
+    440,
+/**/
+    439,
 /**/
     438,
 /**/

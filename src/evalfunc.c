@@ -1133,8 +1133,6 @@ get_tv_lnum(typval_T *argvars)
 }
 
 #ifdef FEAT_FLOAT
-static int get_float_arg(typval_T *argvars, float_T *f);
-
 /*
  * Get the float value of "argvars[0]" into "f".
  * Returns FAIL when the argument is not a Number or Float.
@@ -1733,8 +1731,6 @@ f_browsedir(typval_T *argvars UNUSED, typval_T *rettv)
 #endif
     rettv->v_type = VAR_STRING;
 }
-
-static buf_T *find_buffer(typval_T *avar);
 
 /*
  * Find a buffer by number or exact name.
@@ -3604,7 +3600,7 @@ f_feedkeys(typval_T *argvars, typval_T *rettv UNUSED)
 
 		if (!dangerous)
 		    ++ex_normal_busy;
-		exec_normal(TRUE, TRUE);
+		exec_normal(TRUE, FALSE, TRUE);
 		if (!dangerous)
 		    --ex_normal_busy;
 
@@ -3837,8 +3833,6 @@ f_fnamemodify(typval_T *argvars, typval_T *rettv)
 	rettv->vval.v_string = vim_strnsave(fname, len);
     vim_free(fbuf);
 }
-
-static void foldclosed_both(typval_T *argvars, typval_T *rettv, int end);
 
 /*
  * "foldclosed()" function
@@ -4496,8 +4490,6 @@ f_getbufinfo(typval_T *argvars, typval_T *rettv)
 	    return;
     }
 }
-
-static void get_buffer_lines(buf_T *buf, linenr_T start, linenr_T end, int retlist, typval_T *rettv);
 
 /*
  * Get line or list of lines from buffer "buf" into "rettv".
@@ -7610,8 +7602,6 @@ f_localtime(typval_T *argvars UNUSED, typval_T *rettv)
     rettv->vval.v_number = (varnumber_T)time(NULL);
 }
 
-static void get_maparg(typval_T *argvars, typval_T *rettv, int exact);
-
     static void
 get_maparg(typval_T *argvars, typval_T *rettv, int exact)
 {
@@ -8221,8 +8211,6 @@ f_matchstrpos(typval_T *argvars, typval_T *rettv)
     find_some_match(argvars, rettv, MATCH_POS);
 }
 
-static void max_min(typval_T *argvars, typval_T *rettv, int domax);
-
     static void
 max_min(typval_T *argvars, typval_T *rettv, int domax)
 {
@@ -8304,8 +8292,6 @@ f_min(typval_T *argvars, typval_T *rettv)
 {
     max_min(argvars, rettv, FALSE);
 }
-
-static int mkdir_recurse(char_u *dir, int prot);
 
 /*
  * Create the directory in which "dir" is located, and higher levels when
@@ -9101,8 +9087,6 @@ f_reg_recording(typval_T *argvars UNUSED, typval_T *rettv)
 }
 
 #if defined(FEAT_RELTIME)
-static int list2proftime(typval_T *arg, proftime_T *tm);
-
 /*
  * Convert a List to proftime_T.
  * Return FAIL when there is something wrong.
@@ -9215,9 +9199,6 @@ f_reltimestr(typval_T *argvars UNUSED, typval_T *rettv)
 }
 
 #if defined(FEAT_CLIENTSERVER) && defined(FEAT_X11)
-static void make_connection(void);
-static int check_connection(void);
-
     static void
 make_connection(void)
 {
@@ -9886,8 +9867,6 @@ f_reverse(typval_T *argvars, typval_T *rettv)
 #define SP_SUBPAT	0x20	    /* return nr of matching sub-pattern */
 #define SP_END		0x40	    /* leave cursor at end of match */
 #define SP_COLUMN	0x80	    /* start at cursor column */
-
-static int get_search_arg(typval_T *varp, int *flagsp);
 
 /*
  * Get flags for a search function.
@@ -10718,8 +10697,6 @@ f_setline(typval_T *argvars, typval_T *rettv)
     set_buffer_lines(curbuf, lnum, FALSE, &argvars[1], rettv);
 }
 
-static void set_qf_ll_list(win_T *wp, typval_T *list_arg, typval_T *action_arg, typval_T *what_arg, typval_T *rettv);
-
 /*
  * Used by "setqflist()" and "setloclist()" functions
  */
@@ -11294,7 +11271,6 @@ typedef struct
     int		item_compare_keep_zero;
 } sortinfo_T;
 static sortinfo_T	*sortinfo = NULL;
-static void	do_sort_uniq(typval_T *argvars, typval_T *rettv, int sort);
 #define ITEM_COMPARE_FAIL 999
 
 /*
@@ -12939,8 +12915,6 @@ f_tabpagenr(typval_T *argvars UNUSED, typval_T *rettv)
 }
 
 
-static int get_winnr(tabpage_T *tp, typval_T *argvar);
-
 /*
  * Common code for tabpagewinnr() and winnr().
  */
@@ -13338,6 +13312,10 @@ f_test_scrollbar(typval_T *argvars, typval_T *rettv UNUSED)
 	return;
     }
     gui_drag_scrollbar(sb, value, dragging);
+# ifndef USE_ON_FLY_SCROLL
+    // need to loop through normal_cmd() to handle the scroll events
+    exec_normal(FALSE, TRUE, FALSE);
+# endif
 }
 #endif
 
