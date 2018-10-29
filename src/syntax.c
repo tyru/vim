@@ -6876,10 +6876,8 @@ static char *(highlight_init_both[]) = {
     CENT("TabLineFill term=reverse cterm=reverse",
 	 "TabLineFill term=reverse cterm=reverse gui=reverse"),
 #ifdef FEAT_TABSIDEBAR
-    CENT("TabSideBarSel term=bold cterm=bold",
-	  "TabSideBarSel term=bold cterm=bold gui=bold"),
-    CENT("TabSideBarFill term=reverse cterm=reverse",
-	  "TabSideBarFill term=reverse cterm=reverse gui=reverse"),
+	"default link TabSideBarSel TabLineSel",
+	"default link TabSideBarFill TabLineFill",
 #endif
 #ifdef FEAT_GUI
     "Cursor guibg=fg guifg=bg",
@@ -6954,8 +6952,7 @@ static char *(highlight_init_light[]) = {
     CENT("TabLine term=underline cterm=underline ctermfg=black ctermbg=LightGrey",
 	 "TabLine term=underline cterm=underline ctermfg=black ctermbg=LightGrey gui=underline guibg=LightGrey"),
 #ifdef FEAT_TABSIDEBAR
-    CENT("TabSideBar term=NONE cterm=NONE ctermfg=black ctermbg=LightGrey",
-	 "TabSideBar term=NONE cterm=NONE ctermfg=black ctermbg=LightGrey gui=underline guibg=LightGrey"),
+	"default link TabSideBar TabLine",
 #endif
 #ifdef FEAT_SYN_HL
     CENT("CursorColumn term=reverse ctermbg=LightGrey",

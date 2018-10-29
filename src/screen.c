@@ -10744,7 +10744,7 @@ draw_tabsidebar()
     win_T	*cwp;
     win_T	*wp;
 
-    if (0 == tabsidebar_width())
+    if (0 == maxwidth)
 	return;
 
     /* count up tabpages */
@@ -10867,7 +10867,7 @@ draw_tabsidebar()
 		    {
 			vim_snprintf((char *)NameBuff, MAXPATHL, "%d", wincount);
 			len = (int)STRLEN(NameBuff);
-			if (tabsidebar_width() > col + len)
+			if (maxwidth > col + len)
 			{
 			    screen_puts_len(NameBuff, len, row, col,
 #if defined(FEAT_SYN_HL)
@@ -10880,14 +10880,14 @@ draw_tabsidebar()
 			}
 		    }
 		    if (modified)
-			if (tabsidebar_width() > col + 1)
+			if (maxwidth > col + 1)
 			    screen_puts_len((char_u *)"+", 1, row, col++, attr);
 
-		    if (tabsidebar_width() > col + 1)
+		    if (maxwidth > col + 1)
 			screen_putchar(fillchar, row, col++, attr);
 		}
 
-		room = tabsidebar_width() - col - 1;
+		room = maxwidth - col - 1;
 		if (room > 0)
 		{
 		    get_trans_bufname(cwp->w_buffer);
@@ -10914,7 +10914,7 @@ draw_tabsidebar()
 		    screen_puts_len(p, (int)STRLEN(p), row, col, attr);
 		    col += len;
 		}
-		while (col < tabsidebar_width())
+		while (col < maxwidth)
 		    screen_putchar(fillchar, row, col++, attr);
 	    }
 	    do_unlet((char_u *)"g:actual_curtabpage", TRUE);
@@ -10923,7 +10923,7 @@ draw_tabsidebar()
 	}
 	else
 	{
-	    while (col < tabsidebar_width())
+	    while (col < maxwidth)
 		screen_putchar(fillchar, row, col++, attr);
 	}
     }
