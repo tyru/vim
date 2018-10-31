@@ -2715,6 +2715,9 @@ static struct vimoption options[] =
     {"tabsidebarcolumns",  "tsbc",   P_NUM|P_RALL,
 			    (char_u *)&p_tsbc, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L} SCTX_INIT},
+    {"tabsidebarwrap", "tsbw", P_NUM|P_RALL,
+			    (char_u *)&p_tsbw, PV_NONE,
+			    {(char_u *)1L, (char_u *)0L} SCTX_INIT},
 #endif
     {"tabstop",	    "ts",   P_NUM|P_VI_DEF|P_RBUF,
 			    (char_u *)&p_ts, PV_TS,
@@ -9210,6 +9213,7 @@ set_num_option(
 #endif
 
 #ifdef FEAT_TABSIDEBAR
+    // showtabsidebar
     else if (pp == &p_stsb)
     {
 	if (p_stsb < 0 || 2 < p_stsb)
@@ -9220,6 +9224,7 @@ set_num_option(
         shell_new_columns();
     }
 
+    // tabsidebarcolumns
     else if (pp == &p_tsbc)
     {
 	if (p_tsbc < 0)
@@ -9228,6 +9233,15 @@ set_num_option(
 	    p_tsbc = 0;
 	}
         shell_new_columns();
+    }
+
+    // tabsidebarwrap
+    else if (pp == &p_tsbw)
+    {
+	if (p_tsbw != 0)
+	{
+	    p_tsbw = 1;
+	}
     }
 #endif
 

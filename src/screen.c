@@ -10710,35 +10710,170 @@ recording_mode(int attr)
 }
 
 #ifdef FEAT_TABSIDEBAR
+    static void
+screen_puts_len_for_tabsidebar(char_u	*p, int	len, int	*prow, int	*pcol, int	attr, int	maxwidth, int	fillchar)
+{
+    int		i;
+
+    for (i = 0; i < len; i++)
+    {
+	if (maxwidth <= (*pcol))
+	{
+	    if (p_tsbw)
+	    {
+		(*prow)++;
+		*pcol = 0;
+	    }
+	    else
+		break;
+	}
+	screen_putchar(p[i], *prow, *pcol, attr);
+	(*pcol)++;
+    }
+}
+
+    static void
+draw_tabsidebar_default(
+	win_T	*wp,
+	win_T	*cwp,
+	char_u	*p,
+	int	len,
+	int	*prow,
+	int	*pcol,
+	int	attr,
+	int	maxwidth,
+	int	fillchar)
+{
+    int		modified;
+    int		wincount;
+    char_u	buf[2] = { NUL, NUL };
+
+    modified = FALSE;
+    for (wincount = 0; wp != NULL; wp = wp->w_next, ++wincount)
+	if (bufIsChanged(wp->w_buffer))
+	    modified = TRUE;
+
+    if (modified || 1 < wincount)
+    {
+	if (1 < wincount)
+	{
+	    vim_snprintf((char *)NameBuff, MAXPATHL, "%d", wincount);
+	    len = (int)STRLEN(NameBuff);
+	    screen_puts_len_for_tabsidebar(NameBuff, len, prow, pcol,
+#if defined(FEAT_SYN_HL)
+		    hl_combine_attr(attr, HL_ATTR(HLF_T)),
+#else
+		    attr,
+#endif
+		    maxwidth, fillchar
+		    );
+	}
+	if (modified)
+	{
+	    buf[0] = '+';
+	    screen_puts_len_for_tabsidebar(buf, 1, prow, pcol, attr, maxwidth, fillchar);
+	}
+
+	buf[0] = fillchar;
+	screen_puts_len_for_tabsidebar(buf, 1, prow, pcol, attr, maxwidth, fillchar);
+    }
+
+    get_trans_bufname(cwp->w_buffer);
+    shorten_dir(NameBuff);
+    screen_puts_len_for_tabsidebar(NameBuff, vim_strsize(NameBuff), prow, pcol, attr, maxwidth, fillchar);
+
+    while ((*pcol) < maxwidth)
+	screen_putchar(fillchar, *prow, (*pcol)++, attr);
+}
+
+    static void
+draw_tabsidebar_userdefined(
+	win_T	*wp,
+	win_T	*cwp,
+	char_u	*p,
+	int	len,
+	int	*prow,
+	int	*pcol,
+	int	attr,
+	int	maxwidth,
+	int	fillchar)
+{
+    int		p_crb_save;
+    int		width;
+    char_u	buf[MAXPATHL];
+    struct	stl_hlrec hltab[STL_MAX_ITEM];
+    struct	stl_hlrec tabtab[STL_MAX_ITEM];
+    int		use_sandbox = FALSE;
+    int		curattr;
+    int		n;
+    int		i;
+
+    /* Temporarily reset 'cursorbind', we don't want a side effect from moving
+     * the cursor away and back. */
+    p_crb_save = cwp->w_p_crb;
+    cwp->w_p_crb = FALSE;
+
+    /* Make a copy, because the statusline may include a function call that
+     * might change the option value and free the memory. */
+    p = vim_strsave(p);
+
+    width = build_stl_str_hl(cwp, buf, sizeof(buf),
+	    p, use_sandbox,
+	    fillchar, (p_tsbw ? sizeof(buf) : maxwidth), hltab, tabtab);
+
+    vim_free(p);
+    cwp->w_p_crb = p_crb_save;
+
+    /* Make all characters printable. */
+    p = transstr(buf);
+    if (p != NULL)
+    {
+	vim_strncpy(buf, p, sizeof(buf) - 1);
+	vim_free(p);
+    }
+
+    curattr = attr;
+    p = buf;
+    for (n = 0; hltab[n].start != NULL; n++)
+    {
+	len = (int)(hltab[n].start - p);
+	screen_puts_len_for_tabsidebar(p, len, prow, pcol, curattr, maxwidth, fillchar);
+	p = hltab[n].start;
+	if (hltab[n].userhl == 0)
+	    curattr = attr;
+	else if (hltab[n].userhl < 0)
+	    curattr = syn_id2attr(-hltab[n].userhl);
+	else if (wp != NULL && wp != curwin && wp->w_status_height != 0)
+	    curattr = highlight_stlnc[hltab[n].userhl - 1];
+	else
+	    curattr = highlight_user[hltab[n].userhl - 1];
+    }
+    len = (int)STRLEN(p);
+    screen_puts_len_for_tabsidebar(p, len, prow, pcol, curattr, maxwidth, fillchar);
+
+    while ((*pcol) < maxwidth)
+	screen_putchar(fillchar, *prow, (*pcol)++, curattr);
+}
+
 /*
  * draw the tabsidebar
  */
     void
 draw_tabsidebar()
 {
-    char_u	*p;
-    char_u	buf[MAXPATHL];
+    int		maxwidth = tabsidebar_width();
+    int		fillchar = ' ';
+
+    int		len = 0;
+    char_u	*p = NULL;
     int		attr;
     int		attr_fill = HL_ATTR(HLF_TSBF);
     int		attr_nosel = HL_ATTR(HLF_TSB);
     int		attr_sel = HL_ATTR(HLF_TSBS);
     int		col = 0;
-    int		curattr;
-    int		fillchar = ' ';
-    int		len;
-    int		maxwidth = tabsidebar_width();
-    int		modified;
-    int		n;
-    int		p_crb_save;
-    int		room;
     int		row = 0;
-    int		use_sandbox = FALSE;
-    int		width;
-    int		wincount;
     int		tabpages_count = 0;
     int		i;
-    struct	stl_hlrec hltab[STL_MAX_ITEM];
-    struct	stl_hlrec tabtab[STL_MAX_ITEM];
     tabpage_T	*tp = NULL;
     typval_T	v;
     win_T	*cwp;
@@ -10799,124 +10934,13 @@ draw_tabsidebar()
 
 	    if (0 < len)
 	    {
-		/* Temporarily reset 'cursorbind', we don't want a side effect from moving
-		 * the cursor away and back. */
-		p_crb_save = cwp->w_p_crb;
-		cwp->w_p_crb = FALSE;
-
-		/* Make a copy, because the statusline may include a function call that
-		 * might change the option value and free the memory. */
-		p = vim_strsave(p);
-		width = build_stl_str_hl(cwp, buf, sizeof(buf),
-					    p, use_sandbox,
-					    fillchar, maxwidth, hltab, tabtab);
-		vim_free(p);
-		cwp->w_p_crb = p_crb_save;
-
-		/* Make all characters printable. */
-		p = transstr(buf);
-		if (p != NULL)
-		{
-		    vim_strncpy(buf, p, sizeof(buf) - 1);
-		    vim_free(p);
-		}
-
-		/* fill up with "fillchar" */
-		len = (int)STRLEN(buf);
-		while (width < maxwidth && len < (int)sizeof(buf) - 1)
-		{
-#ifdef FEAT_MBYTE
-		    len += (*mb_char2bytes)(fillchar, buf + len);
-#else
-		    buf[len++] = fillchar;
-#endif
-		    ++width;
-		}
-		buf[len] = NUL;
-
-		curattr = attr;
-		p = buf;
-		for (n = 0; hltab[n].start != NULL; n++)
-		{
-		    len = (int)(hltab[n].start - p);
-		    screen_puts_len(p, len, row, col, curattr);
-		    col += vim_strnsize(p, len);
-		    p = hltab[n].start;
-
-		    if (hltab[n].userhl == 0)
-			curattr = attr;
-		    else if (hltab[n].userhl < 0)
-			curattr = syn_id2attr(-hltab[n].userhl);
-		    else if (wp != NULL && wp != curwin && wp->w_status_height != 0)
-			curattr = highlight_stlnc[hltab[n].userhl - 1];
-		    else
-			curattr = highlight_user[hltab[n].userhl - 1];
-		}
-		screen_puts(p, row, col, curattr);
+		draw_tabsidebar_userdefined(wp, cwp, p, len, &row, &col, attr, maxwidth, fillchar);
 	    }
 	    else
 	    {
-		modified = FALSE;
-		for (wincount = 0; wp != NULL; wp = wp->w_next, ++wincount)
-		    if (bufIsChanged(wp->w_buffer))
-			modified = TRUE;
-
-		if (modified || wincount > 1)
-		{
-		    if (wincount > 1)
-		    {
-			vim_snprintf((char *)NameBuff, MAXPATHL, "%d", wincount);
-			len = (int)STRLEN(NameBuff);
-			if (maxwidth > col + len)
-			{
-			    screen_puts_len(NameBuff, len, row, col,
-#if defined(FEAT_SYN_HL)
-				hl_combine_attr(attr, HL_ATTR(HLF_T))
-#else
-				attr
-#endif
-				);
-			    col += len;
-			}
-		    }
-		    if (modified)
-			if (maxwidth > col + 1)
-			    screen_puts_len((char_u *)"+", 1, row, col++, attr);
-
-		    if (maxwidth > col + 1)
-			screen_putchar(fillchar, row, col++, attr);
-		}
-
-		room = maxwidth - col - 1;
-		if (room > 0)
-		{
-		    get_trans_bufname(cwp->w_buffer);
-		    shorten_dir(NameBuff);
-		    len = vim_strsize(NameBuff);
-		    p = NameBuff;
-#ifdef FEAT_MBYTE
-		    if (has_mbyte)
-			while (len > room)
-			{
-			    len -= ptr2cells(p);
-			    MB_PTR_ADV(p);
-			}
-		    else
-#endif
-			if (len > room)
-			{
-			    p += len - room;
-			    len = room;
-			}
-		    if (len > Columns - col - 1)
-			len = Columns - col - 1;
-
-		    screen_puts_len(p, (int)STRLEN(p), row, col, attr);
-		    col += len;
-		}
-		while (col < maxwidth)
-		    screen_putchar(fillchar, row, col++, attr);
+		draw_tabsidebar_default(wp, cwp, p, len, &row, &col, attr, maxwidth, fillchar);
 	    }
+
 	    do_unlet((char_u *)"g:actual_curtabpage", TRUE);
 
 	    tp = tp->tp_next;
