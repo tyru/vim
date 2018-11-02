@@ -10745,7 +10745,7 @@ screen_puts_len_for_tabsidebar(char_u	*p, int	len, int	*prow, int	*pcol, int	att
 		vim_free(temp);
 	    }
 
-#if FEAT_MBYTE
+#if defined(FEAT_MBYTE)
 	    if (has_mbyte)
 		chcells = (*mb_ptr2cells)(buf);
 	    else
