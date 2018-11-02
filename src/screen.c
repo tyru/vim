@@ -10713,22 +10713,65 @@ recording_mode(int attr)
     static void
 screen_puts_len_for_tabsidebar(char_u	*p, int	len, int	*prow, int	*pcol, int	attr, int	maxwidth, int	fillchar)
 {
-    int		i;
+    int		j, k;
+    int		chlen;
+    int		chcells;
+    char_u	buf[1024];
+    char_u*	temp;
 
-    for (i = 0; i < len; i++)
+    for (j = 0; j < len;)
     {
-	if (maxwidth <= (*pcol))
+	if (p_tsbw && ((p[j] == '\n') || (p[j] == '\r')))
 	{
-	    if (p_tsbw)
-	    {
-		(*prow)++;
-		*pcol = 0;
-	    }
-	    else
-		break;
+	    while ((*pcol) < maxwidth)
+		screen_putchar(fillchar, *prow, (*pcol)++, attr);
+	    (*prow)++;
+	    *pcol = 0;
+	    j++;
 	}
-	screen_putchar(p[i], *prow, *pcol, attr);
-	(*pcol)++;
+	else
+	{
+	    chlen = (*mb_ptr2len)(p + j);
+	    for (k = 0; k < chlen; k++)
+		buf[k] = p[j + k];
+	    buf[chlen] = NUL;
+	    j += chlen;
+
+	    /* Make all characters printable. */
+	    temp = transstr(buf);
+	    if (temp != NULL)
+	    {
+		vim_strncpy(buf, temp, sizeof(buf) - 1);
+		vim_free(temp);
+	    }
+
+#if FEAT_MBYTE
+	    if (has_mbyte)
+		chcells = (*mb_ptr2cells)(buf);
+	    else
+#endif
+		chcells = 1;
+
+	    if (maxwidth < (*pcol) + chcells)
+	    {
+		while ((*pcol) < maxwidth)
+		    screen_putchar(fillchar, *prow, (*pcol)++, attr);
+
+		if (maxwidth < chcells)
+		    break;
+
+		else if (p_tsbw)
+		{
+		    (*prow)++;
+		    *pcol = 0;
+		}
+		else
+		    break;
+	    }
+
+	    screen_puts(buf, *prow, *pcol, attr);
+	    (*pcol) += chcells;
+	}
     }
 }
 
@@ -10823,14 +10866,6 @@ draw_tabsidebar_userdefined(
 
     vim_free(p);
     cwp->w_p_crb = p_crb_save;
-
-    /* Make all characters printable. */
-    p = transstr(buf);
-    if (p != NULL)
-    {
-	vim_strncpy(buf, p, sizeof(buf) - 1);
-	vim_free(p);
-    }
 
     curattr = attr;
     p = buf;
