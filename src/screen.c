@@ -10903,12 +10903,14 @@ draw_tabsidebar()
     char_u	*p = NULL;
     int		attr;
     int		attr_fill = HL_ATTR(HLF_TSBF);
-    int		attr_nosel = HL_ATTR(HLF_TSB);
     int		attr_sel = HL_ATTR(HLF_TSBS);
+    int		attr_even = HL_ATTR(HLF_TSBE);
+    int		attr_odd = HL_ATTR(HLF_TSBO);
     int		col = 0;
     int		row = 0;
     int		tabpages_count = 0;
     int		i;
+    int		n = 0;
     tabpage_T	*tp = NULL;
     typval_T	v;
     win_T	*cwp;
@@ -10929,6 +10931,7 @@ draw_tabsidebar()
 
     for (row = 0; row < Rows - p_ch; row++)
     {
+	n++;
 	col = 0;
 	attr = attr_fill;
 
@@ -10941,7 +10944,12 @@ draw_tabsidebar()
 	    if (tp->tp_topframe == topframe)
 		attr = attr_sel;
 	    else
-		attr = attr_nosel;
+	    {
+		if (n % 2 == 0)
+		    attr = attr_even;
+		else
+		    attr = attr_odd;
+	    }
 
 	    if (tp == curtab)
 	    {
