@@ -10849,7 +10849,6 @@ draw_tabsidebar_userdefined(
     int		use_sandbox = FALSE;
     int		curattr;
     int		n;
-    int		i;
 
     /* Temporarily reset 'cursorbind', we don't want a side effect from moving
      * the cursor away and back. */
