@@ -2318,7 +2318,7 @@ do_mouse(
     int		old_active = VIsual_active;
     int		old_mode = VIsual_mode;
     int		regname;
-
+    int		mouse_col_fixed = 0;
 #if defined(FEAT_FOLDING)
     save_cursor = curwin->w_cursor;
 #endif
@@ -2565,9 +2565,9 @@ do_mouse(
     start_visual.lnum = 0;
 
 #ifdef FEAT_TABSIDEBAR
-    int mouse_col_fixed = mouse_col + tabsidebar_width();
+    mouse_col_fixed = mouse_col + tabsidebar_width();
 #else
-    int mouse_col_fixed = mouse_col;
+    mouse_col_fixed = mouse_col;
 #endif
 
 #ifdef FEAT_TABSIDEBAR
