@@ -23,7 +23,7 @@ rem )
 rem .\gvim -u NONE -c "redir @a | ver |0put a | wq" ver_ming.txt
 rem
 rem echo "Building MSVC 64bit console Version"
-rem sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
+sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
 rem nmake -f Make_mvc2.mak CPU=AMD64 OLE=no GUI=no IME=yes MBYTE=yes ICONV=yes DEBUG=no FEATURES=%FEATURE% || exit 1
 rem nmake -f Make_mvc2.mak clean
 
