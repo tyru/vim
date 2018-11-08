@@ -4,6 +4,8 @@ skip_tags: true
 
 environment:
   appveyor_repo_tag: true
+  my_variable:
+    secure: I/adDAeOOwlIfiqw2j1C7zhExhLcZige7Fe1ebFNvmJgv/1mvMl8VljAZlkQRJ81
   matrix:
     - FEATURE: HUGE
 #    - FEATURE: NORMAL
