@@ -3,6 +3,7 @@ version: "{build}"
 skip_tags: true
 
 environment:
+  appveyor_repo_tag: true
   matrix:
     - FEATURE: HUGE
 #    - FEATURE: NORMAL
@@ -44,7 +45,5 @@ deploy:
     artifact: release
     draft: false
     prerelease: true
-    on:
-      appveyor_repo_tag: true
 
 # vim: sw=2 sts=2 et ts=8 sr
