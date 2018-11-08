@@ -10842,7 +10842,6 @@ draw_tabsidebar_userdefined(
 	int	fillchar)
 {
     int		p_crb_save;
-    int		width;
     char_u	buf[MAXPATHL];
     struct	stl_hlrec hltab[STL_MAX_ITEM];
     struct	stl_hlrec tabtab[STL_MAX_ITEM];
@@ -10859,7 +10858,7 @@ draw_tabsidebar_userdefined(
      * might change the option value and free the memory. */
     p = vim_strsave(p);
 
-    width = build_stl_str_hl(cwp, buf, sizeof(buf),
+    build_stl_str_hl(cwp, buf, sizeof(buf),
 	    p, use_sandbox,
 	    fillchar, (p_tsbw ? sizeof(buf) : maxwidth), hltab, tabtab);
 

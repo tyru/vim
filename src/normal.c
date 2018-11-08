@@ -2564,11 +2564,10 @@ do_mouse(
 
     start_visual.lnum = 0;
 
-    int mouse_col_fixed
 #ifdef FEAT_TABSIDEBAR
-       	= mouse_col + tabsidebar_width();
+    int mouse_col_fixed = mouse_col + tabsidebar_width();
 #else
-       	= mouse_col;
+    int mouse_col_fixed = mouse_col;
 #endif
 
 #ifdef FEAT_TABSIDEBAR
