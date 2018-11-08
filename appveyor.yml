@@ -3,9 +3,6 @@ version: "{build}"
 skip_tags: true
 
 environment:
-  appveyor_repo_tag: true
-  my_variable:
-    secure: I/adDAeOOwlIfiqw2j1C7zhExhLcZige7Fe1ebFNvmJgv/1mvMl8VljAZlkQRJ81
   matrix:
     - FEATURE: HUGE
 #    - FEATURE: NORMAL
@@ -34,7 +31,6 @@ build_script:
 #  - nmake -f Make_dos.mak VIMPROG=..\vim
 
 artifacts:
-  # pushing a single file
   - path: src\gvim.exe 
     name: release
   - path: src\vim.exe 
@@ -43,8 +39,12 @@ artifacts:
 deploy:
     # Deploy to GitHub Releases
   - provider: GitHub
+    auth_token:
+      secure: I/adDAeOOwlIfiqw2j1C7zhExhLcZige7Fe1ebFNvmJgv/1mvMl8VljAZlkQRJ81
     artifact: release
     draft: false
     prerelease: true
+    on:
+      appveyor_repo_tag: true
 
 # vim: sw=2 sts=2 et ts=8 sr
