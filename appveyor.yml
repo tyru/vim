@@ -3,6 +3,7 @@ version: "{build}"
 skip_tags: true
 
 environment:
+  appveyor_repo_tag: true
   matrix:
     - FEATURE: HUGE
 #    - FEATURE: NORMAL
@@ -34,6 +35,8 @@ artifacts:
   # pushing a single file
   - path: src\gvim.exe 
     name: release
+  - path: src\vim.exe 
+    name: release
 
 deploy:
     # Deploy to GitHub Releases
@@ -41,8 +44,5 @@ deploy:
     artifact: release
     draft: false
     prerelease: true
-    on:
-      branch: tabsidebar
-      appveyor_repo_tag: true
 
 # vim: sw=2 sts=2 et ts=8 sr
