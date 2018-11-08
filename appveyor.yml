@@ -33,13 +33,14 @@ build_script:
 artifacts:
   # pushing a single file
   - path: src\gvim.exe 
+    name: release
 
 deploy:
     # Deploy to GitHub Releases
   - provider: GitHub
-    artifact: /src\gvim.exe/
+    artifact: release
     draft: false
-    prerelease: false
+    prerelease: true
     on:
       branch: tabsidebar
       appveyor_repo_tag: true
