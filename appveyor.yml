@@ -5,7 +5,7 @@ skip_tags: true
 environment:
   matrix:
     - FEATURE: HUGE
-    - FEATURE: NORMAL
+#    - FEATURE: NORMAL
 # disabled
 #    - FEATURE: TINY
 #    - FEATURE: SMALL
