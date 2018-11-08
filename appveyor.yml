@@ -34,7 +34,7 @@ build_script:
 artifacts:
   - path: src\gvim.exe 
     name: release
-  - path: src\vim.exe 
+  - path: src\ver_msvc.txt
     name: release
 
 deploy:

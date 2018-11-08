@@ -21,11 +21,11 @@ rem ) ELSE (
 rem     mingw32-make.exe -f Make_ming.mak OPTIMIZE=speed GUI=yes IME=yes MBYTE=yes ICONV=yes DEBUG=no FEATURES=%FEATURE% || exit 1
 rem )
 rem .\gvim -u NONE -c "redir @a | ver |0put a | wq" ver_ming.txt
-
-echo "Building MSVC 64bit console Version"
-sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
-nmake -f Make_mvc2.mak CPU=AMD64 OLE=no GUI=no IME=yes MBYTE=yes ICONV=yes DEBUG=no FEATURES=%FEATURE% || exit 1
-nmake -f Make_mvc2.mak clean
+rem
+rem echo "Building MSVC 64bit console Version"
+rem sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
+rem nmake -f Make_mvc2.mak CPU=AMD64 OLE=no GUI=no IME=yes MBYTE=yes ICONV=yes DEBUG=no FEATURES=%FEATURE% || exit 1
+rem nmake -f Make_mvc2.mak clean
 
 :: build MSVC huge version with python and channel support
 :: GUI needs to be last, so that testing works
@@ -44,3 +44,4 @@ rem type ver_ming.txt
 echo "version output MVC"
 type ver_msvc.txt
 cd ..
+
