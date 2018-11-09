@@ -39,14 +39,22 @@ get_beval_info(
 #  endif
     {
 	row = mouse_row;
-	col = mouse_col;
+	col = mouse_col
+#ifdef FEAT_TABSIDEBAR
+	    - tabsidebar_width()
+#endif
+	    ;
     }
 # endif
 # ifdef FEAT_GUI
     if (gui.in_use)
     {
 	row = Y_2_ROW(beval->y);
-	col = X_2_COL(beval->x);
+	col = X_2_COL(beval->x)
+#ifdef FEAT_TABSIDEBAR
+	    - tabsidebar_width()
+#endif
+	    ;
     }
 #endif
     wp = mouse_find_win(&row, &col);

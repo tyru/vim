@@ -737,6 +737,11 @@
 #endif
 
 /*
+ * +tabsidebar		Tab SideBar
+ */
+#define FEAT_TABSIDEBAR
+
+/*
  * +browse		":browse" command.
  *			or just the ":browse" command modifier
  */

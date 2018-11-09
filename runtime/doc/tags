@@ -868,6 +868,7 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 'showmatch'	options.txt	/*'showmatch'*
 'showmode'	options.txt	/*'showmode'*
 'showtabline'	options.txt	/*'showtabline'*
+'showtabsidebar'	options.txt	/*'showtabsidebar'*
 'shq'	options.txt	/*'shq'*
 'si'	options.txt	/*'si'*
 'sidescroll'	options.txt	/*'sidescroll'*
@@ -915,6 +916,7 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 'stl'	options.txt	/*'stl'*
 'stmp'	options.txt	/*'stmp'*
 'sts'	options.txt	/*'sts'*
+'stsb'	options.txt	/*'stsb'*
 'su'	options.txt	/*'su'*
 'sua'	options.txt	/*'sua'*
 'suffixes'	options.txt	/*'suffixes'*
@@ -1071,6 +1073,8 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 'ta'	options.txt	/*'ta'*
 'tabline'	options.txt	/*'tabline'*
 'tabpagemax'	options.txt	/*'tabpagemax'*
+'tabsidebar'	options.txt	/*'tabsidebar'*
+'tabsidebarcolumns'	options.txt	/*'tabsidebarcolumns'*
 'tabstop'	options.txt	/*'tabstop'*
 'tag'	options.txt	/*'tag'*
 'tagbsearch'	options.txt	/*'tagbsearch'*
@@ -1119,6 +1123,8 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 'tpm'	options.txt	/*'tpm'*
 'tr'	options.txt	/*'tr'*
 'ts'	options.txt	/*'ts'*
+'tsb'	options.txt	/*'tsb'*
+'tsbc'	options.txt	/*'tsbc'*
 'tsl'	options.txt	/*'tsl'*
 'tsr'	options.txt	/*'tsr'*
 'ttimeout'	options.txt	/*'ttimeout'*
@@ -2835,6 +2841,8 @@ $VIM_POSIX	vi_diff.txt	/*$VIM_POSIX*
 :redraw	various.txt	/*:redraw*
 :redraws	various.txt	/*:redraws*
 :redrawstatus	various.txt	/*:redrawstatus*
+:redrawtabs	various.txt	/*:redrawtabs*
+:redrawtabsidebar	various.txt	/*:redrawtabsidebar*
 :reg	change.txt	/*:reg*
 :registers	change.txt	/*:registers*
 :res	windows.txt	/*:res*
@@ -6382,6 +6390,7 @@ g:Netrw_UserMaps	pi_netrw.txt	/*g:Netrw_UserMaps*
 g:Netrw_corehandler	pi_netrw.txt	/*g:Netrw_corehandler*
 g:Netrw_funcref	pi_netrw.txt	/*g:Netrw_funcref*
 g:actual_curbuf	options.txt	/*g:actual_curbuf*
+g:actual_curtabpage	options.txt	/*g:actual_curtabpage*
 g:ada#Comment	ft_ada.txt	/*g:ada#Comment*
 g:ada#Ctags_Kinds	ft_ada.txt	/*g:ada#Ctags_Kinds*
 g:ada#DotWordRegex	ft_ada.txt	/*g:ada#DotWordRegex*
@@ -6690,6 +6699,7 @@ getscript-history	pi_getscript.txt	/*getscript-history*
 getscript-plugins	pi_getscript.txt	/*getscript-plugins*
 getscript-start	pi_getscript.txt	/*getscript-start*
 gettabinfo()	eval.txt	/*gettabinfo()*
+gettabsidebar()	eval.txt	/*gettabsidebar()*
 gettabvar()	eval.txt	/*gettabvar()*
 gettabwinvar()	eval.txt	/*gettabwinvar()*
 getwininfo()	eval.txt	/*getwininfo()*
@@ -6934,6 +6944,9 @@ hl-StatusLineTermNC	syntax.txt	/*hl-StatusLineTermNC*
 hl-TabLine	syntax.txt	/*hl-TabLine*
 hl-TabLineFill	syntax.txt	/*hl-TabLineFill*
 hl-TabLineSel	syntax.txt	/*hl-TabLineSel*
+hl-TabSideBar	syntax.txt	/*hl-TabSideBar*
+hl-TabSideBarFill	syntax.txt	/*hl-TabSideBarFill*
+hl-TabSideBarSel	syntax.txt	/*hl-TabSideBarSel*
 hl-Terminal	syntax.txt	/*hl-Terminal*
 hl-Title	syntax.txt	/*hl-Title*
 hl-Tooltip	syntax.txt	/*hl-Tooltip*
@@ -8433,11 +8446,13 @@ setpos()	eval.txt	/*setpos()*
 setqflist()	eval.txt	/*setqflist()*
 setqflist-examples	quickfix.txt	/*setqflist-examples*
 setreg()	eval.txt	/*setreg()*
+settabsidebar()	eval.txt	/*settabsidebar()*
 settabvar()	eval.txt	/*settabvar()*
 settabwinvar()	eval.txt	/*settabwinvar()*
 setting-guifont	gui.txt	/*setting-guifont*
 setting-guitablabel	tabpage.txt	/*setting-guitablabel*
 setting-tabline	tabpage.txt	/*setting-tabline*
+setting-tabsidebar	tabpage.txt	/*setting-tabsidebar*
 setuid	change.txt	/*setuid*
 setwinvar()	eval.txt	/*setwinvar()*
 sftp	pi_netrw.txt	/*sftp*
@@ -8926,6 +8941,7 @@ tabpage.txt	tabpage.txt	/*tabpage.txt*
 tabpagebuflist()	eval.txt	/*tabpagebuflist()*
 tabpagenr()	eval.txt	/*tabpagenr()*
 tabpagewinnr()	eval.txt	/*tabpagewinnr()*
+tabsidebar-functions	usr_41.txt	/*tabsidebar-functions*
 tag	tagsrch.txt	/*tag*
 tag-!	tagsrch.txt	/*tag-!*
 tag-any-white	tagsrch.txt	/*tag-any-white*

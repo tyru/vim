@@ -1195,7 +1195,11 @@ clip_invert_rectangle(
 	gui_mch_invert_rectangle(row, col, height, width);
     else
 #endif
-	screen_draw_rectangle(row, col, height, width, invert);
+	screen_draw_rectangle(row, col
+#ifdef FEAT_TABSIDEBAR
+		+ tabsidebar_width()
+#endif
+		, height, width, invert);
 }
 
 /*

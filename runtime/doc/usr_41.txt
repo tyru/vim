@@ -811,6 +811,11 @@ Buffers, windows and the argument list:
 	getjumplist()		get a list of jump list entries
 	swapinfo()		information about a swap file
 
+						*tabsidebar-functions*
+TabSidebar list:
+	gettabsidebar()		get a tab label of tabsidebar
+	settabsidebar()		set a tab label of tabsidebar
+
 Command line:					*command-line-functions*
 	getcmdline()		get the current command line
 	getcmdpos()		get position of the cursor in the command line

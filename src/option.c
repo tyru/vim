@@ -480,7 +480,14 @@ struct vimoption
 # define ISP_LATIN1 (char_u *)"@,161-255"
 #endif
 
-# define HIGHLIGHT_INIT "8:SpecialKey,~:EndOfBuffer,@:NonText,d:Directory,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,c:VertSplit,t:Title,v:Visual,V:VisualNOS,w:WarningMsg,W:WildMenu,f:Folded,F:FoldColumn,A:DiffAdd,C:DiffChange,D:DiffDelete,T:DiffText,>:SignColumn,-:Conceal,B:SpellBad,P:SpellCap,R:SpellRare,L:SpellLocal,+:Pmenu,=:PmenuSel,x:PmenuSbar,X:PmenuThumb,*:TabLine,#:TabLineSel,_:TabLineFill,!:CursorColumn,.:CursorLine,o:ColorColumn,q:QuickFixLine,z:StatusLineTerm,Z:StatusLineTermNC"
+/* Make the string as short as possible when compiling with few features. */
+#if defined(FEAT_DIFF) || defined(FEAT_FOLDING) || defined(FEAT_SPELL) \
+	|| defined(FEAT_CLIPBOARD) || defined(FEAT_CONCEAL) \
+	|| defined(FEAT_QUICKFIX) || defined(FEAT_TERMINAL)
+# define HIGHLIGHT_INIT "8:SpecialKey,~:EndOfBuffer,@:NonText,d:Directory,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,c:VertSplit,t:Title,v:Visual,V:VisualNOS,w:WarningMsg,W:WildMenu,f:Folded,F:FoldColumn,A:DiffAdd,C:DiffChange,D:DiffDelete,T:DiffText,>:SignColumn,-:Conceal,B:SpellBad,P:SpellCap,R:SpellRare,L:SpellLocal,+:Pmenu,=:PmenuSel,x:PmenuSbar,X:PmenuThumb,*:TabLine,#:TabLineSel,_:TabLineFill,!:CursorColumn,.:CursorLine,o:ColorColumn,q:QuickFixLine,z:StatusLineTerm,Z:StatusLineTermNC,%:TabSideBar,^:TabSideBarSel,&:TabSideBarFill,a:TabSideBarEven,b:TabSideBarOdd"
+#else
+# define HIGHLIGHT_INIT "8:SpecialKey,@:NonText,d:Directory,e:ErrorMsg,i:IncSearch,l:Search,m:MoreMsg,M:ModeMsg,n:LineNr,N:CursorLineNr,r:Question,s:StatusLine,S:StatusLineNC,t:Title,v:Visual,w:WarningMsg,W:WildMenu,>:SignColumn,*:TabLine,#:TabLineSel,_:TabLineFill"
+#endif
 
 /* Default python version for pyx* commands */
 #if defined(FEAT_PYTHON) && defined(FEAT_PYTHON3)
@@ -2548,6 +2555,11 @@ static struct vimoption options[] =
     {"showtabline", "stal", P_NUM|P_VI_DEF|P_RALL,
 			    (char_u *)&p_stal, PV_NONE,
 			    {(char_u *)1L, (char_u *)0L} SCTX_INIT},
+#ifdef FEAT_TABSIDEBAR
+    {"showtabsidebar", "stsb", P_NUM|P_RALL,
+			    (char_u *)&p_stsb, PV_NONE,
+			    {(char_u *)1L, (char_u *)0L} SCTX_INIT},
+#endif
     {"sidescroll",  "ss",   P_NUM|P_VI_DEF,
 			    (char_u *)&p_ss, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L} SCTX_INIT},
@@ -2696,6 +2708,17 @@ static struct vimoption options[] =
     {"tabpagemax",  "tpm",  P_NUM|P_VI_DEF,
 			    (char_u *)&p_tpm, PV_NONE,
 			    {(char_u *)10L, (char_u *)0L} SCTX_INIT},
+#ifdef FEAT_TABSIDEBAR
+    {"tabsidebar"  ,"tsb",  P_STRING|P_RALL,
+			    (char_u *)&p_tsb, PV_NONE,
+			    {(char_u *)"", (char_u *)""} SCTX_INIT},
+    {"tabsidebarcolumns",  "tsbc",   P_NUM|P_RALL,
+			    (char_u *)&p_tsbc, PV_NONE,
+			    {(char_u *)0L, (char_u *)0L} SCTX_INIT},
+    {"tabsidebarwrap", "tsbw", P_BOOL|P_RALL,
+			    (char_u *)&p_tsbw, PV_NONE,
+			    {(char_u *)FALSE, (char_u *)0L} SCTX_INIT},
+#endif
     {"tabstop",	    "ts",   P_NUM|P_VI_DEF|P_RBUF,
 			    (char_u *)&p_ts, PV_TS,
 			    {(char_u *)8L, (char_u *)0L} SCTX_INIT},
@@ -9195,6 +9218,30 @@ set_num_option(
     }
 #endif
 
+#ifdef FEAT_TABSIDEBAR
+    // showtabsidebar
+    else if (pp == &p_stsb)
+    {
+	if (p_stsb < 0 || 2 < p_stsb)
+	{
+	    errmsg = e_positive;
+	    p_stsb = 1;
+	}
+        shell_new_columns();
+    }
+
+    // tabsidebarcolumns
+    else if (pp == &p_tsbc)
+    {
+	if (p_tsbc < 0)
+	{
+	    errmsg = e_positive;
+	    p_tsbc = 0;
+	}
+        shell_new_columns();
+    }
+#endif
+
     /* if p_ch changed value, change the command line height */
     else if (pp == &p_ch)
     {
@@ -10723,6 +10770,29 @@ unset_global_local_option(char_u *name, void *from)
     static char_u *
 get_varp_scope(struct vimoption *p, int opt_flags)
 {
+#ifdef FEAT_TABSIDEBAR
+    if (STRCMP(p->fullname, "tabsidebar") == 0)
+    {
+	if (opt_flags & OPT_GLOBAL)
+	{
+	    if (p_tsb == NULL)
+	    {
+		p_tsb = alloc(100);
+		STRCPY(p_tsb, "");
+	    }
+	    return (char_u *)&p_tsb;
+	}
+	if (opt_flags & OPT_LOCAL)
+	{
+	    if (curtab->tp_tabsidebar == NULL)
+	    {
+		curtab->tp_tabsidebar = alloc(100);
+		STRCPY(curtab->tp_tabsidebar, "");
+	    }
+	    return (char_u *)&(curtab->tp_tabsidebar);
+	}
+    }
+#endif
     if ((opt_flags & OPT_GLOBAL) && p->indir != PV_NONE)
     {
 	if (p->var == VAR_WIN)

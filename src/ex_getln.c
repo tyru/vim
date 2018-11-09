@@ -1153,6 +1153,10 @@ getcmdline_int(
 		}
 		KeyTyped = skt;
 		wild_menu_showing = 0;
+#ifdef FEAT_TABSIDEBAR
+		/* force redraw statusline */
+		redraw_all_later(NOT_VALID);
+#endif
 		if (ccline.input_fn)
 		    RedrawingDisabled = old_RedrawingDisabled;
 	    }

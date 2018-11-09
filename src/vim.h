@@ -833,6 +833,11 @@ extern int (*dyn_libintl_putenv)(const char *envstring);
 #define FINDFILE_DIR	1	/* only directories */
 #define FINDFILE_BOTH	2	/* files and directories */
 
+#ifdef FEAT_TABSIDEBAR
+# define COLUMNS_WITHOUT_TABSB()	(Columns - tabsidebar_width() < 0 ? 0 : Columns - tabsidebar_width())
+#else
+# define COLUMNS_WITHOUT_TABSB()	Columns
+#endif
 #define W_ENDCOL(wp)	(wp->w_wincol + wp->w_width)
 #ifdef FEAT_MENU
 # define W_WINROW(wp)	(wp->w_winrow + wp->w_winbar_height)
@@ -1409,6 +1414,11 @@ typedef enum
     , HLF_QFL	    /* quickfix window line currently selected */
     , HLF_ST	    /* status lines of terminal windows */
     , HLF_STNC	    /* status lines of not-current terminal windows */
+    , HLF_TSB	    /* tabsidebar */
+    , HLF_TSBS	    /* tabsidebar selected */
+    , HLF_TSBF	    /* tabsidebar filler */
+    , HLF_TSBE	    /* tabsidebar even */
+    , HLF_TSBO	    /* tabsidebar odd */
     , HLF_COUNT	    /* MUST be the last one */
 } hlf_T;
 
@@ -1419,7 +1429,8 @@ typedef enum
 		  'f', 'F', 'A', 'C', 'D', 'T', '-', '>', \
 		  'B', 'P', 'R', 'L', \
 		  '+', '=', 'x', 'X', '*', '#', '_', '!', '.', 'o', 'q', \
-		  'z', 'Z'}
+		  'z', 'Z', \
+		  '%', '^', '&', 'a', 'b' }
 
 /*
  * Boolean constants

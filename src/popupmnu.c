@@ -410,12 +410,20 @@ pum_redraw(void)
 	if (curwin->w_p_rl)
 	{
 	    if (pum_col < curwin->w_wincol + curwin->w_width - 1)
-		screen_putchar(' ', row, pum_col + 1, attr);
+		screen_putchar(' ', row, pum_col + 1
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, attr);
 	}
 	else
 #endif
 	    if (pum_col > 0)
-		screen_putchar(' ', row, pum_col - 1, attr);
+		screen_putchar(' ', row, pum_col - 1
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, attr);
 
 	/* Display each entry, use two spaces for a Tab.
 	 * Do this 3 times: For the main text, kind and extra info */
@@ -483,7 +491,11 @@ pum_redraw(void)
 					}
 				    }
 				    screen_puts_len(rt, (int)STRLEN(rt),
-						   row, col - size + 1, attr);
+						   row, col - size + 1
+#ifdef FEAT_TABSIDEBAR
+						   + tabsidebar_width()
+#endif
+						   , attr);
 				    vim_free(rt_start);
 				}
 				vim_free(st);
@@ -495,8 +507,11 @@ pum_redraw(void)
 			{
 			    if (st != NULL)
 			    {
-				screen_puts_len(st, (int)STRLEN(st), row, col,
-									attr);
+				screen_puts_len(st, (int)STRLEN(st), row, col
+#ifdef FEAT_TABSIDEBAR
+					+ tabsidebar_width()
+#endif
+					, attr);
 				vim_free(st);
 			    }
 			    col += width;
@@ -509,14 +524,21 @@ pum_redraw(void)
 #ifdef FEAT_RIGHTLEFT
 			if (curwin->w_p_rl)
 			{
-			    screen_puts_len((char_u *)"  ", 2, row, col - 1,
-									attr);
+			    screen_puts_len((char_u *)"  ", 2, row, col - 1
+#ifdef FEAT_TABSIDEBAR
+				    + tabsidebar_width()
+#endif
+				    , attr);
 			    col -= 2;
 			}
 			else
 #endif
 			{
-			    screen_puts_len((char_u *)"  ", 2, row, col, attr);
+			    screen_puts_len((char_u *)"  ", 2, row, col
+#ifdef FEAT_TABSIDEBAR
+				    + tabsidebar_width()
+#endif
+				    , attr);
 			    col += 2;
 			}
 			totwidth += 2;
@@ -542,15 +564,29 @@ pum_redraw(void)
 #ifdef FEAT_RIGHTLEFT
 	    if (curwin->w_p_rl)
 	    {
-		screen_fill(row, row + 1, pum_col - pum_base_width - n + 1,
-						    col + 1, ' ', ' ', attr);
+		screen_fill(row, row + 1, pum_col - pum_base_width - n + 1
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, col + 1
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, ' ', ' ', attr);
 		col = pum_col - pum_base_width - n + 1;
 	    }
 	    else
 #endif
 	    {
-		screen_fill(row, row + 1, col, pum_col + pum_base_width + n,
-							      ' ', ' ', attr);
+		screen_fill(row, row + 1, col
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, pum_col + pum_base_width + n
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, ' ', ' ', attr);
 		col = pum_col + pum_base_width + n;
 	    }
 	    totwidth = pum_base_width + n;
@@ -558,23 +594,43 @@ pum_redraw(void)
 
 #ifdef FEAT_RIGHTLEFT
 	if (curwin->w_p_rl)
-	    screen_fill(row, row + 1, pum_col - pum_width + 1, col + 1, ' ',
-								    ' ', attr);
+	    screen_fill(row, row + 1, pum_col - pum_width + 1
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , col + 1
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , ' ', ' ', attr);
 	else
 #endif
-	    screen_fill(row, row + 1, col, pum_col + pum_width, ' ', ' ',
-									attr);
+	    screen_fill(row, row + 1, col
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , pum_col + pum_width
+#ifdef FEAT_TABSIDEBAR
+		    + tabsidebar_width()
+#endif
+		    , ' ', ' ', attr);
 	if (pum_scrollbar > 0)
 	{
 #ifdef FEAT_RIGHTLEFT
 	    if (curwin->w_p_rl)
-		screen_putchar(' ', row, pum_col - pum_width,
-			i >= thumb_pos && i < thumb_pos + thumb_heigth
+		screen_putchar(' ', row, pum_col - pum_width
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, i >= thumb_pos && i < thumb_pos + thumb_heigth
 						  ? attr_thumb : attr_scroll);
 	    else
 #endif
-		screen_putchar(' ', row, pum_col + pum_width,
-			i >= thumb_pos && i < thumb_pos + thumb_heigth
+		screen_putchar(' ', row, pum_col + pum_width
+#ifdef FEAT_TABSIDEBAR
+			+ tabsidebar_width()
+#endif
+			, i >= thumb_pos && i < thumb_pos + thumb_heigth
 						  ? attr_thumb : attr_scroll);
 	}
 

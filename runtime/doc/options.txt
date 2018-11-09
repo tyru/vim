@@ -7120,6 +7120,20 @@ A jump table for the options with a short description can be found at |Q_op|.
 	line.
 	See |tab-page| for more information about tab pages.
 
+						*'showtabsidebar'* *'stsb'*
+'showtabsidebar' 'stsb'	number	(default 0)
+			global
+			{not in Vi}
+			{not available when compiled without the |+windows|
+			feature}
+	The value of this option specifies when the tabsidebar with tab page
+	labels will be displayed:
+		0: never
+		1: only if there are at least two tab pages
+		2: always
+	This is non-GUI implementation of the tabsidebar only.
+	See |tab-page| for more information about tab page labels.
+
 						*'sidescroll'* *'ss'*
 'sidescroll' 'ss'	number	(default 0)
 			global
@@ -7770,6 +7784,43 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Maximum number of tab pages to be opened by the |-p| command line
 	argument or the ":tab all" command. |tabpage|
 
+				*'tabsidebar'* *'tsb'* *g:actual_curtabpage*
+'tabsidebar' 'tsb'			number	(default empty)
+			global or local to tabpage
+			{not in Vi, although some versions have a boolean
+			verbose option}
+	When nonempty, this option determines the content of the tab page.
+	The option consists of printf style '%' items interspersed with
+	normal text. So this option is like |'statusline'| or |'tabline'|.
+
+	You can use |g:actual_curtabpage| in a tabsidebar's function.
+	|g:actual_curtabpage| is current tab label number.
+>
+	set tabsidebar=%!TabSideBar()
+	function! TabSideBar() abort
+	  return printf('(%2d) %%f', g:actual_curtabpage)
+	endfunction
+<
+
+						*'tabsidebarcolumns'* *'tsbc'*
+'tabsidebarcolumns' 'tsbc'		number	(default 0)
+			global
+			{not in Vi, although some versions have a boolean
+			verbose option}
+	When bigger than zero, this option determines the content of the
+	tabsidebar at the left of the Vim window.
+	|tabsidebarcolumns| is The column size of tabsidebar.
+
+						*'tabsidebarwrap'* *'tsbw'*
+'tabsidebarwrap' 'tsbw'		boolean	(default off)
+			global
+			{not in Vi, although some versions have a boolean
+			verbose option}
+	This option changes how the text of tabsidebar is displayed.
+	When on, the text of tabsidebar longer than |tabsidebarcolumns| will
+	wrap and displaying continues on the next line.
+	When off, the text of tabsidebar will not wrap and only part of
+	long one will be displayed.
 
 						*'tabstop'* *'ts'*
 'tabstop' 'ts'		number	(default 8)
