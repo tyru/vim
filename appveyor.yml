@@ -32,9 +32,13 @@ build_script:
 #  - nmake -f Make_dos.mak VIMPROG=..\vim
 
 artifacts:
-  - path: src\gvim.exe 
+  - path: src\gvim-i386.exe 
     name: release
-  - path: src\ver_msvc.txt
+  - path: src\ver_msvc-i386.txt
+    name: release
+  - path: src\gvim-AMD64.exe 
+    name: release
+  - path: src\ver_msvc-AMD64.txt
     name: release
 
 deploy:
