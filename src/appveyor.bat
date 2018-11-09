@@ -23,7 +23,7 @@ rem )
 rem .\gvim -u NONE -c "redir @a | ver |0put a | wq" ver_ming.txt
 rem
 rem echo "Building MSVC 64bit console Version"
-sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
+rem sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
 rem nmake -f Make_mvc2.mak CPU=AMD64 OLE=no GUI=no IME=yes MBYTE=yes ICONV=yes DEBUG=no FEATURES=%FEATURE% || exit 1
 rem nmake -f Make_mvc2.mak clean
 rem 
@@ -46,13 +46,18 @@ rem type ver_msvc.txt
 rem cd ..
 
 cd src
-    sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
 
+    "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /release
+    set INCLUDE=%INCLUDE%C:\Program Files (x86)\Windows Kits\8.1\Include\um
+    sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
     nmake -f Make_mvc2.mak DIRECTX=yes CPU=i386 CHANNEL=yes OLE=no GUI=yes IME=yes MBYTE=yes ICONV=yes DEBUG=no PYTHON_VER=27 DYNAMIC_PYTHON=yes PYTHON=C:\Python27 PYTHON3_VER=35 DYNAMIC_PYTHON3=yes PYTHON3=C:\Python35 FEATURES=%FEATURE% || exit 1
     .\gvim -u NONE -c "redir @a | ver |0put a | wq" ver_msvc-i386.txt
     type ver_msvc-i386.txt
     move /Y .\gvim.exe .\gvim-i386.exe
 
+    "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64 /release
+    set INCLUDE=%INCLUDE%C:\Program Files (x86)\Windows Kits\8.1\Include\um
+    sed -e "s/\$(LINKARGS2)/\$(LINKARGS2) | sed -e 's#.*\\\\r.*##'/" Make_mvc.mak > Make_mvc2.mak
     nmake -f Make_mvc2.mak DIRECTX=yes CPU=AMD64 CHANNEL=yes OLE=no GUI=yes IME=yes MBYTE=yes ICONV=yes DEBUG=no PYTHON_VER=27 DYNAMIC_PYTHON=yes PYTHON=C:\Python27-x64 PYTHON3_VER=35 DYNAMIC_PYTHON3=yes PYTHON3=C:\Python35-x64 FEATURES=%FEATURE% || exit 1
     .\gvim -u NONE -c "redir @a | ver |0put a | wq" ver_msvc-AMD64.txt
     type ver_msvc-AMD64.txt
