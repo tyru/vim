@@ -25,6 +25,7 @@ int list_append_tv(list_T *l, typval_T *tv);
 int list_append_dict(list_T *list, dict_T *dict);
 int list_append_list(list_T *list1, list_T *list2);
 int list_append_string(list_T *l, char_u *str, int len);
+int list_append_func(list_T *l, char_u *funcname, int len);
 int list_append_number(list_T *l, varnumber_T n);
 int list_insert_tv(list_T *l, typval_T *tv, listitem_T *item);
 void list_insert(list_T *l, listitem_T *ni, listitem_T *item);

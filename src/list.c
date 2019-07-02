@@ -520,6 +520,24 @@ list_append_list(list_T *list1, list_T *list2)
     return OK;
 }
 
+    static int
+do_list_append_string(list_T *l, char_u *str, int len, vartype_T type)
+{
+    listitem_T *li = listitem_alloc();
+
+    if (li == NULL)
+	return FAIL;
+    list_append(l, li);
+    li->li_tv.v_type = type;
+    li->li_tv.v_lock = 0;
+    if (str == NULL)
+	li->li_tv.vval.v_string = NULL;
+    else if ((li->li_tv.vval.v_string = (len >= 0 ? vim_strnsave(str, len)
+						 : vim_strsave(str))) == NULL)
+	return FAIL;
+    return OK;
+}
+
 /*
  * Make a copy of "str" and append it as an item to list "l".
  * When "len" >= 0 use "str[len]".
@@ -528,19 +546,13 @@ list_append_list(list_T *list1, list_T *list2)
     int
 list_append_string(list_T *l, char_u *str, int len)
 {
-    listitem_T *li = listitem_alloc();
+    return do_list_append_string(l, str, len, VAR_STRING);
+}
 
-    if (li == NULL)
-	return FAIL;
-    list_append(l, li);
-    li->li_tv.v_type = VAR_STRING;
-    li->li_tv.v_lock = 0;
-    if (str == NULL)
-	li->li_tv.vval.v_string = NULL;
-    else if ((li->li_tv.vval.v_string = (len >= 0 ? vim_strnsave(str, len)
-						 : vim_strsave(str))) == NULL)
-	return FAIL;
-    return OK;
+    int
+list_append_func(list_T *l, char_u *funcname, int len)
+{
+    return do_list_append_string(l, funcname, len, VAR_FUNC);
 }
 
 /*

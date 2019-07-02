@@ -10163,16 +10163,15 @@ f_reverse(typval_T *argvars, typval_T *rettv)
 
 
 struct require_ctx {
-    typval_T	*rettv;
+    dict_T	*dict;
     char_u	*ns;
 };
 
     static void
 make_require_dict(ufunc_T *fp, void *ctx)
 {
-    typval_T	*rettv = ((struct require_ctx*)ctx)->rettv;
+    dict_T	*dict = ((struct require_ctx*)ctx)->dict;
     char_u	*ns = ((struct require_ctx*)ctx)->ns;
-    dict_T	*d = rettv->vval.v_dict;
 
     if (!isdigit(*fp->uf_name)
 		&& STRNCMP(fp->uf_name, ns, STRLEN(ns)) == 0)
@@ -10182,8 +10181,8 @@ make_require_dict(ufunc_T *fp, void *ctx)
 	    fname++;
 	else
 	    fname = fp->uf_name;
-	if (dict_find(d, fname, -1) == NULL)
-	    dict_add_func_len(d, (char*)fname, fp->uf_name, -1);
+	if (dict_find(dict, fname, -1) == NULL)
+	    dict_add_func_len(dict, (char*)fname, fp->uf_name, -1);
     }
 }
 
@@ -10196,28 +10195,49 @@ f_require(typval_T *argvars, typval_T *rettv)
     struct require_ctx	ctx;
     char_u		*ns;
     char_u		*scriptname = NULL;
+    char_u		*funcname;
+    dictitem_T		*funcitem;
+    listitem_T		*li;
 
     ns = vim_strsave(tv_get_string(&argvars[0]));
 
-    /* Try loading the package from $VIMRUNTIME/autoload/<name>.vim */
+    /* Try loading the package from $VIMRUNTIME/autoload/<ns>.vim */
     scriptname = autoload_name(ns, -1);
-    if (!script_autoload_by_fname(scriptname, FALSE))
-	goto theend;
+    script_autoload_by_fname(scriptname, FALSE);
 
     switch (argvars[1].v_type)
     {
 	case VAR_UNKNOWN:
-	    if (rettv_dict_alloc(rettv) != OK)
+	    if (rettv_dict_alloc(rettv) == FAIL)
 		goto theend;
-	    ctx.rettv = rettv;
+
+	    ctx.dict = rettv->vval.v_dict;
 	    ctx.ns = ns;
 	    func_hashtab_iterate(make_require_dict, &ctx);
 	    break;
 
 	case VAR_LIST:
-	    if (rettv_list_alloc(rettv) != OK)
+	    ctx.dict = dict_alloc();
+	    ctx.ns = ns;
+	    func_hashtab_iterate(make_require_dict, &ctx);
+
+	    if (rettv_list_alloc(rettv) == FAIL)
 		goto theend;
-	    // TODO
+
+	    for (li = argvars[1].vval.v_list->lv_first; li != NULL; li = li->li_next)
+	    {
+		funcname = tv_get_string_chk(&li->li_tv);
+		if (funcname == NULL)
+		    continue;
+		funcitem = dict_find(ctx.dict, funcname, -1);
+		if (funcitem == NULL)
+		{
+		    semsg(_("E700: Unknown function: %s#%s"), ns, funcname);
+		    continue;
+		}
+		list_append_func(rettv->vval.v_list, funcitem->di_tv.vval.v_string, -1);
+	    }
+
 	    break;
 
 	default:
