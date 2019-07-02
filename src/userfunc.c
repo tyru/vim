@@ -2578,7 +2578,7 @@ ex_function(exarg_T *eap)
 	    j = FAIL;
 	    if (sourcing_name != NULL)
 	    {
-		scriptname = autoload_name(name);
+		scriptname = autoload_name_by_varname(name);
 		if (scriptname != NULL)
 		{
 		    p = vim_strchr(scriptname, '/');

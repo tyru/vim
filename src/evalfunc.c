@@ -10162,43 +10162,28 @@ f_reverse(typval_T *argvars, typval_T *rettv)
 }
 
 
-/*
- * Return "func" for given fully qualified function name "foo#bar#func".
- */
-    static char_u*
-skip_namespace(char_u *s, size_t len)
-{
-    int		i;
-    for (i = len - 1; i >= 0; i--) {
-	if (s[i] == '#')
-	{
-	    i++;
-	    break;
-	}
-    }
-    return &s[i < 0 ? 0 : i];
-}
-
 struct require_ctx {
-    typval_T *argvars;
-    typval_T *rettv;
+    typval_T	*rettv;
+    char_u	*ns;
 };
 
     static void
 make_require_dict(ufunc_T *fp, void *ctx)
 {
-    typval_T	*argvars = ((struct require_ctx*)ctx)->argvars;
     typval_T	*rettv = ((struct require_ctx*)ctx)->rettv;
-    char_u	*ns = tv_get_string(&argvars[0]);
+    char_u	*ns = ((struct require_ctx*)ctx)->ns;
     dict_T	*d = rettv->vval.v_dict;
 
     if (!isdigit(*fp->uf_name)
 		&& STRNCMP(fp->uf_name, ns, STRLEN(ns)) == 0)
     {
-	int	len = STRLEN(fp->uf_name);
-	char_u	*fname = skip_namespace(fp->uf_name, len);
+	char_u	*fname = vim_strrchr(fp->uf_name, AUTOLOAD_CHAR);
+	if (fname != NULL)
+	    fname++;
+	else
+	    fname = fp->uf_name;
 	if (dict_find(d, fname, -1) == NULL)
-	    dict_add_func_len(d, (char*)fname, fp->uf_name, len);
+	    dict_add_func_len(d, (char*)fname, fp->uf_name, -1);
     }
 }
 
@@ -10208,29 +10193,40 @@ make_require_dict(ufunc_T *fp, void *ctx)
     static void
 f_require(typval_T *argvars, typval_T *rettv)
 {
-    struct require_ctx		ctx;
+    struct require_ctx	ctx;
+    char_u		*ns;
+    char_u		*scriptname = NULL;
 
-    // TODO: load the script if not loaded?
+    ns = vim_strsave(tv_get_string(&argvars[0]));
+
+    /* Try loading the package from $VIMRUNTIME/autoload/<name>.vim */
+    scriptname = autoload_name(ns, -1);
+    if (!script_autoload_by_fname(scriptname, FALSE))
+	goto theend;
 
     switch (argvars[1].v_type)
     {
 	case VAR_UNKNOWN:
 	    if (rettv_dict_alloc(rettv) != OK)
-		return;
-	    ctx.argvars = argvars;
+		goto theend;
 	    ctx.rettv = rettv;
+	    ctx.ns = ns;
 	    func_hashtab_iterate(make_require_dict, &ctx);
 	    break;
 
 	case VAR_LIST:
 	    if (rettv_list_alloc(rettv) != OK)
-		return;
+		goto theend;
 	    // TODO
 	    break;
 
 	default:
 	    semsg(_(e_listarg), "require()");
     }
+
+theend:
+    vim_free(ns);
+    vim_free(scriptname);
 }
 
 

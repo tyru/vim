@@ -9221,18 +9221,37 @@ find_option_end(char_u **arg, int *opt_flags)
  * Returns NULL when out of memory.
  */
     char_u *
-autoload_name(char_u *name)
+autoload_name_by_varname(char_u *varname)
+{
+    size_t len;
+    char_u *p = vim_strrchr(varname, AUTOLOAD_CHAR);
+    if (p != NULL)
+	len = (size_t)(p - varname);
+    else
+	len = STRLEN(varname);
+
+    return autoload_name(varname, len);
+}
+
+/*
+ * Return the autoload script name for a function or variable name.
+ * Returns NULL when out of memory.
+ */
+    char_u *
+autoload_name(char_u *name, size_t len)
 {
     char_u	*p;
     char_u	*scriptname;
 
+    if (len < 0)
+	len = STRLEN(name);
+
     /* Get the script file name: replace '#' with '/', append ".vim". */
-    scriptname = alloc(STRLEN(name) + 14);
+    scriptname = alloc(len + 14);
     if (scriptname == NULL)
-	return FALSE;
+	return NULL;
     STRCPY(scriptname, "autoload/");
-    STRCAT(scriptname, name);
-    *vim_strrchr(scriptname, AUTOLOAD_CHAR) = NUL;
+    STRNCAT(scriptname, name, len);
     STRCAT(scriptname, ".vim");
     while ((p = vim_strchr(scriptname, AUTOLOAD_CHAR)) != NULL)
 	*p = '/';
@@ -9249,16 +9268,28 @@ script_autoload(
     int		reload)	    /* load script again when already loaded */
 {
     char_u	*p;
-    char_u	*scriptname, *tofree;
+    char_u	*scriptname;
     int		ret = FALSE;
-    int		i;
 
     /* If there is no '#' after name[0] there is no package name. */
     p = vim_strchr(name, AUTOLOAD_CHAR);
     if (p == NULL || p == name)
 	return FALSE;
 
-    tofree = scriptname = autoload_name(name);
+    scriptname = autoload_name_by_varname(name);
+    ret = script_autoload_by_fname(scriptname, reload);
+
+    vim_free(scriptname);
+    return ret;
+}
+
+    int
+script_autoload_by_fname(
+    char_u	*scriptname,
+    int		reload)	    /* load script again when already loaded */
+{
+    int		ret = FALSE;
+    int		i;
 
     /* Find the name in the list of previously loaded package names.  Skip
      * "autoload/", it's always the same. */
@@ -9272,8 +9303,7 @@ script_autoload(
 	/* Remember the name if it wasn't loaded already. */
 	if (i == ga_loaded.ga_len && ga_grow(&ga_loaded, 1) == OK)
 	{
-	    ((char_u **)ga_loaded.ga_data)[ga_loaded.ga_len++] = scriptname;
-	    tofree = NULL;
+	    ((char_u **)ga_loaded.ga_data)[ga_loaded.ga_len++] = vim_strsave(scriptname);
 	}
 
 	/* Try loading the package from $VIMRUNTIME/autoload/<name>.vim */
@@ -9281,7 +9311,6 @@ script_autoload(
 	    ret = TRUE;
     }
 
-    vim_free(tofree);
     return ret;
 }
 
