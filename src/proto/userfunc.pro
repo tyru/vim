@@ -12,6 +12,7 @@ int call_callback(callback_T *callback, int len, typval_T *rettv, int argcount, 
 int call_func(char_u *funcname, int len, typval_T *rettv, int argcount_in, typval_T *argvars_in, int (*argv_func)(int, typval_T *, int), linenr_T firstline, linenr_T lastline, int *doesrange, int evaluate, partial_T *partial, dict_T *selfdict_in);
 char_u *trans_function_name(char_u **pp, int skip, int flags, funcdict_T *fdp, partial_T **partial);
 void ex_function(exarg_T *eap);
+void func_hashtab_iterate(void (*callback)(ufunc_T *fp, void *ctx), void *ctx);
 int eval_fname_script(char_u *p);
 int translated_function_exists(char_u *name);
 int function_exists(char_u *name, int no_deref);

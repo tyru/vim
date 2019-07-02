@@ -384,22 +384,12 @@ dict_add_special(dict_T *d, char *key, varnumber_T nr)
 
 /*
  * Add a string entry to dictionary "d".
- * Returns FAIL when out of memory and when key already exists.
- */
-    int
-dict_add_string(dict_T *d, char *key, char_u *str)
-{
-    return dict_add_string_len(d, key, str, -1);
-}
-
-/*
- * Add a string entry to dictionary "d".
  * "str" will be copied to allocated memory.
  * When "len" is -1 use the whole string, otherwise only this many bytes.
  * Returns FAIL when out of memory and when key already exists.
  */
-    int
-dict_add_string_len(dict_T *d, char *key, char_u *str, int len)
+    static int
+dict_add_string_len_type(dict_T *d, char *key, char_u *str, int len, vartype_T type)
 {
     dictitem_T	*item;
     char_u	*val = NULL;
@@ -407,7 +397,7 @@ dict_add_string_len(dict_T *d, char *key, char_u *str, int len)
     item = dictitem_alloc((char_u *)key);
     if (item == NULL)
 	return FAIL;
-    item->di_tv.v_type = VAR_STRING;
+    item->di_tv.v_type = type;
     if (str != NULL)
     {
 	if (len == -1)
@@ -422,6 +412,32 @@ dict_add_string_len(dict_T *d, char *key, char_u *str, int len)
 	return FAIL;
     }
     return OK;
+}
+
+/*
+ * Add a string entry to dictionary "d".
+ * Returns FAIL when out of memory and when key already exists.
+ */
+    int
+dict_add_string(dict_T *d, char *key, char_u *str)
+{
+    return dict_add_string_len_type(d, key, str, -1, VAR_STRING);
+}
+
+    int
+dict_add_string_len(dict_T *d, char *key, char_u *str, int len)
+{
+    return dict_add_string_len_type(d, key, str, len, VAR_STRING);
+}
+
+/*
+ * Add a funcref entry to dictionary "d".
+ * Returns FAIL when out of memory and when key already exists.
+ */
+    int
+dict_add_func_len(dict_T *d, char *key, char_u *fname, int len)
+{
+    return dict_add_string_len_type(d, key, fname, len, VAR_FUNC);
 }
 
 /*

@@ -1973,6 +1973,24 @@ theend:
     return name;
 }
 
+    static void
+add_list_func_head(ufunc_T *fp, void *ctx)
+{
+    regmatch_T	*regmatch = (regmatch_T*)ctx;
+
+    if (!isdigit(*fp->uf_name) && vim_regexec(regmatch, fp->uf_name, 0))
+	list_func_head(fp, FALSE);
+}
+
+    static void
+add_list_func_head_filtered(ufunc_T *fp, void *ctx)
+{
+    if (message_filtered(fp->uf_name))
+	return;
+    if (!func_name_refcount(fp->uf_name))
+	list_func_head(fp, FALSE);
+}
+
 /*
  * ":function"
  */
@@ -2017,19 +2035,7 @@ ex_function(exarg_T *eap)
     {
 	if (!eap->skip)
 	{
-	    todo = (int)func_hashtab.ht_used;
-	    for (hi = func_hashtab.ht_array; todo > 0 && !got_int; ++hi)
-	    {
-		if (!HASHITEM_EMPTY(hi))
-		{
-		    --todo;
-		    fp = HI2UF(hi);
-		    if (message_filtered(fp->uf_name))
-			continue;
-		    if (!func_name_refcount(fp->uf_name))
-			list_func_head(fp, FALSE);
-		}
-	    }
+	    func_hashtab_iterate(add_list_func_head_filtered, NULL);
 	}
 	eap->nextcmd = check_nextcmd(eap->arg);
 	return;
@@ -2052,19 +2058,7 @@ ex_function(exarg_T *eap)
 	    if (regmatch.regprog != NULL)
 	    {
 		regmatch.rm_ic = p_ic;
-
-		todo = (int)func_hashtab.ht_used;
-		for (hi = func_hashtab.ht_array; todo > 0 && !got_int; ++hi)
-		{
-		    if (!HASHITEM_EMPTY(hi))
-		    {
-			--todo;
-			fp = HI2UF(hi);
-			if (!isdigit(*fp->uf_name)
-				    && vim_regexec(&regmatch, fp->uf_name, 0))
-			    list_func_head(fp, FALSE);
-		    }
-		}
+		func_hashtab_iterate(add_list_func_head, &regmatch);
 		vim_regfree(regmatch.regprog);
 	    }
 	}
@@ -2685,6 +2679,23 @@ ret_free:
     vim_free(name);
     did_emsg |= saved_did_emsg;
     need_wait_return |= saved_wait_return;
+}
+
+    void
+func_hashtab_iterate(void (*callback)(ufunc_T *fp, void *ctx), void *ctx)
+{
+    hashitem_T	*hi;
+    int		todo;
+
+    todo = (int)func_hashtab.ht_used;
+    for (hi = func_hashtab.ht_array; todo > 0 && !got_int; ++hi)
+    {
+	if (!HASHITEM_EMPTY(hi))
+	{
+	    --todo;
+	    callback(HI2UF(hi), ctx);
+	}
+    }
 }
 
 /*

@@ -314,6 +314,7 @@ static void f_rename(typval_T *argvars, typval_T *rettv);
 static void f_repeat(typval_T *argvars, typval_T *rettv);
 static void f_resolve(typval_T *argvars, typval_T *rettv);
 static void f_reverse(typval_T *argvars, typval_T *rettv);
+static void f_require(typval_T *argvars, typval_T *rettv);
 #ifdef FEAT_FLOAT
 static void f_round(typval_T *argvars, typval_T *rettv);
 #endif
@@ -841,6 +842,7 @@ static struct fst
     {"remove",		2, 3, f_remove},
     {"rename",		2, 2, f_rename},
     {"repeat",		2, 2, f_repeat},
+    {"require",		1, 2, f_require},
     {"resolve",		1, 1, f_resolve},
     {"reverse",		1, 1, f_reverse},
 #ifdef FEAT_FLOAT
@@ -10158,6 +10160,79 @@ f_reverse(typval_T *argvars, typval_T *rettv)
 	l->lv_idx = l->lv_len - l->lv_idx - 1;
     }
 }
+
+
+/*
+ * Return "func" for given fully qualified function name "foo#bar#func".
+ */
+    static char_u*
+skip_namespace(char_u *s, size_t len)
+{
+    int		i;
+    for (i = len - 1; i >= 0; i--) {
+	if (s[i] == '#')
+	{
+	    i++;
+	    break;
+	}
+    }
+    return &s[i < 0 ? 0 : i];
+}
+
+struct require_ctx {
+    typval_T *argvars;
+    typval_T *rettv;
+};
+
+    static void
+make_require_dict(ufunc_T *fp, void *ctx)
+{
+    typval_T	*argvars = ((struct require_ctx*)ctx)->argvars;
+    typval_T	*rettv = ((struct require_ctx*)ctx)->rettv;
+    char_u	*ns = tv_get_string(&argvars[0]);
+    dict_T	*d = rettv->vval.v_dict;
+
+    if (!isdigit(*fp->uf_name)
+		&& STRNCMP(fp->uf_name, ns, STRLEN(ns)) == 0)
+    {
+	int	len = STRLEN(fp->uf_name);
+	char_u	*fname = skip_namespace(fp->uf_name, len);
+	if (dict_find(d, fname, -1) == NULL)
+	    dict_add_func_len(d, (char*)fname, fp->uf_name, len);
+    }
+}
+
+/*
+ * "require({namespace} [, {fnlist}])" function
+ */
+    static void
+f_require(typval_T *argvars, typval_T *rettv)
+{
+    struct require_ctx		ctx;
+
+    // TODO: load the script if not loaded?
+
+    switch (argvars[1].v_type)
+    {
+	case VAR_UNKNOWN:
+	    if (rettv_dict_alloc(rettv) != OK)
+		return;
+	    ctx.argvars = argvars;
+	    ctx.rettv = rettv;
+	    func_hashtab_iterate(make_require_dict, &ctx);
+	    break;
+
+	case VAR_LIST:
+	    if (rettv_list_alloc(rettv) != OK)
+		return;
+	    // TODO
+	    break;
+
+	default:
+	    semsg(_(e_listarg), "require()");
+    }
+}
+
 
 #define SP_NOMOVE	0x01	    /* don't move cursor */
 #define SP_REPEAT	0x02	    /* repeat to find outer pair */
