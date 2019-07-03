@@ -9243,9 +9243,6 @@ autoload_name(char_u *name, size_t len)
     char_u	*p;
     char_u	*scriptname;
 
-    if (len < 0)
-	len = STRLEN(name);
-
     /* Get the script file name: replace '#' with '/', append ".vim". */
     scriptname = alloc(len + 14);
     if (scriptname == NULL)

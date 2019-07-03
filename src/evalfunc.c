@@ -10202,7 +10202,7 @@ f_require(typval_T *argvars, typval_T *rettv)
     ns = vim_strsave(tv_get_string(&argvars[0]));
 
     /* Try loading the package from $VIMRUNTIME/autoload/<ns>.vim */
-    scriptname = autoload_name(ns, -1);
+    scriptname = autoload_name(ns, STRLEN(ns));
     script_autoload_by_fname(scriptname, FALSE);
 
     switch (argvars[1].v_type)
