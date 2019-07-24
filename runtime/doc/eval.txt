@@ -2394,10 +2394,10 @@ function({name} [, {arglist}] [, {dict}])
 garbagecollect([{atexit}])	none	free memory, breaking cyclic references
 get_lazy({list}, {idx} [, {deffunc}])	any	get item {idx} from {list} or result of {deffunc}
 get_lazy({dict}, {key} [, {deffunc}])	any	get item {key} from {dict} or result of {deffunc}
-get_lazy({func}, {what})		any	same as get({func}, {what})
+get_lazy({func}, {what} [, {deffunc}])		any	same as get({func}, {what})
 get({list}, {idx} [, {def}])	any	get item {idx} from {list} or {def}
 get({dict}, {key} [, {def}])	any	get item {key} from {dict} or {def}
-get({func}, {what})		any	get property of funcref/partial {func}
+get({func}, {what} [, {def})	any	get property of funcref/partial {func}
 getbufinfo([{expr}])		List	information about buffers
 getbufline({expr}, {lnum} [, {end}])
 				List	lines {lnum} to {end} of buffer {expr}
@@ -4727,7 +4727,7 @@ garbagecollect([{atexit}])				*garbagecollect()*
 get_lazy({list}, {idx} [, {defaultfunc}])
 get_lazy({blob}, {idx} [, {defaultfunc}])
 get_lazy({dict}, {key} [, {defaultfunc}])
-get_lazy({func}, {what})
+get_lazy({func}, {what} [, {defaultfunc}])
 		Same as |get()| but if {defaultfunc} was given and the item is not
 		available, call {defaultfunc} and return the result.
 >
@@ -4767,13 +4767,16 @@ get({dict}, {key} [, {default}])
 		Get item with key {key} from |Dictionary| {dict}.  When this
 		item is not available return {default}.  Return zero when
 		{default} is omitted.
-get({func}, {what})
+get({func}, {what} [, {default}])
 		Get an item with from Funcref {func}.  Possible values for
 		{what} are:
 			"name"	The function name
 			"func"	The function
 			"dict"	The dictionary
 			"args"	The list with arguments
+
+		Only when {what} == "dict" and item is not available, return
+		{default}. Return zero when {default} is omitted.
 
 							*getbufinfo()*
 getbufinfo([{expr}])
