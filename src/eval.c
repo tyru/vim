@@ -4824,7 +4824,7 @@ eval_method(
 
     // Locate the method name.
     name = *arg;
-    for (len = 0; ASCII_ISALNUM(name[len]) || name[len] == '_'; ++len)
+    for (len = 0; ASCII_ISALNUM(name[len]) || name[len] == '_' || name[len] == ':'; ++len)
 	;
     if (len == 0)
     {
