@@ -4734,7 +4734,7 @@ eval7(
     *arg = skipwhite(*arg);
 
     /* Handle following '[', '(' and '.' for expr[expr], expr.name,
-     * expr(expr). */
+     * expr(expr), var->method(). */
     if (ret == OK)
 	ret = handle_subscript(arg, rettv, evaluate, TRUE);
 
