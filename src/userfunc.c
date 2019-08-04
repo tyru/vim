@@ -1495,7 +1495,8 @@ call_func(
     int		argcount = argcount_in;
     typval_T	*argvars = argvars_in;
     dict_T	*selfdict = funcexe->selfdict;
-    typval_T	argv[MAX_FUNC_ARGS + 1]; /* used when "partial" is not NULL */
+    // used when "partial" is not NULL or funcexe->basetv is not NULL
+    typval_T	argv[MAX_FUNC_ARGS + 1];
     int		argv_clear = 0;
     partial_T	*partial = funcexe->partial;
 
@@ -1555,8 +1556,7 @@ call_func(
 	     * User defined function.
 	     */
 	    if (funcexe->basetv != NULL)
-		// TODO: support User function: base->Method()
-		fp = NULL;
+		fp = find_func(rfname);
 	    else if (partial != NULL && partial->pt_func != NULL)
 		fp = partial->pt_func;
 	    else
@@ -1585,6 +1585,14 @@ call_func(
 		if (funcexe->argv_func != NULL)
 		    argcount = funcexe->argv_func(argcount, argvars,
 							   fp->uf_args.ga_len);
+		if (funcexe->basetv != NULL)
+		{
+		    memcpy(&argv[1], argvars, sizeof(typval_T) * argcount);
+		    memcpy(argv, funcexe->basetv, sizeof(typval_T));
+		    argcount++;
+		}
+		else
+		    memcpy(argv, argvars, sizeof(typval_T) * argcount);
 
 		if (fp->uf_flags & FC_RANGE && funcexe->doesrange != NULL)
 		    *funcexe->doesrange = TRUE;
@@ -1613,7 +1621,7 @@ call_func(
 			did_save_redo = TRUE;
 		    }
 		    ++fp->uf_calls;
-		    call_user_func(fp, argcount, argvars, rettv,
+		    call_user_func(fp, argcount, argv, rettv,
 					 funcexe->firstline, funcexe->lastline,
 				  (fp->uf_flags & FC_DICT) ? selfdict : NULL);
 		    if (--fp->uf_calls <= 0 && fp->uf_refcount <= 0)
