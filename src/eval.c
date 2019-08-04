@@ -4818,35 +4818,54 @@ eval_method(
     funcexe_T	funcexe;
     int		ret = OK;
     typval_T	base = *rettv;
+    typval_T	lambda_args[1];
 
     // Skip over the ->.
     *arg += 2;
 
-    // Locate the method name.
-    name = *arg;
-    for (len = 0; ASCII_ISALNUM(name[len]) || name[len] == '_' || name[len] == ':'; ++len)
-	;
-    if (len == 0)
+    if (**arg == '{')
     {
-	if (verbose)
-	    emsg(_("E260: Missing name after ->"));
-	return FAIL;
+	ret = get_lambda_tv(arg, rettv, evaluate);
+	if (ret != OK)
+	    return FAIL;
+
+	vim_memset(&funcexe, 0, sizeof(funcexe));
+	funcexe.evaluate = evaluate;
+	funcexe.basetv = &base;
+	rettv->v_type = VAR_UNKNOWN;
+	ret = call_func(rettv->vval.v_partial->pt_func->uf_name, -1,
+				rettv, 0, lambda_args, &funcexe);
+    }
+    else
+    {
+	// Locate the method name.
+	name = *arg;
+	for (len = 0; ASCII_ISALNUM(name[len]) || name[len] == '_' || name[len] == ':'; ++len)
+	    ;
+
+	if (len == 0)
+	{
+	    if (verbose)
+		emsg(_("E260: Missing name after ->"));
+	    return FAIL;
+	}
+
+	// Check for the "(".  Skip over white space after it.
+	if (name[len] != '(')
+	{
+	    if (verbose)
+		semsg(_(e_missingparen), name);
+	    return FAIL;
+	}
+	*arg += len;
+
+	vim_memset(&funcexe, 0, sizeof(funcexe));
+	funcexe.evaluate = evaluate;
+	funcexe.basetv = &base;
+	rettv->v_type = VAR_UNKNOWN;
+	ret = get_func_tv(name, len, rettv, arg, &funcexe);
     }
 
-    // Check for the "(".  Skip over white space after it.
-    if (name[len] != '(')
-    {
-	if (verbose)
-	    semsg(_(e_missingparen), name);
-	return FAIL;
-    }
-    *arg += len;
-
-    vim_memset(&funcexe, 0, sizeof(funcexe));
-    funcexe.evaluate = evaluate;
-    funcexe.basetv = &base;
-    rettv->v_type = VAR_UNKNOWN;
-    ret = get_func_tv(name, len, rettv, arg, &funcexe);
 
     /* Clear the funcref afterwards, so that deleting it while
      * evaluating the arguments is possible (see test55). */
